@@ -1,6 +1,6 @@
 This is a README!
 
-Autonomous is Super Dooper cool and we love making CLANKERS!!!! Tinskins, wirebacks, part buckets, oil guzzlers, and all other sorts.
+Autonomous is Super Dooper cool and we love making ROBOTS!!!! Cool guys that will keep us around when Sam Altman pulls a Matrix on us.
 
 Imagine this is huey with a link to the webstie.
 
