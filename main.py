@@ -23,7 +23,7 @@ from vid_and_img_processing.unfisheye import prepare_undistortion_maps
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
 # Set True if using Matt's Laptop
-MATT_LAPTOP = True
+MATT_LAPTOP = False
 
 JANK_CONTROLLER = False
 
@@ -34,13 +34,13 @@ COMP_SETTINGS = False
 PRINT = True
 
 # Save times to an array for plotting
-TIMING = True
+TIMING = False
 
 # Set True to redo warp and picking Huey's main color, front and back corners
 WARP_AND_COLOR_PICKING = True
 
 # Set True when testing with a live Huey and not a pre-filmed video
-IS_TRANSMITTING = True
+IS_TRANSMITTING = False
 
 # True to display current and future orientation angles for each iteration
 SHOW_FRAME = True
@@ -72,8 +72,8 @@ BACK_UP_TIME = 0.5
 start_back_up_time = 0
 
 # camera_number = 1
-camera_number = 701
-# camera_number = test_videos_folder + "/crude_rot_huey.mp4"
+# camera_number = 701
+camera_number = test_videos_folder + "/crude_rot_huey.mp4"
 # camera_number = test_videos_folder + "/huey_duet_demo.mp4"
 # camera_number = test_videos_folder + "/huey_demo2.mp4"
 # camera_number = test_videos_folder + "/huey_demo3.mp4"
