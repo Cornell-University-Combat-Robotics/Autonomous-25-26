@@ -322,87 +322,88 @@ class Ram():
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
 
     def ram_ram(self, bots={'huey': {'bbox': list, 'center': list, 'orientation': float}, 'enemy': {'bbox': list, 'center': list}}):
+        if bots and bots["huey"]:
+            # Get new position and heading values
+            # TODO: 
+            self.huey_position = np.array(bots['huey'].get('center'))
+            self.huey_orientation = bots['huey'].get('orientation')
 
-        # Get new position and heading values
-        self.huey_position = np.array(bots['huey'].get('center'))
-        self.huey_orientation = bots['huey'].get('orientation')
+            self.delta_t = time.time() - self.old_time  # record delta time
+            self.old_time = time.time()
 
-        if (self.check_previous_position_and_orientation(bots) and time.time() - Ram.start_back_up_time > Ram.BACK_UP_TIME):
-            print("Back it up rbg 😜")
-            Ram.start_back_up_time = time.time()
-            return self.huey_move(Ram.BACK_UP_SPEED, Ram.BACK_UP_TURN)
+            self.enemy_position = np.array(bots['enemy'].get('center')) # probably issue here? 
+            enemy_velocity = self.calculate_velocity(
+                self.enemy_previous_positions[-1], self.enemy_position, self.delta_t)
+            turn, speed = self.predict_desired_turn_and_speed(our_pos=self.huey_position, our_orientation=self.huey_orientation, enemy_pos=self.enemy_position,
+                                                            enemy_velocity=enemy_velocity, dt=self.delta_t)
 
-        self.delta_t = time.time() - self.old_time  # record delta time
-        self.old_time = time.time()
+            if (Ram.TEST_MODE):
+                angle = self.predict_desired_orientation_angle(
+                    self.huey_position, self.huey_orientation, self.enemy_position, enemy_velocity, self.delta_t)
+                direction = self.predict_enemy_position(
+                    self.enemy_position, enemy_velocity, self.delta_t) - self.huey_position
 
-        self.enemy_position = np.array(bots['enemy'].get('center'))
-        enemy_velocity = self.calculate_velocity(
-            self.enemy_previous_positions[-1], self.enemy_position, self.delta_t)
-        turn, speed = self.predict_desired_turn_and_speed(our_pos=self.huey_position, our_orientation=self.huey_orientation, enemy_pos=self.enemy_position,
-                                                          enemy_velocity=enemy_velocity, dt=self.delta_t)
+                test_ram_csv.test_file_update(delta_time=self.delta_t, bots=bots, huey_pos=self.huey_position, huey_facing=self.huey_orientation,
+                                            enemy_pos=self.enemy_position, huey_old_pos=self.huey_old_position,
+                                            huey_velocity=self.calculate_velocity(
+                                                self.huey_position, self.huey_old_position, self.delta_t),
+                                            enemy_old_pos=self.enemy_previous_positions, enemy_velocity=enemy_velocity, speed=speed, turn=turn,
+                                            left_speed=self.left, right_speed=self.right, angle=angle, direction=direction)
 
-        if (Ram.TEST_MODE):
-            angle = self.predict_desired_orientation_angle(
-                self.huey_position, self.huey_orientation, self.enemy_position, enemy_velocity, self.delta_t)
-            direction = self.predict_enemy_position(
-                self.enemy_position, enemy_velocity, self.delta_t) - self.huey_position
+            self.huey_old_position = self.huey_position
 
-            test_ram_csv.test_file_update(delta_time=self.delta_t, bots=bots, huey_pos=self.huey_position, huey_facing=self.huey_orientation,
-                                          enemy_pos=self.enemy_position, huey_old_pos=self.huey_old_position,
-                                          huey_velocity=self.calculate_velocity(
-                                              self.huey_position, self.huey_old_position, self.delta_t),
-                                          enemy_old_pos=self.enemy_previous_positions, enemy_velocity=enemy_velocity, speed=speed, turn=turn,
-                                          left_speed=self.left, right_speed=self.right, angle=angle, direction=direction)
+            if self.huey_pos_count % 5 == 0:
+                self.huey_previous_positions.append(self.huey_position)
+                self.huey_previous_orientations.append(self.huey_orientation)
 
-        self.huey_old_position = self.huey_position
+                # print(f'🥶🥶🥶 Huey Pos Count: {self.huey_pos_count}')
+            self.huey_pos_count += 1
+            self.huey_orient_count += 1
 
-        if self.huey_pos_count % 5 == 0:
-            self.huey_previous_positions.append(self.huey_position)
-            self.huey_previous_orientations.append(self.huey_orientation)
+            # Save Huey's last 10 positions
+            if len(self.huey_previous_positions) > Ram.HUEY_HISTORY_BUFFER:
+                self.huey_previous_positions.pop(0)
 
-            # print(f'🥶🥶🥶 Huey Pos Count: {self.huey_pos_count}')
-        self.huey_pos_count += 1
-        self.huey_orient_count += 1
+            if len(self.huey_previous_orientations) > Ram.HUEY_HISTORY_BUFFER:
+                self.huey_previous_orientations.pop(0)
 
-        # Save Huey's last 10 positions
-        if len(self.huey_previous_positions) > Ram.HUEY_HISTORY_BUFFER:
-            self.huey_previous_positions.pop(0)
+            # If the array for enemy_previous_positions is full, then pop the first one
+            self.enemy_previous_positions.append(self.enemy_position)
 
-        if len(self.huey_previous_orientations) > Ram.HUEY_HISTORY_BUFFER:
-            self.huey_previous_orientations.pop(0)
+            if len(self.enemy_previous_positions) > Ram.ENEMY_HISTORY_BUFFER:
+                self.enemy_previous_positions.pop(0)
 
-        # If the array for enemy_previous_positions is full, then pop the first one
-        self.enemy_previous_positions.append(self.enemy_position)
-
-        if len(self.enemy_previous_positions) > Ram.ENEMY_HISTORY_BUFFER:
-            self.enemy_previous_positions.pop(0)
-
-        if (time.time() - Ram.start_back_up_time <= Ram.BACK_UP_TIME):
-            return self.huey_move(Ram.BACK_UP_SPEED, Ram.BACK_UP_TURN)
-        
-        # PID Shenanigans
-        use_pid = True
-        
-        if use_pid and self.delta_t != 0:
-            # Only use PID for the turn values
-            # Calculate the error
-            error = turn
-            # Calculate the derivative
-            if self.delta_t > 0:
-                derivative = (self.huey_orientation - self.huey_previous_orientations[-1]) / (self.delta_t * 180.0)
-            else:
-                derivative = 0
-            # Don't use the integral term for now
-            integral = 0
-            # Calculate the PID output
-            pid_output = (error * 1) + (derivative * 0.03 * -1) + (integral * 0.0)
-            # Calculate the new speed and turn values
-            speed = speed
-            turn = pid_output
-            if turn > 1:
-                turn = 1
-            elif turn < -1:
-                turn = -1
-        
-
-        return self.huey_move(speed, turn)
+            if (time.time() - Ram.start_back_up_time <= Ram.BACK_UP_TIME):
+                return self.huey_move(Ram.BACK_UP_SPEED, Ram.BACK_UP_TURN)
+            
+            # PID Shenanigans
+            use_pid = True
+            
+            if use_pid and self.delta_t != 0:
+                # Only use PID for the turn values
+                # Calculate the error
+                error = turn
+                # Calculate the derivative
+                if self.delta_t > 0:
+                    derivative = (self.huey_orientation - self.huey_previous_orientations[-1]) / (self.delta_t * 180.0)
+                else:
+                    derivative = 0
+                # Don't use the integral term for now
+                integral = 0
+                # Calculate the PID output
+                pid_output = (error * 1) + (derivative * 0.03 * -1) + (integral * 0.0)
+                # Calculate the new speed and turn values
+                speed = speed
+                turn = pid_output
+                if turn > 1:
+                    turn = 1
+                elif turn < -1:
+                    turn = -1
+                    
+            return self.huey_move(speed, turn)
+        else:
+            self.huey_previous_positions.append(self.huey_previous_positions[-1])
+            if (self.check_previous_position_and_orientation(bots) and time.time() - Ram.start_back_up_time > Ram.BACK_UP_TIME):
+                print("Back it up rbg 😜")
+                Ram.start_back_up_time = time.time()
+                return self.huey_move(Ram.BACK_UP_SPEED, Ram.BACK_UP_TURN)
