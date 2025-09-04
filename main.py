@@ -37,7 +37,7 @@ PRINT = True
 TIMING = False
 
 # Set True to redo warp and picking Huey's main color, front and back corners
-WARP_AND_COLOR_PICKING = True
+WARP_AND_COLOR_PICKING = False
 
 # Set True when testing with a live Huey and not a pre-filmed video
 IS_TRANSMITTING = False
@@ -324,7 +324,7 @@ def main():
                     
                 if detected_bots_with_data and detected_bots_with_data["enemy"]:
                     detected_bots_with_data["enemy"] = detected_bots_with_data["enemy"][0]
-
+                print("ENTERED RAM!!!!! OH MY GOODNESS GRACIOUS WOAHNESS")
                 move_dictionary = algorithm.ram_ram(
                     detected_bots_with_data)
                 print("EXITED RAM!!!!!!!!!!!!!!!!!!! OOO WOAH~")
