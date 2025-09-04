@@ -283,37 +283,39 @@ class Ram():
         counter_orientation = 0
         x_curr, y_curr = self.huey_position
 
-        huey_girth = (math.dist(bots['huey'].get('bbox')[
-                      1], bots['huey'].get('bbox')[0]))/2
+        if bots and bots["huey"] and len(bots["huey"])>0: # Conditional Back-Up
 
-        # Huey against left wall
-        if (self.huey_position[0] < huey_girth and (0 <= self.huey_orientation < 45 or 315 < self.huey_orientation <= 359)):
-            print("👿 AGAINST A LEFT WALL, NO BACK 👿")
-            return False
+            huey_girth = (math.dist(bots['huey'].get('bbox')[
+                        1], bots['huey'].get('bbox')[0]))/2
 
-        # Huey against right wall
-        if (self.huey_position[0] > 700 - huey_girth and (135 < self.huey_orientation <= 225)):
-            print("🦋 AGAINST A RIGHT WALL, NO BACK 🦋")
-            return False
+            # Huey against left wall
+            if (self.huey_position[0] < huey_girth and (0 <= self.huey_orientation < 45 or 315 < self.huey_orientation <= 359)):
+                print("👿 AGAINST A LEFT WALL, NO BACK 👿")
+                return False
 
-        # Huey against top wall
-        if (self.huey_position[1] < huey_girth and (225 < self.huey_orientation <= 315)):
-            print("🌝 AGAINST A TOP WALL, NO BACK 🌝")
-            return False
+            # Huey against right wall
+            if (self.huey_position[0] > 700 - huey_girth and (135 < self.huey_orientation <= 225)):
+                print("🦋 AGAINST A RIGHT WALL, NO BACK 🦋")
+                return False
 
-        # Huey against bottom wall
-        if (self.huey_position[1] > 700 - huey_girth and (45 < self.huey_orientation <= 135)):
-            print("🦐 AGAINST A BOTTOM WALL, NO BACK 🦐")
-            return False
+            # Huey against top wall
+            if (self.huey_position[1] < huey_girth and (225 < self.huey_orientation <= 315)):
+                print("🌝 AGAINST A TOP WALL, NO BACK 🌝")
+                return False
 
-        for prev_pos in self.huey_previous_positions:
-            if math.sqrt((x_curr - prev_pos[0])**2 + (y_curr - prev_pos[1])**2) < Ram.TOLERANCE:
-                counter_pos += 1
+            # Huey against bottom wall
+            if (self.huey_position[1] > 700 - huey_girth and (45 < self.huey_orientation <= 135)):
+                print("🦐 AGAINST A BOTTOM WALL, NO BACK 🦐")
+                return False
 
-        for prev_orientation in self.huey_previous_orientations:
-            # TODO: work out angle range
-            if abs(prev_orientation - self.huey_orientation) < Ram.TOLERANCE*0.5:
-                counter_orientation += 1
+            for prev_pos in self.huey_previous_positions:
+                if math.sqrt((x_curr - prev_pos[0])**2 + (y_curr - prev_pos[1])**2) < Ram.TOLERANCE:
+                    counter_pos += 1
+
+            for prev_orientation in self.huey_previous_orientations:
+                # TODO: work out angle range
+                if abs(prev_orientation - self.huey_orientation) < Ram.TOLERANCE*0.5:
+                    counter_orientation += 1
 
         if counter_pos >= Ram.BACK_UP_THRESHOLD and counter_orientation >= Ram.BACK_UP_THRESHOLD:
             return True
@@ -407,6 +409,7 @@ class Ram():
             print("jail...")
             self.huey_previous_positions.append(self.huey_previous_positions[-1])
             print("prev pos appended.")
+            
             if (self.check_previous_position_and_orientation(bots) and time.time() - Ram.start_back_up_time > Ram.BACK_UP_TIME):
                 print("Back it up rbg 😜")
                 Ram.start_back_up_time = time.time()
