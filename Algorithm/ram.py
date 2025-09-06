@@ -284,7 +284,7 @@ class Ram():
         x_curr, y_curr = self.huey_position
 
         if bots and bots["huey"] and len(bots["huey"])>0: # Conditional Back-Up
-
+            print("🦋👿conditional👿🦋")
             huey_girth = (math.dist(bots['huey'].get('bbox')[
                         1], bots['huey'].get('bbox')[0]))/2
 
@@ -308,14 +308,14 @@ class Ram():
                 print("🦐 AGAINST A BOTTOM WALL, NO BACK 🦐")
                 return False
 
-            for prev_pos in self.huey_previous_positions:
-                if math.sqrt((x_curr - prev_pos[0])**2 + (y_curr - prev_pos[1])**2) < Ram.TOLERANCE:
-                    counter_pos += 1
+        for prev_pos in self.huey_previous_positions:
+            if math.sqrt((x_curr - prev_pos[0])**2 + (y_curr - prev_pos[1])**2) < Ram.TOLERANCE:
+                counter_pos += 1
 
-            for prev_orientation in self.huey_previous_orientations:
-                # TODO: work out angle range
-                if abs(prev_orientation - self.huey_orientation) < Ram.TOLERANCE*0.5:
-                    counter_orientation += 1
+        for prev_orientation in self.huey_previous_orientations:
+            # TODO: work out angle range
+            if abs(prev_orientation - self.huey_orientation) < Ram.TOLERANCE*0.5:
+                counter_orientation += 1
 
         if counter_pos >= Ram.BACK_UP_THRESHOLD and counter_orientation >= Ram.BACK_UP_THRESHOLD:
             return True
@@ -338,28 +338,30 @@ class Ram():
 
         if len(self.huey_previous_orientations) > Ram.HUEY_HISTORY_BUFFER:
             self.huey_previous_orientations.pop(0)
-
+            
+        if (time.time() - Ram.start_back_up_time <= Ram.BACK_UP_TIME):
+            print("Still backing, no calc")
+            return self.huey_move(Ram.BACK_UP_SPEED, Ram.BACK_UP_TURN)
+        
         # If the array for enemy_previous_positions is full, then pop the first one
         self.enemy_previous_positions.append(self.enemy_position)
 
         if len(self.enemy_previous_positions) > Ram.ENEMY_HISTORY_BUFFER:
             self.enemy_previous_positions.pop(0)
-
-        if (time.time() - Ram.start_back_up_time <= Ram.BACK_UP_TIME):
+            
+        if (self.check_previous_position_and_orientation(bots) and time.time() - Ram.start_back_up_time > Ram.BACK_UP_TIME):
+            print("Back it up rbg 😜")
+            Ram.start_back_up_time = time.time()
             return self.huey_move(Ram.BACK_UP_SPEED, Ram.BACK_UP_TURN)
-        print("Before huey check ❤️")
+        
         if bots and bots["huey"] and len(bots["huey"])>0:
-            print("PASSED HUEY TSA")
             # Get new position and heading values
             self.huey_position = np.array(bots['huey'].get('center'))
-            print("Before position addy 😭")
             self.huey_orientation = bots['huey'].get('orientation')
-            print("Before orient addy 😭😭")
 
             self.delta_t = time.time() - self.old_time  # record delta time
             self.old_time = time.time()
             
-            print("Before enemy check ❤️❤️❤️")
             if bots["enemy"]:
                 self.enemy_position = np.array(bots['enemy'].get('center')) # probably issue here? 
                 enemy_velocity = self.calculate_velocity(
@@ -405,12 +407,7 @@ class Ram():
                         turn = -1
                         
                     return self.huey_move(speed, turn)
-        else:
+        else: #TODO: Back-up logic not triggering
             print("jail...")
             self.huey_previous_positions.append(self.huey_previous_positions[-1])
             print("prev pos appended.")
-            
-            if (self.check_previous_position_and_orientation(bots) and time.time() - Ram.start_back_up_time > Ram.BACK_UP_TIME):
-                print("Back it up rbg 😜")
-                Ram.start_back_up_time = time.time()
-                return self.huey_move(Ram.BACK_UP_SPEED, Ram.BACK_UP_TURN)

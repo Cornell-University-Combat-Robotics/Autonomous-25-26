@@ -37,7 +37,7 @@ PRINT = True
 TIMING = False
 
 # Set True to redo warp and picking Huey's main color, front and back corners
-WARP_AND_COLOR_PICKING = False
+WARP_AND_COLOR_PICKING = True
 
 # Set True when testing with a live Huey and not a pre-filmed video
 IS_TRANSMITTING = False
@@ -81,6 +81,7 @@ start_back_up_time = 0
 # camera_number = test_videos_folder + "/only_enemy_demo.mp4"
 # camera_number = test_videos_folder + "/green_huey_demo.mp4"
 # camera_number = test_videos_folder + "/when_i_throw_it_back_huey.mp4"
+# camera_number = test_videos_folder + "/lazy_huey.mp4"
 camera_number = test_videos_folder + "/kabedon_huey.mp4"
 # camera_number = test_videos_folder + "/yellow_huey_demo.mp4"
 # camera_number = test_videos_folder + "/warped_no_huey.mp4"
