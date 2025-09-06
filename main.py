@@ -81,8 +81,8 @@ start_back_up_time = 0
 # camera_number = test_videos_folder + "/only_enemy_demo.mp4"
 # camera_number = test_videos_folder + "/green_huey_demo.mp4"
 # camera_number = test_videos_folder + "/when_i_throw_it_back_huey.mp4"
-# camera_number = test_videos_folder + "/lazy_huey.mp4"
-camera_number = test_videos_folder + "/kabedon_huey.mp4"
+camera_number = test_videos_folder + "/lazy_huey.mp4"
+# camera_number = test_videos_folder + "/kabedon_huey.mp4"
 # camera_number = test_videos_folder + "/yellow_huey_demo.mp4"
 # camera_number = test_videos_folder + "/warped_no_huey.mp4"
 # camera_number = test_videos_folder + "/flippy_huey.mp4"
@@ -325,10 +325,9 @@ def main():
                     
                 if detected_bots_with_data and detected_bots_with_data["enemy"]:
                     detected_bots_with_data["enemy"] = detected_bots_with_data["enemy"][0]
-                print("ENTERED RAM!!!!! OH MY GOODNESS GRACIOUS WOAHNESS")
+
                 move_dictionary = algorithm.ram_ram(
                     detected_bots_with_data)
-                print("EXITED RAM!!!!!!!!!!!!!!!!!!! OOO WOAH~")
                 
                 if detected_bots_with_data and detected_bots_with_data["huey"]:
                     if PRINT:
@@ -356,7 +355,6 @@ def main():
                     display_angles(None, None, warped_frame)
 
                 if SHOW_FRAME and not DISPLAY_ANGLES:
-                    print("RAHHHH")
                     cv2.imshow("Bounding boxes (no angles)", warped_frame)
 
                 if TIMING:
@@ -437,8 +435,7 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
                     (255, 0, 255),
                     2,
                 )
-            new_orientation_degrees = orientation_degrees + \
-                (turn * 180) + IS_BACKED
+            new_orientation_degrees = orientation_degrees + (turn * 180) + IS_BACKED
 
             # Components of predicted turn
             dx = np.cos(math.pi * new_orientation_degrees / 180)

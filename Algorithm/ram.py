@@ -284,7 +284,6 @@ class Ram():
         x_curr, y_curr = self.huey_position
 
         if bots and bots["huey"] and len(bots["huey"])>0: # Conditional Back-Up
-            print("🦋👿conditional👿🦋")
             huey_girth = (math.dist(bots['huey'].get('bbox')[
                         1], bots['huey'].get('bbox')[0]))/2
 
@@ -408,6 +407,5 @@ class Ram():
                         
                     return self.huey_move(speed, turn)
         else: #TODO: Back-up logic not triggering
-            print("jail...")
             self.huey_previous_positions.append(self.huey_previous_positions[-1])
-            print("prev pos appended.")
+            print("Prev pos appended.")

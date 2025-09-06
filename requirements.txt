@@ -1,7 +1,12 @@
 # HOW TO INSTALL REQUIREMENTS FROM VENV
-    # MacOS: python3 -m venv venv
-    # Windows: python3 -m venv <venv-name>
-    # source <venv-name>/bin/activate
+    # To set up venv:
+        # MacOS:
+        # python3 -m venv <venv-name>
+        # source <venv-name>/bin/activate
+        # Windows:
+        # python -m venv <venv-name>
+        # <venv-name>\Scripts\activate
+    # To install packages (for both systems):
     # pip install -r requirements.txt
     
 opencv-python==4.12.0.88       # import cv2
