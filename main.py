@@ -71,7 +71,7 @@ map2 = np.load('vid_and_img_processing/700xmap2.npy')
 BACK_UP_TIME = 0.5
 start_back_up_time = 0
 
-camera_number = 0
+camera_number = 1
 # camera_number = 701
 # camera_number = test_videos_folder + "/crude_rot_huey.mp4"
 # camera_number = test_videos_folder + "/huey_duet_demo.mp4"
@@ -81,7 +81,7 @@ camera_number = 0
 # camera_number = test_videos_folder + "/only_enemy_demo.mp4"
 # camera_number = test_videos_folder + "/green_huey_demo.mp4"
 # camera_number = test_videos_folder + "/when_i_throw_it_back_huey.mp4"
-# camera_number = test_videos_folder + "/lazy_huey.mp4"
+#camera_number = test_videos_folder + "/lazy_huey.mp4"
 # camera_number = test_videos_folder + "/kabedon_huey.mp4"
 # camera_number = test_videos_folder + "/yellow_huey_demo.mp4"
 # camera_number = test_videos_folder + "/warped_no_huey.mp4"
@@ -90,9 +90,9 @@ camera_number = 0
 
 
 if IS_TRANSMITTING:
-    speed_motor_channel = 1
-    turn_motor_channel = 3
-    weapon_motor_channel = 4
+    speed_motor_channel = 1 #0 INDEXED, channel 2
+    turn_motor_channel = 3 # CHANNEL 4
+    weapon_motor_channel = 4 #CHANNEL 5
 
 # ------------------------------ BEFORE THE MATCH ------------------------------
 

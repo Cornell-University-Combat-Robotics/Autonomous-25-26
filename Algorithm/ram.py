@@ -2,6 +2,7 @@ import math
 import time
 import os
 import numpy as np
+import random
 # import Algorithm.test_ram_csv as test_ram_csv
 
 
@@ -131,6 +132,11 @@ class Ram():
         self.old_time = time.time()
         # delta time
         self.delta_t = 0.001
+
+        #recovery
+        self.recovering_until = 0
+        self.recover_speed = 0
+        self.recover_turn = 0
     # ----------------------------- HELPER METHODS -----------------------------
 
     ''' 
@@ -322,6 +328,16 @@ class Ram():
         if counter_pos >= Ram.BACK_UP_THRESHOLD and counter_orientation >= Ram.BACK_UP_THRESHOLD:
             return True
         return False
+    
+    ''' moves huey in a random direction at a random speed for a random number of seconds)'''
+
+    def recover(self):
+        duration = random.uniform(1.0, 2.0)
+        self.recovering_until = time.time() + duration
+        self.recover_speed = random.uniform(0.5, 1)
+        self.recover_turn = random.uniform(0.2, 1)
+            
+
 
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
 
@@ -341,9 +357,17 @@ class Ram():
         if len(self.huey_previous_orientations) > Ram.HUEY_HISTORY_BUFFER:
             self.huey_previous_orientations.pop(0)
             
-        if (time.time() - Ram.start_back_up_time <= Ram.BACK_UP_TIME):
-            print("Still backing, no calc")
-            return self.huey_move(Ram.BACK_UP_SPEED, Ram.BACK_UP_TURN)
+        # if (time.time() - Ram.start_back_up_time <= Ram.BACK_UP_TIME):
+        #     print("Still backing, no calc")
+        #     return self.huey_move(Ram.BACK_UP_SPEED, Ram.BACK_UP_TURN)
+        
+        if time.time() < self.recovering_until:
+            print("Recovering...")
+            return self.huey_move(self.recover_speed, self.recover_turn)
+        elif self.recovering_until > 0 and time.time() >= self.recovering_until:
+            print("Recovery finished")
+            self.recovering_until = 0
+            
         
         # If the array for enemy_previous_positions is full, then pop the first one
         self.enemy_previous_positions.append(self.enemy_position)
@@ -352,9 +376,10 @@ class Ram():
             self.enemy_previous_positions.pop(0)
             
         if (self.check_previous_position_and_orientation(bots) and time.time() - Ram.start_back_up_time > Ram.BACK_UP_TIME):
-            print("Back it up rbg 😜")
+            print("Start recovery")
             Ram.start_back_up_time = time.time()
-            return self.huey_move(Ram.BACK_UP_SPEED, Ram.BACK_UP_TURN)
+            self.recover()
+            return self.huey_move(self.recover_speed, self.recover_turn)
         
         if bots and bots["huey"] and len(bots["huey"])>0:
             # Get new position and heading values
