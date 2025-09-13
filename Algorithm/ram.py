@@ -92,7 +92,7 @@ class Ram():
     '''
 
     def __init__(self, bots=None, huey_position=(np.array([ARENA_WIDTH, ARENA_WIDTH])), huey_old_position=(np.array([ARENA_WIDTH, ARENA_WIDTH])),
-                 huey_orientation=45, enemy_position=np.array([0, 0])) -> None:
+                 huey_orientation=45, enemy_position=np.array([0, 0]), huey_old_turn=0, huey_old_speed=0) -> None: #TODO: different speed ?
         # ----------------------------- INIT -----------------------------
         if bots is None:
             # initialize the position and orientation of huey
@@ -101,12 +101,15 @@ class Ram():
             self.huey_orientation = huey_orientation
             # initialize the current enemy position
             self.enemy_position = enemy_position
-
+            self.huey_old_speed = huey_old_speed
+            self.huey_old_turn = huey_old_turn
         else:
             self.huey_position = np.array(bots['huey'].get('center'))
             self.huey_old_position = np.array(bots['huey'].get('center'))
             self.huey_orientation = bots['huey'].get('orientation')
             self.enemy_position = np.array(bots['enemy'].get('center'))
+            self.huey_old_speed = huey_old_speed
+            self.huey_old_turn = huey_old_turn
 
         self.left = 0
         self.right = 0
@@ -361,12 +364,15 @@ class Ram():
             self.delta_t = time.time() - self.old_time  # record delta time
             self.old_time = time.time()
             
-            if bots["enemy"]:
+            if bots["enemy"] and len(bots["enemy"])>0:
                 self.enemy_position = np.array(bots['enemy'].get('center')) # probably issue here? 
                 enemy_velocity = self.calculate_velocity(
                     self.enemy_previous_positions[-1], self.enemy_position, self.delta_t)
+                # TODO: turn, speed are undefined if no enemy seen; default assign it to last turn/speed value outside of ifs?
+                # ORRRRR make move dictionary NOT redefine if no enemy seen (handle in main?)
                 turn, speed = self.predict_desired_turn_and_speed(our_pos=self.huey_position, our_orientation=self.huey_orientation, enemy_pos=self.enemy_position,
                                                                 enemy_velocity=enemy_velocity, dt=self.delta_t)
+                self.huey_old_turn, self.huey_old_speed = turn, speed
 
                 if (Ram.TEST_MODE):
                     angle = self.predict_desired_orientation_angle(
@@ -406,6 +412,9 @@ class Ram():
                         turn = -1
                         
                     return self.huey_move(speed, turn)
-        else: #TODO: Back-up logic not triggering
+        else:
             self.huey_previous_positions.append(self.huey_previous_positions[-1])
             print("Prev pos appended.")
+            return self.huey_move(self.huey_old_speed, s
+                                  elf.huey_old_turn)
+
