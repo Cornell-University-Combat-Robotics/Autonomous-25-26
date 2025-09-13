@@ -412,9 +412,9 @@ class Ram():
                         turn = -1
                         
                     return self.huey_move(speed, turn)
+            return self.huey_move(self.huey_old_speed, self.huey_old_turn)
         else:
             self.huey_previous_positions.append(self.huey_previous_positions[-1])
             print("Prev pos appended.")
-            return self.huey_move(self.huey_old_speed, s
-                                  elf.huey_old_turn)
+            return self.huey_move(self.huey_old_speed, self.huey_old_turn)
 
