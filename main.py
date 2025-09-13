@@ -90,7 +90,7 @@ camera_number = 1
 
 
 if IS_TRANSMITTING:
-    speed_motor_channel = 1 #0 INDEXED, channel 2
+    speed_motor_channel = 1 # CHANNEL 2
     turn_motor_channel = 3 # CHANNEL 4
     weapon_motor_channel = 4 #CHANNEL 5
 
