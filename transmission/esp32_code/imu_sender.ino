@@ -1,41 +1,49 @@
-#include <esp_now.h>
-#include <WiFi.h>
 #include <Wire.h>
-#include "MPU6050.h"   // or whichever IMU library you use
+#include <Adafruit_BNO08x.h>
+#include <WiFi.h>
+#include <esp_now.h>
 
-MPU6050 imu;
+// --- BNO085 setup ---
+Adafruit_BNO08x bno = Adafruit_BNO08x(55, 0x4A);
+sh2_SensorValue_t sensorValue;
 
-typedef struct struct_message {
+// --- ESP-NOW data struct ---
+typedef struct {
   float ax, ay, az;
   float gx, gy, gz;
-} struct_message;
+  float qw, qx, qy, qz;
+} imu_packet_t;
 
-struct_message imuData;
+imu_packet_t imuData;
 
-// Receiver MAC (replace with your receiver’s MAC from `WiFi.macAddress()`)
+// Replace with receiver ESP32 MAC (get it from Serial.println(WiFi.macAddress()))
 uint8_t receiverMac[] = {0x24, 0x6F, 0x28, 0xAB, 0xCD, 0xEF};
 
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  Serial.print("Send Status: ");
+  Serial.print("ESP-NOW Send Status: ");
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Success" : "Fail");
 }
 
 void setup() {
   Serial.begin(115200);
-  Wire.begin();
+  delay(1000);
 
-  imu.initialize();
-  if (!imu.testConnection()) {
-    Serial.println("IMU connection failed!");
-    while (1);
+  // --- Initialize IMU ---
+  if (!bno.begin_I2C()) {
+    Serial.println("Failed to find BNO085");
+    while (1) delay(10);
   }
+  bno.enableReport(SH2_ACCELEROMETER);
+  bno.enableReport(SH2_GYROSCOPE_CALIBRATED);
+  bno.enableReport(SH2_ROTATION_VECTOR);
+  Serial.println("BNO085 ready");
 
+  // --- Initialize WiFi & ESP-NOW ---
   WiFi.mode(WIFI_STA);
   if (esp_now_init() != ESP_OK) {
     Serial.println("Error initializing ESP-NOW");
     return;
   }
-
   esp_now_register_send_cb(OnDataSent);
 
   esp_now_peer_info_t peerInfo = {};
@@ -49,12 +57,32 @@ void setup() {
 }
 
 void loop() {
-  imu.getMotion6(&imuData.ax, &imuData.ay, &imuData.az, &imuData.gx, &imuData.gy, &imuData.gz);
-  esp_err_t result = esp_now_send(receiverMac, (uint8_t *) &imuData, sizeof(imuData));
-  if (result == ESP_OK) {
-    Serial.println("Data sent successfully");
-  } else {
-    Serial.println("Error sending data");
+  // Poll IMU and pack struct
+  if (bno.getSensorEvent(&sensorValue)) {
+    switch (sensorValue.sensorId) {
+      case SH2_ACCELEROMETER:
+        imuData.ax = sensorValue.un.accelerometer.x;
+        imuData.ay = sensorValue.un.accelerometer.y;
+        imuData.az = sensorValue.un.accelerometer.z;
+        break;
+
+      case SH2_GYROSCOPE_CALIBRATED:
+        imuData.gx = sensorValue.un.gyroscope.x;
+        imuData.gy = sensorValue.un.gyroscope.y;
+        imuData.gz = sensorValue.un.gyroscope.z;
+        break;
+
+      case SH2_ROTATION_VECTOR:
+        imuData.qw = sensorValue.un.rotationVector.real;
+        imuData.qx = sensorValue.un.rotationVector.i;
+        imuData.qy = sensorValue.un.rotationVector.j;
+        imuData.qz = sensorValue.un.rotationVector.k;
+        break;
+    }
   }
-  delay(50);  // ~20 Hz
+
+  // Send latest data packet
+  esp_now_send(receiverMac, (uint8_t *)&imuData, sizeof(imuData));
+
+  delay(50); // ~20 Hz
 }
