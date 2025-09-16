@@ -71,7 +71,8 @@ map2 = np.load('vid_and_img_processing/700xmap2.npy')
 BACK_UP_TIME = 0.5
 start_back_up_time = 0
 
-camera_number = 0
+camera_number = 1
+# camera_number = 1
 # camera_number = 701
 # camera_number = test_videos_folder + "/crude_rot_huey.mp4"
 # camera_number = test_videos_folder + "/huey_duet_demo.mp4"

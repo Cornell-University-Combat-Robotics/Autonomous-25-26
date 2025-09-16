@@ -72,7 +72,7 @@ class Ram():
     BACK_UP_SPEED = -1
     BACK_UP_TURN = 0
     BACK_UP_TIME = 0.5
-    BACK_UP_THRESHOLD = 8  # number of stagnant frames to trigger Huey back up
+    BACK_UP_THRESHOLD = 8  # TODO: lower number of stagnant frames to trigger Huey back up?
     start_back_up_time = 0
 
     '''
@@ -332,10 +332,14 @@ class Ram():
     ''' moves huey in a random direction at a random speed for a random number of seconds)'''
 
     def recover(self):
-        duration = random.uniform(0.5, 2.0)
+        duration = random.uniform(1.0, 3.0)
         self.recovering_until = time.time() + duration
-        self.recover_speed = random.uniform(0.5, 1)
-        self.recover_turn = random.uniform(0.2, 1)
+        pos_or_neg = random.randint(0, 1)
+        if pos_or_neg == 1:
+            self.recover_speed = random.uniform(0.5, 1)
+        else:
+            self.recover_speed = random.uniform(-1, -0.5)
+        self.recover_turn = random.uniform(-1, 1)
             
 
 
