@@ -71,7 +71,7 @@ map2 = np.load('vid_and_img_processing/700xmap2.npy')
 BACK_UP_TIME = 0.5
 start_back_up_time = 0
 
-camera_number = 1
+camera_number = 0
 # camera_number = 701
 # camera_number = test_videos_folder + "/crude_rot_huey.mp4"
 # camera_number = test_videos_folder + "/huey_duet_demo.mp4"
@@ -330,31 +330,31 @@ def main():
                     detected_bots_with_data)
                 
                 if detected_bots_with_data and detected_bots_with_data["huey"]:
-                    if PRINT:
-                        print("ALGORITHM: " + str(move_dictionary))
                     if DISPLAY_ANGLES:
                         display_angles(detected_bots_with_data,
                                         move_dictionary, warped_frame)
-                    # 14. Transmitting the motor values to Huey's if we're using a live video
-                    if IS_TRANSMITTING: #add check for ?
-                        speed = move_dictionary["speed"]
-                        turn = move_dictionary["turn"]
-                        #TODO: when move_dictionary is None, these values don't exist -- just return old speed & turn values from Ram?
-                        # new issue, since we are now making NEW ram object each frame
+                if PRINT:
+                    print("ALGORITHM: " + str(move_dictionary))
+                # 14. Transmitting the motor values to Huey's if we're using a live video
+                if IS_TRANSMITTING: #add check for ?
+                    speed = move_dictionary["speed"]
+                    turn = move_dictionary["turn"]
+                    #TODO: when move_dictionary is None, these values don't exist -- just return old speed & turn values from Ram?
+                    # new issue, since we are now making NEW ram object each frame
 
-                        tt = time.perf_counter()
-                        if turn * -1 > 0:
-                            motor_group.move(
-                                IS_FLIPPED * speed * 0.8, turn * -1 * 0.55 + 0.2)
-                        else:
-                            motor_group.move(
-                                IS_FLIPPED * speed * 0.8, turn * -1 * 0.55 - 0.2)
-                        if TIMING:
-                            t_turn.append(time.perf_counter() - tt)
-                    elif DISPLAY_ANGLES:
-                        display_angles(detected_bots_with_data,
-                                    None, warped_frame)
+                    tt = time.perf_counter()
+                    if turn * -1 > 0:
+                        motor_group.move(
+                            IS_FLIPPED * speed * 0.8, turn * -1 * 0.55 + 0.2)
+                    else:
+                        motor_group.move(
+                            IS_FLIPPED * speed * 0.8, turn * -1 * 0.55 - 0.2)
+                    if TIMING:
+                        t_turn.append(time.perf_counter() - tt)
                 elif DISPLAY_ANGLES:
+                    display_angles(detected_bots_with_data,
+                                None, warped_frame)
+                else:
                     display_angles(None, None, warped_frame)
 
                 if SHOW_FRAME and not DISPLAY_ANGLES:
