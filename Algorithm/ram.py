@@ -339,6 +339,11 @@ class Ram():
             pos_or_neg = -1
         self.recover_speed = random.uniform(0.5, 1) * pos_or_neg
         self.recover_turn = random.uniform(-1, 1)
+
+    ''' moves Huey backwards, left, forward, right'''
+
+    def cha_cha_slide(self):
+        return None
             
 
 
