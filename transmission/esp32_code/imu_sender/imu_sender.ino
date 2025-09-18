@@ -4,7 +4,7 @@
 #include <esp_now.h>
 
 // --- BNO085 setup ---
-Adafruit_BNO08x bno = Adafruit_BNO08x(55, 0x4A);
+Adafruit_BNO08x bno;
 sh2_SensorValue_t sensorValue;
 
 // --- ESP-NOW data struct ---
