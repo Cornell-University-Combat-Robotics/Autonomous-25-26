@@ -1,173 +1,277 @@
-import math
-import os
 import cv2
+import os
 import numpy as np
+from sklearn.decomposition import PCA
+from typing import Optional, Tuple
+import glob
+
+DISPLAY = True
 
 
 class Arrow:
     """
-    A class for detecting the orientation of a robot in a given image
-    based on its unique corner colors.
+    Detect orientation of a robot-like arrow using color-based centroid detection
+    and PCA on the arrow mask.
     """
-    
-    def __init__(self, selected_colors, display_final_image=False):
-        """
-        Initializes the Arrow class.
 
-        Args:
-            selected_colors (list): Manually selected HSV colors for corners.
-            display_final_image (bool): Whether to display the final image with
-                                        centroids and angle overlay.
-        """
+    def __init__(self, selected_colors: list[Tuple[int, int, int]], display_final_image: bool = False):
         self.selected_colors = selected_colors
         self.display_final_image = display_final_image
+        self.bots = []
 
-    def get_image_center(self, image: np.ndarray) -> tuple[int, int]:
+    def set_bots(self, bots: list[dict]):
+        self.bots = bots
+
+    def detect_our_robot_main(self, bot_images: list[np.ndarray]):
         """
-        Finds the geometric center of an image.
-
-        Args:
-            image (np.ndarray): Input image.
-
-        Returns:
-            (int, int): (x, y) coordinates of the image center.
+        Detects the image containing our robot using the arrow color.
+        Chooses the image with the largest detected contour.
         """
-        h, w = image.shape[:2]  # height, width
-        center_x = w // 2
-        center_y = h // 2
-        return (center_x, center_y)
+        try:
+            if not bot_images or not all(img is not None for img in bot_images):
+                print("No valid bot images found.")
+                return None
+
+            arrow_color_index = 1  # arrow color in selected_colors
+            best_img = None
+            largest_area = 0
+
+            for img in bot_images:
+                # cv2.imshow("OPTION", img)
+                # cv2.waitKey(0)
+                # cv2.destroyAllWindows()
+
+                hsv_image = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+                contours, mask = self.get_contours_per_color(hsv_image, arrow_color_index)
+
+                for cnt in contours:
+                    area = cv2.contourArea(cnt)
+                    if area > largest_area:
+                        largest_area = area
+                        best_img = img
+
+            if best_img is None:
+                print("Our robot was not detected in any image.")
+            return best_img
+
+        except Exception as e:
+            print(f"Unexpected error in detect_our_robot_main: {e}")
+            return None
+
+    def get_image_center(self, image: np.ndarray) -> np.ndarray:
+        h, w = image.shape[:2]
+        return np.array([w // 2, h // 2], dtype=int)
 
     def get_contours_per_color(self, hsv_image: np.ndarray, color_index: int):
-        """
-        Retrieves contours for the given color index.
-
-        Args:
-            hsv_image (np.ndarray): Input image in HSV format.
-            color_index (int): Index in self.selected_colors for the desired color.
-
-        Returns:
-            list: Contours corresponding to the given color.
-        """
         selected_color = self.selected_colors[color_index]
-        print("selected color: " + str(selected_color))
-
-        # Define HSV range
-        lower_limit = np.array([max(0, selected_color[0] - 10), 20, 20])
-        upper_limit = np.array([min(179, selected_color[0] + 10), 255, 255])
+        # Hue range +/-10, avoid underflow/overflow
+        lower_limit = np.array([max(0, selected_color[0] - 10), 20, 20], dtype=np.uint8)
+        upper_limit = np.array([min(179, selected_color[0] + 10), 255, 255], dtype=np.uint8)
 
         mask = cv2.inRange(hsv_image, lower_limit, upper_limit)
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-        cv2.imshow(f"Mask Color {color_index}", mask)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-
         return contours, mask
-    
-    def find_centroid(self, image: np.ndarray, hsv_image: np.ndarray, color_index: int):
-        """
-        Finds the centroid of the largest contour for a given color.
 
-        Args:
-            image (np.ndarray): BGR image (for drawing).
-            hsv_image (np.ndarray): HSV version of the image.
-            color_index (int): Which color to use.
-
-        Returns:
-            tuple or None: (x, y) centroid or None if not found.
-        """
+    def find_centroid(self, hsv_image: np.ndarray, color_index: int) -> Tuple[Optional[np.ndarray], np.ndarray]:
         contours, mask = self.get_contours_per_color(hsv_image, color_index)
         if not contours:
-            return None
+            return None, mask
 
-        # pick largest contour
         contour = max(contours, key=cv2.contourArea)
         area = cv2.contourArea(contour)
         if area < 10:
-            return None
+            return None, mask
 
         M = cv2.moments(contour)
         if M["m00"] == 0:
-            return None
+            return None, mask
 
         cx = int(M["m10"] / M["m00"])
         cy = int(M["m01"] / M["m00"])
+        # return as [x, y]
+        return np.array([cx, cy], dtype=int), mask
 
-        return (cx, cy)
-
-    @staticmethod
-    def compute_angle_between_points(p1: tuple, p2: tuple):
+    def compute_angle_from_vector(self, dx: float, dy: float) -> float:
         """
-        Computes the angle of the line between two points.
-
-        Args:
-            p1 (tuple): First point (x1, y1).
-            p2 (tuple): Second point (x2, y2).
-
-        Returns:
-            float: Angle in degrees relative to x-axis.
+        Angle in degrees measured from +x axis, converting image coords
+        (y growing downward).
         """
-        x1, y1 = p1
-        x2, y2 = p2
-        dx = x2 - x1
-        dy = -(y2 - y1)  # invert y for image coords
+        dy = -dy  # flip y for image coordinates
         angle_rad = np.arctan2(dy, dx)
-        return math.degrees(angle_rad) % 360
+        return float(np.degrees(angle_rad) % 360)
 
-    def arrow_detection_main(self, image: np.ndarray):
-        """
-        Detects center of mass for the arrow and computes orientation angle.
-
-        Args:
-            image (np.ndarray): Input robot image (BGR).
-
-        Returns:
-            dict: containing centroids and angle.
-        """
+    def center_of_mass(self, image: np.ndarray) -> Tuple[Optional[np.ndarray], np.ndarray]:
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        center_of_arrow = self.find_centroid(image, hsv_image, 1)
-        return center_of_arrow
+        # color index 1 is the white arrow center per your earlier code
+        center_of_arrow, mask = self.find_centroid(hsv_image, 1)
+        return center_of_arrow, mask
 
+    def pca_on_mask(self, bot_image: np.ndarray, mask: np.ndarray, center_of_arrow: np.ndarray):
+        """
+        Perform PCA on the largest connected component of mask and return
+        endpoints for visualization, the principal vector, and an approximate angle
+        from the vector from green bbox center to white centroid (if bbox exists).
+        """
+        # If no arrow centroid or mask, bail out
+        if center_of_arrow is None:
+            return None
+
+        # get largest connected component
+        num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(mask)
+        if num_labels <= 1:
+            # no components besides background
+            return None
+
+        # pick largest non-background label
+        largest_label = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
+        arrow_mask = np.zeros_like(mask)
+        arrow_mask[labels == largest_label] = 255
+
+        # if DISPLAY:
+        #     cv2.imshow("arrow_mask", arrow_mask)
+        #     cv2.waitKey(1)
+
+        # coords are (row, col) -> (y, x)
+        coords = np.column_stack(np.where(arrow_mask == 255))
+        if coords.shape[0] < 2:
+            return None
+
+        # PCA on coords
+        pca = PCA(n_components=2)
+        pca.fit(coords)
+        # component is in [row, col] (y, x) order
+        pca_vec = pca.components_[0].copy()  # e.g. [dy, dx] in row/col space
+
+        # Compute an approximate angle using vector from image center (bbox in your earlier code)
+        # If you have a green bbox center, you can replace this with that; here we'll use image center
+        center_of_bbox = self.get_image_center(bot_image)
+
+        # Convert center_of_arrow (x,y) and center_of_bbox (x,y) to numpy arrays
+        # earlier coords used [x, y]
+        actual_vector = center_of_arrow - center_of_bbox  # [x, y]
+        approx_pca_angle = self.compute_angle_from_vector(float(actual_vector[0]), float(actual_vector[1]))
+
+        # draw centroids (ensure ints)
+        cv2.circle(bot_image, (int(center_of_arrow[0]), int(center_of_arrow[1])), 5, (255, 255, 255), -1)
+        cv2.circle(bot_image, (int(center_of_bbox[0]), int(center_of_bbox[1])), 5, (0, 255, 0), -1)
+
+        # Scale PCA vector for visualization; note pca_vec is [row, col] -> [dy, dx] so flip when using compute_angle_from_vector
+        length = int(max(bot_image.shape[:2]) * 0.4)
+        dx = int(pca_vec[1] * length)
+        dy = int(pca_vec[0] * length)
+
+        p1 = (int(center_of_arrow[0] - dx), int(center_of_arrow[1] - dy))
+        p2 = (int(center_of_arrow[0] + dx), int(center_of_arrow[1] + dy))
+
+        return p1, p2, pca_vec, approx_pca_angle
+
+    def angle_diff(self, a: float, b: float) -> float:
+        """Unsigned wrapped difference in degrees"""
+        return abs(((a - b + 180) % 360) - 180)
+
+    def detect_arrow_angle(self, image) -> Optional[float]:
+        """
+        Full detection pipeline: find centroids, run PCA, resolve 180deg ambiguity,
+        and return final angle in degrees or None on failure.
+        """
+        center_of_arrow, mask = self.center_of_mass(image)
+        if center_of_arrow is None or mask is None:
+            print("Failed to find arrow centroid or mask.")
+            return None
+
+        pca_res = self.pca_on_mask(image, mask, center_of_arrow)
+        if pca_res is None:
+            print("PCA failed or insufficient data.")
+            return None
+
+        p1, p2, pca_vec, approx_pca_angle = pca_res
+
+        # compute two candidate angles from PCA principal vector
+        pca_angle_1 = self.compute_angle_from_vector(float(pca_vec[1]), float(pca_vec[0]))
+        pca_angle_2 = (pca_angle_1 + 180) % 360
+        closeness_1 = self.angle_diff(approx_pca_angle, pca_angle_1)
+        closeness_2 = self.angle_diff(approx_pca_angle, pca_angle_2)
+        pca_angle = pca_angle_1 if closeness_1 < closeness_2 else pca_angle_2
+
+        # visualize results
+
+        if self.display_final_image or DISPLAY:
+            cv2.line(image, p1, p2, (0, 0, 0), 2)
+            cv2.circle(image, (int(center_of_arrow[0]), int(center_of_arrow[1])), 5, (255, 255, 255), -1)
+            cv2.putText(image, f"{pca_angle:.1f} deg", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 0), 2)
+            cv2.imshow("bot_image with PCA axis", image)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
+
+        return float(pca_angle)
+    
+    def arrow_main(self, bot_images):
+        if bot_images is None:
+            bot_images = [bot["img"] for bot in self.bots]
+        
+        image = self.detect_our_robot_main(bot_images) # error
+
+        if image is None:
+            return {}
+        
+        # cv2.imshow("My Image", image)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
+
+        orientation = self.detect_arrow_angle(image) # error
+        
+        # Find the identified bot (our robot)
+        huey_bbox = None
+        for bot_data in self.bots['bots']:
+            if bot_data["img"] is image:
+                huey_bbox = bot_data["bbox"]
+                break
+
+        huey = {
+            "bbox": huey_bbox,
+            "center": self.get_image_center(image),
+            "orientation": orientation,
+        }
+
+        # Enemy bots are all except the identified bot
+        enemy_bots = []
+        for bot_data in self.bots['bots']:
+            if bot_data["img"] is not image:
+                enemy = {
+                    "bbox": bot_data["bbox"],
+                    "center": np.mean(bot_data["bbox"], axis=0),
+                }
+                enemy_bots.append(enemy)
+
+        result = {"huey": huey, "enemy": enemy_bots}
+        return result
 
 if __name__ == "__main__":
-    # We assume that we know which bot is Huey
-    bot_image_path = os.getcwd() + "/huey.png"
-    selected_colors_file = os.getcwd() + "/selected_colors.txt"
+    bot_image_folder = os.path.join(os.getcwd(), "test")
+    selected_colors_file = os.path.join(os.getcwd(), "selected_colors.txt")
 
-    bot_image = cv2.imread(bot_image_path)
-    if bot_image is None:
-        raise ValueError(f"Failed to load bot image: {bot_image_path}")
+    bot_image_paths = glob.glob(os.path.join(bot_image_folder, "*.png"))  # or *.jpg etc.
+    bot_images = []
+    for path in bot_image_paths:
+        img = cv2.imread(path)
+        if img is not None:
+            bot_images.append(img)
+        else:
+            print(f"Warning: failed to load image {path}")
 
-    selected_colors = []
+    if not bot_images:
+        raise ValueError(f"No valid images found in folder: {bot_image_folder}")
+
+    # Load selected colors
+    selected_colors: list[Tuple[int, int, int]] = []
+    if not os.path.exists(selected_colors_file):
+        raise FileNotFoundError(f"Missing selected colors file: {selected_colors_file}")
+
     with open(selected_colors_file, "r") as file:
         for line in file:
             hsv = list(map(int, line.strip().split(", ")))
-            selected_colors.append(hsv)
-
-    arrow = Arrow(selected_colors, display_final_image=True)
-    center_of_bbox = arrow.get_image_center(bot_image) # [x, y] point
-    center_of_arrow = arrow.arrow_detection_main(bot_image) # [x, y] point
-
-    result_point = (int(center_of_arrow[0]), int(center_of_arrow[1]))
-
-    cv2.circle(bot_image, result_point, 6, (0, 255, 0), -1)
-    cv2.putText(bot_image, "Arrow", (result_point[0] + 10, result_point[1] - 10),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            selected_colors.append((hsv[0], hsv[1], hsv[2]))
     
-    # Draw geometric center (blue now)
-    center_point = (int(center_of_bbox[0]), int(center_of_bbox[1]))
-    cv2.circle(bot_image, center_point, 6, (255, 0, 0), -1)  # blue
-    cv2.putText(bot_image, "Center", (center_point[0] + 10, center_point[1] - 10),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-    
-    print("center_of_bbox: " + str(center_of_bbox))
-    print("center_of_arrow: " + str(center_of_arrow))
-    print("compute_angle_between_points: " + str(arrow.compute_angle_between_points(center_point, result_point)))
-
-    # Draw arrow from center to arrow detection (yellow)
-    cv2.arrowedLine(bot_image, center_point, result_point, (0, 255, 255), 2, tipLength=0.1)
-    
-    cv2.imshow("Bot with Arrow", bot_image)
-    cv2.waitKey(0)  # wait until a key is pressed
-    cv2.destroyAllWindows()
-
+    arrow = Arrow(selected_colors, display_final_image=DISPLAY)
+    result = arrow.arrow_main(bot_images)
+    print("result: " + str(result))
