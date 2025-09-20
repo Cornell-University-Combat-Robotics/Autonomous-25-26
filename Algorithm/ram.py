@@ -71,9 +71,18 @@ class Ram():
     TOLERANCE = 10  # how close Huey's prev pos are permitted to be
     BACK_UP_SPEED = -1
     BACK_UP_TURN = 0
+    FORWARD_SPEED = 1
+    FORWARD_TURN = 0
+    LEFT_SPEED = 1
+    LEFT_TURN = -1
+    RIGHT_SPEED = 1
+    RIGHT_TURN = 1
     BACK_UP_TIME = 0.5
     BACK_UP_THRESHOLD = 5  # TODO: lower number of stagnant frames to trigger Huey back up?
     start_back_up_time = 0
+    RECOVERY_SPEED_VALUES = [BACK_UP_SPEED, FORWARD_SPEED, LEFT_SPEED, RIGHT_SPEED]
+    RECOVERY_TURN_VALUES = [BACK_UP_TURN, FORWARD_TURN, LEFT_TURN, RIGHT_TURN]
+    recovery_step = 0
 
     '''
     Constructor for the Ram class that initializes the position and orientation of the bot, the motors, the enemy position, 
@@ -342,8 +351,11 @@ class Ram():
 
     ''' moves Huey backwards, left, forward, right'''
 
-    def cha_cha_slide(self):
-        return None
+    def recovery_sequence(self):
+        duration = random.uniform(0.5, 1.0)
+        self.recovering_until = time.time() + duration
+        self.recover_speed = self.RECOVERY_SPEED_VALUES[self.recovery_step%4]
+        self.recover_turn = self.RECOVERY_TURN_VALUES[self.recovery_step%4]
             
 
 
@@ -386,8 +398,12 @@ class Ram():
         if (self.check_previous_position_and_orientation(bots) and time.time() - Ram.start_back_up_time > Ram.BACK_UP_TIME):
             print("Start recovery")
             Ram.start_back_up_time = time.time()
-            self.recover()
+            self.recovery_step += 1 
+            #self.recover() SCHIZO
+            self.recovery_sequence() #SEQUENCE
             return self.huey_move(self.recover_speed, self.recover_turn)
+        else:
+            self.recovery_step = 0
         
         if bots and bots["huey"] and len(bots["huey"])>0:
             # Get new position and heading values
