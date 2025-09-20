@@ -11,14 +11,15 @@ import math
 import matplotlib.pyplot as plt
 
 from Algorithm.ram import Ram
-from corner_detection.color_picker import ColorPicker
+from arrow.color_picker import ColorPicker
 from arrow.arrow import Arrow
-from machine.predict import RoboflowModel, YoloModel
+from machine.predict import YoloModel
 from transmission.motors import Motor
 from transmission.serial_conn import OurSerial
 from warp_main import get_homography_mat, warp
 from vid_and_img_processing.unfisheye import unfish
 from vid_and_img_processing.unfisheye import prepare_undistortion_maps
+from main_helpers import KeyFrame
 
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
@@ -32,9 +33,6 @@ COMP_SETTINGS = False
 
 # Set True to print outputs for Corner Detection and Algo
 PRINT = True
-
-# Save times to an array for plotting
-TIMING = False
 
 # Set True to redo warp and picking Huey's main color, front and back corners
 WARP_AND_COLOR_PICKING = True
@@ -98,45 +96,14 @@ if IS_TRANSMITTING:
 
 @profile
 def main():
-
-    if TIMING:
-        t_cap = []
-        t_fish = []
-        t_warp = []
-        t_turn = []
-        t_predict = []
-        t_whole = []
-
+    #TODO: Add timing back
+    
     try:
         # 1. Start the capturing frame from the camera or pre-recorded video
         # 2. Capture initial frame by pressing '0'
         cap = cv2.VideoCapture(camera_number)
-        captured_image = None
 
-        if cap.isOpened() == False:
-            print("Error opening video file" + "\n")
-
-        while cap.isOpened():
-            ret, frame = cap.read()
-
-            if ret and frame is not None:
-                cv2.imshow("Press 'q' to quit. Press '0' to capture the image", frame)
-                key = cv2.waitKey(1) & 0xFF  # Check for key press
-
-                if key == ord("q"):  # Press 'q' to quit without capturing
-                    break
-                elif key == ord("0"):  # Press '0' to capture the image and exit
-                    captured_image = frame.copy()
-                    resized_image = cv2.resize(
-                        captured_image, (0, 0), fx=resize_factor, fy=resize_factor)
-                    h, w = resized_image.shape[:2]
-                    map1, map2 = prepare_undistortion_maps(w, h)
-                    cv2.imwrite(folder + "/captured_image.png", captured_image)
-                    break
-            else:
-                print("Failed to read frame" + "\n")
-                break
-        cv2.destroyAllWindows()
+        captured_image = KeyFrame(cap, resize_factor)
 
         # 3. Use the initial frame to get the Homography Matrix
         if WARP_AND_COLOR_PICKING:
@@ -144,22 +111,20 @@ def main():
                 print(
                     "No image was captured. Please press '0' to capture an image before continuing.")
                 return
-            resized_image = cv2.resize(
-                captured_image, (0, 0), fx=resize_factor, fy=resize_factor)
-            cv2.imwrite(folder + "/resized_image.png", resized_image)
-            h, w = resized_image.shape[:2]
-            map1, map2 = prepare_undistortion_maps(w, h)
-            if (UNFISHEYE):
-                resized_image = unfish(resized_image, map1, map2)
-            homography_matrix = get_homography_mat(resized_image, 700, 700)
+            #TODO: Time or test whether resizing image adds any performance.
+            # resized_image = cv2.resize(
+            #     captured_image, (0, 0), fx=resize_factor, fy=resize_factor)
+            # cv2.imwrite(folder + "/resized_image.png", resized_image)
+                
+            homography_matrix = get_homography_mat(captured_image, 700, 700, UNFISHEYE)
 
-            warped_frame = warp(resized_image, homography_matrix, 700, 700)
-            cv2.imwrite(folder + "/warped_frame.png", warped_frame)
+            warped_frame = warp(captured_image, homography_matrix, 700, 700)
+            # cv2.imwrite(folder + "/warped_frame.png", warped_frame)
 
             # 3.2 Part 2. ColorPicker: Manually picking colors for Huey, front and back corners
-            image_path = folder + "/warped_frame.png"
+            # image_path = folder + "/warped_frame.png"
             output_file = folder + "/selected_colors.txt"
-            selected_colors = ColorPicker.pick_colors(image_path)
+            selected_colors = ColorPicker.pick_colors(warped_frame)
             with open(output_file, "w") as file:
                 for color in selected_colors:
                     file.write(f"{color[0]}, {color[1]}, {color[2]}\n")
@@ -190,7 +155,7 @@ def main():
                 for line in file:
                     hsv = list(map(int, line.strip().split(", ")))
                     selected_colors.append(hsv)
-            if len(selected_colors) != 4:
+            if len(selected_colors) != 3:
                 raise ValueError("The file must contain exactly 4 HSV values.")
         except Exception as e:
             print(f"Error reading selected_colors.txt: {e}" + "\n")
@@ -276,11 +241,7 @@ def main():
             if IS_ORIGINAL_FPS or time_elapsed > 1.0 / frame_rate:
 
                 # 9. Frames are being capture by the camera/pre-recorded video
-                if TIMING:
-                    t1 = time.perf_counter()
                 ret, frame = cap.read()
-                if TIMING:
-                    t_cap.append(time.perf_counter()-t1)
                 if not ret:
                     # If frame capture fails, break the loop
                     print("Failed to capture image" + "\n")
@@ -301,14 +262,10 @@ def main():
                     frame = unfish(frame, map1, map2)
                 warped_frame = warp(frame, homography_matrix, 700, 700)
 
-                if TIMING:
-                    t2 = time.perf_counter()
                 # 11. Run the Warped Image through Object Detection
                 detected_bots = predictor.predict(
                     warped_frame, show=SHOW_FRAME, track=True)
-                if TIMING:
-                    t_predict.append(time.perf_counter()-t2)
-
+                
                 # 12. Run Object Detection's results through Corner Detection
                 arrow_dictionary = arrow.arrow_main([b["img"] for b in detected_bots["bots"] if b.get("img") is not None])
                 detected_bots_with_data = detected_bots
@@ -341,7 +298,6 @@ def main():
                             motor_group.move(speed * 0.8, turn * -1 * 0.55 + 0.2)
                         else:
                             motor_group.move(speed * 0.8, turn * -1 * 0.55 - 0.2)
-                        t_turn.append(time.perf_counter() - tt)
                 #     elif DISPLAY_ANGLES:
                 #         display_angles(arrow_dictionary,
                 #                     None, warped_frame)
@@ -351,10 +307,6 @@ def main():
                 if SHOW_FRAME and not DISPLAY_ANGLES:
                     print("RAHHHH")
                     cv2.imshow("Bounding boxes (no angles)", warped_frame)
-
-                if TIMING:
-                    t_whole.append(time.perf_counter()-t0)
-                    t0 = time.perf_counter()
 
         cap.release()
         print("============================")
