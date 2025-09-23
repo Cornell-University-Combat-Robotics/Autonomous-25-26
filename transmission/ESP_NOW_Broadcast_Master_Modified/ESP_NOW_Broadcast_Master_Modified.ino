@@ -101,13 +101,12 @@ void loop() {
   double gx = 2.654321987;
   double gy = 0.678954321;
   double gz = 2.234560987;
-  snprintf(data, sizeof(data), ":ax:%.10f:ay:%.10f:az:%.10f:gx:%.10f:gy:%.10f:gz:%.10f", ax, ay, az, gx, gy, gz);
+  snprintf(data, sizeof(data), "ax:%.10f:ay:%.10f:az:%.10f:gx:%.10f:gy:%.10f:gz:%.10f", ax, ay, az, gx, gy, gz);
 
   Serial.printf("Broadcasting message: %s\n", data);
 
   if (!broadcast_peer.send_message((uint8_t *)data, sizeof(data))) {
     Serial.println("Failed to broadcast message");
   }
-
-  delay(5000);
+  delay(1);
 }
