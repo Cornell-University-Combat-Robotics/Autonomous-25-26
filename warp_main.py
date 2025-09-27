@@ -25,8 +25,10 @@ folder = os.getcwd() + "/main_files"
 def get_homography_mat(frame, output_w=1200, output_h=1200, UNFISHEYE = False):
     h, w = frame.shape[:2]
     if (UNFISHEYE):
-                map1, map2 = prepare_undistortion_maps(w, h)
-                frame = unfish(frame, map1, map2)
+        map1, map2 = prepare_undistortion_maps(w, h)
+        frame = unfish(frame, map1, map2)
+    else:
+        map1, map2 = [], []
     corners = []
     padding = 50
 
@@ -77,10 +79,10 @@ def get_homography_mat(frame, output_w=1200, output_h=1200, UNFISHEYE = False):
     output_file = folder + "/homography_matrix.txt"
     with open(output_file, "w") as file:
         for row in matrix:
-            file.write(" ".join(map(str, row)) + "\n")
+            file.write(", ".join(map(str, row)) + "\n")
     print(f"Homography matrix has been saved to '{output_file}'.")
 
-    return matrix
+    return matrix, map1, map2
 
 
 """

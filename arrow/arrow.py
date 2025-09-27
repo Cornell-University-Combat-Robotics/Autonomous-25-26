@@ -231,17 +231,18 @@ class Arrow:
             "bbox": huey_bbox,
             "center": self.get_image_center(image),
             "orientation": orientation,
+            "image_center": np.mean(huey_bbox, axis=0)
         }
 
         # Enemy bots are all except the identified bot
-        enemy_bots = []
+        enemy_bots = {}
         for bot_data in self.bots['bots']:
             if bot_data["img"] is not image:
-                enemy = {
-                    "bbox": bot_data["bbox"],
-                    "center": np.mean(bot_data["bbox"], axis=0),
-                }
-                enemy_bots.append(enemy)
+                enemy_bots = {
+                        "bbox": bot_data["bbox"],
+                        "center": np.mean(bot_data["bbox"], axis=0),
+                    }
+                break
 
         result = {"huey": huey, "enemy": enemy_bots}
         return result
