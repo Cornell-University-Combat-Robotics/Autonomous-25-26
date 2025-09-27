@@ -38,7 +38,7 @@ PRINT = True
 WARP_AND_COLOR_PICKING = True
 
 # Set True when testing with a live Huey and not a pre-filmed video
-IS_TRANSMITTING = False
+IS_TRANSMITTING = True
 
 # True to display current and future orientation angles for each iteration
 SHOW_FRAME = True
@@ -69,6 +69,7 @@ map2 = np.load('vid_and_img_processing/700xmap2.npy')
 BACK_UP_TIME = 0.5
 start_back_up_time = 0
 
+camera_number = 1
 # camera_number = 1
 # camera_number = 701
 # camera_number = test_videos_folder + "/crude_rot_huey.mp4"
@@ -87,9 +88,9 @@ camera_number = test_videos_folder + "/huey_small.mp4"
 
 
 if IS_TRANSMITTING:
-    speed_motor_channel = 1
-    turn_motor_channel = 3
-    weapon_motor_channel = 4
+    speed_motor_channel = 1 # CHANNEL 2
+    turn_motor_channel = 3 # CHANNEL 4
+    weapon_motor_channel = 4 #CHANNEL 5
 
 # ------------------------------ BEFORE THE MATCH ------------------------------
 
@@ -305,7 +306,6 @@ def main():
                 #     display_angles(None, None, warped_frame)
 
                 if SHOW_FRAME and not DISPLAY_ANGLES:
-                    print("RAHHHH")
                     cv2.imshow("Bounding boxes (no angles)", warped_frame)
 
         cap.release()
