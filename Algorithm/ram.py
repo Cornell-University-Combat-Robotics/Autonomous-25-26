@@ -77,7 +77,7 @@ class Ram():
     LEFT_TURN = -1
     RIGHT_SPEED = 1*0.4
     RIGHT_TURN = 1
-    BACK_UP_TIME = 0.5
+    BACK_UP_TIME = 0.5 
     BACK_UP_THRESHOLD = 5  # TODO: lower number of stagnant frames to trigger Huey back up?
     start_back_up_time = 0
     RECOVERY_SPEED_VALUES = [BACK_UP_SPEED, FORWARD_SPEED, LEFT_SPEED, RIGHT_SPEED]
@@ -349,7 +349,7 @@ class Ram():
         self.recover_speed = random.uniform(0.5, 1) * pos_or_neg
         self.recover_turn = random.uniform(-1, 1)
 
-    ''' moves Huey backwards, left, forward, right'''
+    ''' moves Huey backwards, forward, left, right'''
 
     def recovery_sequence(self):
         if time.time() < self.recovering_until:
@@ -359,11 +359,18 @@ class Ram():
             print("Recovery finished")
             self.recovering_until = 0
         duration = random.uniform(0.5, 1.0)
+                
+        if time.time() < self.recovering_until:
+            print("Recovering...")
+            return self.huey_move(self.recover_speed, self.recover_turn)
+        elif self.recovering_until > 0 and time.time() >= self.recovering_until:
+            print("Recovery finished")
+            self.recovering_until = 0
+            
         self.recovering_until = time.time() + duration
         self.recover_speed = self.RECOVERY_SPEED_VALUES[self.recovery_step%4]
         self.recover_turn = self.RECOVERY_TURN_VALUES[self.recovery_step%4]
-            
-
+        
 
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
 
@@ -385,7 +392,7 @@ class Ram():
             
         # if (time.time() - Ram.start_back_up_time <= Ram.BACK_UP_TIME):
         #     print("Still backing, no calc")
-        #     return self.huey_move(Ram.BACK_UP_SPEED, Ram.BACK_UP_TURN)
+        #     return self.huey_move(Ram.BACK_UP_SPEED, Ram.BACK_UP_TURN)    
         
         # if time.time() < self.recovering_until:
         #     print("Recovering...")
@@ -405,13 +412,14 @@ class Ram():
             print("Start recovery")
             Ram.start_back_up_time = time.time()
             self.recovery_step += 1 
-            #self.recover() SCHIZO
+            # self.recover() # SCHIZO
             self.recovery_sequence() #SEQUENCE
             return self.huey_move(self.recover_speed, self.recover_turn)
         else:
             self.recovery_step = 0
         
         if bots and bots["huey"] and len(bots["huey"])>0:
+            print("😰😰😰 HUEY HERE 😰😰😰") #TODO: once it starts recovering, never stops!
             # Get new position and heading values
             print("🥶🥶🥶huey here🥶🥶🥶")
             self.huey_position = np.array(bots['huey'].get('center'))
