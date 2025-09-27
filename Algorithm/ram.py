@@ -62,20 +62,20 @@ class Ram():
     HUEY_HISTORY_BUFFER = 10  # how many previous Huey position we are recording
     ENEMY_HISTORY_BUFFER = 10  # how many previous enemy position we are recording
     DANGER_ZONE = 55
-    MAX_SPEED = 1  # magnitude between 0 and 1
+    MAX_SPEED = 1*0.4  # magnitude between 0 and 1
     MIN_SPEED = 0  # magnitude between 0 and 1
     MAX_TURN = 1  # between 0 and 1
     MIN_TURN = 0  # between 0 and 1
     ARENA_WIDTH = 1200  # in pixels
     TEST_MODE = False  # saves values to CSV file
     TOLERANCE = 10  # how close Huey's prev pos are permitted to be
-    BACK_UP_SPEED = -1
+    BACK_UP_SPEED = -1*0.4
     BACK_UP_TURN = 0
-    FORWARD_SPEED = 1
+    FORWARD_SPEED = 1*0.4
     FORWARD_TURN = 0
-    LEFT_SPEED = 1
+    LEFT_SPEED = 1*0.4
     LEFT_TURN = -1
-    RIGHT_SPEED = 1
+    RIGHT_SPEED = 1*0.4
     RIGHT_TURN = 1
     BACK_UP_TIME = 0.5
     BACK_UP_THRESHOLD = 5  # TODO: lower number of stagnant frames to trigger Huey back up?
@@ -352,6 +352,12 @@ class Ram():
     ''' moves Huey backwards, left, forward, right'''
 
     def recovery_sequence(self):
+        if time.time() < self.recovering_until:
+            print("Recovering...")
+            return self.huey_move(self.recover_speed, self.recover_turn)
+        elif self.recovering_until > 0 and time.time() >= self.recovering_until:
+            print("Recovery finished")
+            self.recovering_until = 0
         duration = random.uniform(0.5, 1.0)
         self.recovering_until = time.time() + duration
         self.recover_speed = self.RECOVERY_SPEED_VALUES[self.recovery_step%4]
@@ -381,12 +387,12 @@ class Ram():
         #     print("Still backing, no calc")
         #     return self.huey_move(Ram.BACK_UP_SPEED, Ram.BACK_UP_TURN)
         
-        if time.time() < self.recovering_until:
-            print("Recovering...")
-            return self.huey_move(self.recover_speed, self.recover_turn)
-        elif self.recovering_until > 0 and time.time() >= self.recovering_until:
-            print("Recovery finished")
-            self.recovering_until = 0
+        # if time.time() < self.recovering_until:
+        #     print("Recovering...")
+        #     return self.huey_move(self.recover_speed, self.recover_turn)
+        # elif self.recovering_until > 0 and time.time() >= self.recovering_until:
+        #     print("Recovery finished")
+        #     self.recovering_until = 0
             
         
         # If the array for enemy_previous_positions is full, then pop the first one
@@ -407,6 +413,7 @@ class Ram():
         
         if bots and bots["huey"] and len(bots["huey"])>0:
             # Get new position and heading values
+            print("🥶🥶🥶huey here🥶🥶🥶")
             self.huey_position = np.array(bots['huey'].get('center'))
             self.huey_orientation = bots['huey'].get('orientation')
 

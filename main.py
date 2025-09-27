@@ -49,7 +49,7 @@ DISPLAY_ANGLES = True
 # Set True to process every single frame the camera captures
 IS_ORIGINAL_FPS = False
 
-UNFISHEYE = True
+UNFISHEYE = False
 
 if COMP_SETTINGS:
     SHOW_FRAME = False
@@ -71,7 +71,7 @@ map2 = np.load('vid_and_img_processing/700xmap2.npy')
 BACK_UP_TIME = 0.5
 start_back_up_time = 0
 
-camera_number = 1
+camera_number = 0
 # camera_number = 1
 # camera_number = 701
 # camera_number = test_videos_folder + "/crude_rot_huey.mp4"
@@ -408,7 +408,7 @@ def main():
 def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False):
     # BLUE line: Huey's Current Orientation according to Corner Detection
 
-    if detected_bots_with_data and detected_bots_with_data["huey"]["orientation"]:
+    if detected_bots_with_data and detected_bots_with_data["huey"] and detected_bots_with_data["huey"]["orientation"]:
         orientation_degrees = detected_bots_with_data["huey"]["orientation"]
 
         # Components of current front arrow
