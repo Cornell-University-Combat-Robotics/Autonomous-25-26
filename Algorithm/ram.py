@@ -399,10 +399,17 @@ class Ram():
         if time.time() < self.recovering_until:
             print("Recovering...")
             return self.huey_move(self.recover_speed, self.recover_turn)
+        else:
+            self.recovering_until = 0
             
-        if (self.check_previous_position_and_orientation(bots) and time.time() - Ram.start_back_up_time > Ram.BACK_UP_TIME):
+        if (self.check_previous_position_and_orientation(bots)):
+            if (bots and bots["huey"] and len(bots["huey"]) > 0):
+                self.huey_position = np.array(bots['huey'].get('center'))
+                self.huey_previous_positions.append(self.huey_position)
+
+                self.huey_orientation = bots['huey'].get('orientation')
+                self.huey_previous_orientations.append(self.huey_orientation)
             print("Start recovery")
-            Ram.start_back_up_time = time.time()
             # self.recover() # SCHIZO
             self.recovery_sequence() #SEQUENCE
             return self.huey_move(self.recover_speed, self.recover_turn)
