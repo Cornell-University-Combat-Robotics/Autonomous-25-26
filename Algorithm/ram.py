@@ -352,21 +352,9 @@ class Ram():
     ''' moves Huey backwards, forward, left, right'''
 
     def recovery_sequence(self):
-        if time.time() < self.recovering_until:
-            print("Recovering...")
-            return self.huey_move(self.recover_speed, self.recover_turn)
-        elif self.recovering_until > 0 and time.time() >= self.recovering_until:
-            print("Recovery finished")
-            self.recovering_until = 0
+        self.recovery_step += 1 
+        print("RECOVERY STEP: ", self.recovery_step)
         duration = random.uniform(0.5, 1.0)
-                
-        if time.time() < self.recovering_until:
-            print("Recovering...")
-            return self.huey_move(self.recover_speed, self.recover_turn)
-        elif self.recovering_until > 0 and time.time() >= self.recovering_until:
-            print("Recovery finished")
-            self.recovering_until = 0
-            
         self.recovering_until = time.time() + duration
         self.recover_speed = self.RECOVERY_SPEED_VALUES[self.recovery_step%4]
         self.recover_turn = self.RECOVERY_TURN_VALUES[self.recovery_step%4]
@@ -407,11 +395,14 @@ class Ram():
 
         if len(self.enemy_previous_positions) > Ram.ENEMY_HISTORY_BUFFER:
             self.enemy_previous_positions.pop(0)
+        
+        if time.time() < self.recovering_until:
+            print("Recovering...")
+            return self.huey_move(self.recover_speed, self.recover_turn)
             
         if (self.check_previous_position_and_orientation(bots) and time.time() - Ram.start_back_up_time > Ram.BACK_UP_TIME):
             print("Start recovery")
             Ram.start_back_up_time = time.time()
-            self.recovery_step += 1 
             # self.recover() # SCHIZO
             self.recovery_sequence() #SEQUENCE
             return self.huey_move(self.recover_speed, self.recover_turn)
