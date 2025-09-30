@@ -89,12 +89,7 @@ def main(): # TODO: Add timing back
                         break
                 
                 prev = time.perf_counter()
-                # frame = cv2.resize(frame, (0, 0), fx=resize_factor, fy=resize_factor)
-                # TODO: Look in on unfisheye and fix it's code
-                # if (UNFISHEYE):
-                #     frame = unfish(frame, map1, map2)
                 warped_frame = warp(frame, homography_matrix, 700, 700)
-                cv2.imwrite("debug_frame_run.png", warped_frame)
 
                 # 11. Run the Warped Image through Object Detection
                 detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
@@ -103,37 +98,24 @@ def main(): # TODO: Add timing back
                 arrow.set_bots(detected_bots)
                 # 12. Run Object Detection's results through Corner Detection
                 arrow_dictionary = arrow.arrow_main([b["img"] for b in detected_bots["bots"] if b.get("img") is not None])
-                if arrow_dictionary and arrow_dictionary["enemy"]:
-                    # TODO: We changed arrow so it only outputs the first enemy robot. Could change later
-                    # arrow_dictionary["enemy"] = arrow_dictionary["enemy"][0] # assumes first enemy robot
-                    print("ENEMEY CENBTER: " + str(arrow_dictionary["enemy"]))
-                
                 move_dictionary = algorithm.ram_ram(arrow_dictionary)
-
                 print("MOVE DICTIONARY: " + str(move_dictionary))
                 
                 if arrow_dictionary and arrow_dictionary["huey"]:
-                    print("main 1")
                     if DISPLAY_ANGLES:
-                        print("main 2")
                         display_angles(arrow_dictionary, move_dictionary, warped_frame)
 
                     # 14. Transmitting the motor values to Huey's if we're using a live video
                     if IS_TRANSMITTING:
-                        print("main 3")
                         speed = move_dictionary["speed"]
                         turn = move_dictionary["turn"]
-                        print("main 4")
                         if turn * -1 > 0:
                             motor_group.move(speed * 0.8, turn * -1 * 0.55 + 0.2)
                         else:
                             motor_group.move(speed * 0.8, turn * -1 * 0.55 - 0.2)
-                        print("main 5")
                 elif DISPLAY_ANGLES:
-                    print("main 6")
                     display_angles(arrow_dictionary, None, warped_frame)
             elif DISPLAY_ANGLES:
-                print("main 7")
                 display_angles(None, None, warped_frame)
 
             if SHOW_FRAME and not DISPLAY_ANGLES:

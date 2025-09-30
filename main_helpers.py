@@ -106,16 +106,13 @@ def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, w
         weapon_motor_group = Motor(ser=ser, channel=weapon_motor_channel, speed=-1)
     else:
         weapon_motor_group = Motor(ser=ser, channel=weapon_motor_channel)
-    print("hello 1")
     return ser, motor_group, weapon_motor_group
 
 def first_run(predictor, warped_frame, SHOW_FRAME, arrow):
     # 6. Do an initial run of ML and Corner. Initialize Algo
     first_run_ml = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
-    print("first_run_ml: " + str(first_run_ml))
     arrow.set_bots(first_run_ml)
     first_run_orientation = arrow.arrow_main([b["img"] for b in first_run_ml["bots"] if b.get("img") is not None])
-    print("first_run_orientation: " + str(first_run_orientation))
 
     if first_run_orientation and first_run_orientation["huey"] and first_run_orientation["enemy"]:
         # Ensure single enemy
@@ -150,7 +147,7 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
     if detected_bots_with_data and detected_bots_with_data["huey"]["orientation"]:
         orientation_degrees = detected_bots_with_data["huey"]["orientation"]
 
-        print("----- HELLO 1 orientation_degrees: " + str(orientation_degrees))
+        print("----- orientation_degrees: " + str(orientation_degrees))
 
         # Components of current front arrow
         dx = np.cos(math.pi / 180 * orientation_degrees)
@@ -172,7 +169,7 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
                 IS_BACKED = 180
                 cv2.putText(image, "BACKING UP", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,255), 2)
             new_orientation_degrees = orientation_degrees + (turn * 180) + IS_BACKED
-            print("----- HELLO 2 new_orientation_degrees: " + str(new_orientation_degrees))
+            print("----- new_orientation_degrees: " + str(new_orientation_degrees))
 
             # Components of predicted turn
             dx = np.cos(math.pi * new_orientation_degrees / 180)
