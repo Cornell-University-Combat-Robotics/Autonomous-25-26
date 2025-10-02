@@ -50,8 +50,6 @@ def main(): # TODO: Add timing back
             warped_frame, homography_matrix = read_prev_homography(captured_image, folder + "/homography_matrix.txt")
             selected_colors = read_prev_colors(folder + "/selected_colors.txt")
 
-        cv2.imwrite("debug_frame_initial.png", warped_frame)
-
         # 5. Defining all subsystem objects: ML, Corner, Algorithm, Transmission
         predictor = get_predictor(MATT_LAPTOP)
         arrow = Arrow(selected_colors, False)
@@ -93,28 +91,26 @@ def main(): # TODO: Add timing back
 
                 # 11. Run the Warped Image through Object Detection
                 detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
-                print("DEBUG detected_bots:", type(detected_bots), detected_bots)
+                # print("DEBUG detected_bots:", type(detected_bots), detected_bots)
                 
                 arrow.set_bots(detected_bots)
                 # 12. Run Object Detection's results through Corner Detection
                 arrow_dictionary = arrow.arrow_main([b["img"] for b in detected_bots["bots"] if b.get("img") is not None])
                 move_dictionary = algorithm.ram_ram(arrow_dictionary)
-                print("MOVE DICTIONARY: " + str(move_dictionary))
+                # print("MOVE DICTIONARY: " + str(move_dictionary))
                 
-                if arrow_dictionary and arrow_dictionary["huey"]:
-                    if DISPLAY_ANGLES:
-                        display_angles(arrow_dictionary, move_dictionary, warped_frame)
+                if DISPLAY_ANGLES:
+                    display_angles(arrow_dictionary, move_dictionary, warped_frame)
 
-                    # 14. Transmitting the motor values to Huey's if we're using a live video
-                    if IS_TRANSMITTING:
-                        speed = move_dictionary["speed"]
-                        turn = move_dictionary["turn"]
-                        if turn * -1 > 0:
-                            motor_group.move(speed * 0.8, turn * -1 * 0.55 + 0.2)
-                        else:
-                            motor_group.move(speed * 0.8, turn * -1 * 0.55 - 0.2)
-                elif DISPLAY_ANGLES:
-                    display_angles(arrow_dictionary, None, warped_frame)
+                # 14. Transmitting the motor values to Huey's if we're using a live video
+                if IS_TRANSMITTING:
+                    speed = move_dictionary["speed"]
+                    turn = move_dictionary["turn"]
+                    if turn * -1 > 0:
+                        motor_group.move(speed * 0.8, turn * -1 * 0.55 + 0.2)
+                    else:
+                        motor_group.move(speed * 0.8, turn * -1 * 0.55 - 0.2)
+
             elif DISPLAY_ANGLES:
                 display_angles(None, None, warped_frame)
 
