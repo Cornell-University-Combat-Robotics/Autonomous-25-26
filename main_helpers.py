@@ -144,7 +144,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, arrow):
 def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False):
     # BLUE line: Huey's Current Orientation according to Corner Detection
 
-    if detected_bots_with_data and detected_bots_with_data["huey"]["orientation"]:
+    if detected_bots_with_data and detected_bots_with_data["huey"]["orientation"] is not None:
         orientation_degrees = detected_bots_with_data["huey"]["orientation"]
 
         print("----- orientation_degrees: " + str(orientation_degrees))

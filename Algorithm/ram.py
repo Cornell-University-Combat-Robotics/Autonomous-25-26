@@ -69,13 +69,13 @@ class Ram():
     ARENA_WIDTH = 1200  # in pixels
     TEST_MODE = False  # saves values to CSV file
     TOLERANCE = 10  # how close Huey's prev pos are permitted to be
-    BACK_UP_SPEED = -1*0.4
+    BACK_UP_SPEED = -1*1
     BACK_UP_TURN = 0
-    FORWARD_SPEED = 1*0.4
+    FORWARD_SPEED = 1*1
     FORWARD_TURN = 0
-    LEFT_SPEED = 1*0.4
+    LEFT_SPEED = 1*1
     LEFT_TURN = -1
-    RIGHT_SPEED = 1*0.4
+    RIGHT_SPEED = 1*1
     RIGHT_TURN = 1
     BACK_UP_TIME = 0.5 
     BACK_UP_THRESHOLD = 5  # TODO: lower number of stagnant frames to trigger Huey back up?
@@ -345,7 +345,7 @@ class Ram():
     def ram_ram(self, bots: dict[str, any] = None):
         self.huey_old_position = self.huey_position
 
-        if self.huey_pos_count % 5 == 0:
+        if self.huey_pos_count % 2 == 0: # Check every other frame for stationary
             self.huey_previous_positions.append(self.huey_position)
             self.huey_previous_orientations.append(self.huey_orientation)
         
@@ -371,9 +371,9 @@ class Ram():
         else:
             self.recovering_until = 0
         
-        # Check if Huey is stationary / unfound
+        # Check if Huey is stationary / unfound, recover if so
         if (self.check_previous_position_and_orientation()):
-            if (bots and bots["huey"]) > 0:
+            if bots and bots["huey"]:
                 self.huey_position = np.array(bots['huey'].get('center'))
                 self.huey_previous_positions.append(self.huey_position)
 
@@ -401,6 +401,9 @@ class Ram():
                     self.enemy_previous_positions, self.enemy_position, self.delta_t)
                 turn, speed = self.predict_desired_turn_and_speed(our_pos=self.huey_position, our_orientation=self.huey_orientation, enemy_pos=self.enemy_position,
                                                             enemy_velocity=enemy_velocity, dt=self.delta_t)
+                
+                self.huey_old_turn, self.huey_old_speed = turn, speed
+
                 if (Ram.TEST_MODE):
                     angle = self.predict_desired_orientation_angle(
                         self.huey_position, self.huey_orientation, self.enemy_position, enemy_velocity, self.delta_t)

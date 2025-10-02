@@ -13,7 +13,7 @@ MATT_LAPTOP = False             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
 WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
-IS_TRANSMITTING = False         # True if connected to live Huey
+IS_TRANSMITTING = False        # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = False         # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames are displayed
@@ -25,7 +25,8 @@ if COMP_SETTINGS:
 
 folder = test_videos_folder = os.getcwd() + "/main_files"
 frame_rate = 50
-camera_number = test_videos_folder + "/huey_small.mp4"
+camera_number = test_videos_folder + "/tinier_huey_arrow.mp4"
+# camera_number = 1
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
@@ -56,7 +57,7 @@ def main(): # TODO: Add timing back
         algorithm = None
         # TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
-            ser, motor_group, weapon_motor_group = get_motor_groups(IS_TRANSMITTING, JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
+            ser, motor_group, weapon_motor_group = get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
         
         cv2.destroyAllWindows()
 
