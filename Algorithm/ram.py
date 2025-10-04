@@ -380,10 +380,10 @@ class Ram():
                 self.huey_orientation = bots['huey'].get('orientation')
                 self.huey_previous_orientations.append(self.huey_orientation) 
                 #TODO: add prev pos for when no bots seen? (since the last else is never reached)
-            # else:
-            #     self.huey_previous_positions.append(self.huey_previous_positions[-1])
+            else:
+                self.huey_previous_positions.append(self.huey_previous_positions[-1])
             print("👿Start recovery👿")
-            # print("😻Prev pos appended, recovery state...😻")
+            print("😻Prev pos appended, recovery state...😻")
             # self.recover() # SCHIZO
             self.recovery_sequence() # SEQUENCE
             return self.huey_move(self.recover_speed, self.recover_turn)

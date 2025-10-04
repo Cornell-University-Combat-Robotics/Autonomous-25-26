@@ -9,7 +9,7 @@
     # To install packages (for both systems):
     # pip install -r requirements.txt
     
-opencv-python==4.12.0.88       # import cv2
+opencv-python==4.12.0.88        # import cv2
 numpy==2.2.6                    # used by OpenCV, matplotlib, etc.
 matplotlib==3.10.6              # plotting
 pandas==2.3.2                   # import pandas
@@ -21,3 +21,4 @@ ultralytics==8.3.194             # import ultralytics (YOLO)
 pyserial==3.5                    # import serial
 onnxruntime==1.22.1              # import onnxruntime
 openvino==2025.3.0               # import openvino
+scikit-learn>=1.2                # from sklearn.decomposition import PCA
