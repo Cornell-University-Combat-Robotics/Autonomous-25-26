@@ -409,6 +409,8 @@ class Ram():
 
                 self.huey_orientation = bots['huey'].get('orientation')
                 self.huey_previous_orientations.append(self.huey_orientation)
+            else:
+                self.huey_previous_positions.append(self.huey_previous_positions[-1])
             print("Start recovery")
             # self.recover() # SCHIZO
             self.recovery_sequence() #SEQUENCE
