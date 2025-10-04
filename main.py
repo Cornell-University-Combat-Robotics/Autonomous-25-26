@@ -103,7 +103,7 @@ def main(): # TODO: Add timing back
                 if DISPLAY_ANGLES:
                     display_angles(arrow_dictionary, move_dictionary, warped_frame)
 
-                # 14. Transmitting the motor values to Huey's if we're using a live video
+                # 14. Transmitting the motor values to Huey if we're using a live video
                 if IS_TRANSMITTING:
                     speed = move_dictionary["speed"]
                     turn = move_dictionary["turn"]
