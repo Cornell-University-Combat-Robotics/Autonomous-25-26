@@ -397,7 +397,7 @@ class Ram():
 
         if bots and bots["huey"]: # TODO: address len > 0? 
             # Get new position and heading values
-            self.huey_position = np.array(bots['huey'].get('image_center'))
+            self.huey_position = np.array(bots['huey'].get('center'))
             self.huey_orientation = bots['huey'].get('orientation')
 
             self.delta_t = time.time() - self.old_time  # record delta time

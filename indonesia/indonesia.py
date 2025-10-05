@@ -103,9 +103,9 @@ class Indonesia:
             print("Our robot was not detected in any image.")
             return None
 
-        # cv2.imshow("our bot", best_img)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
+        cv2.imshow("our bot", best_img)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
         return best_img
 
     def detect_arrow_angle(self, image: np.ndarray) -> Optional[float]:
@@ -118,11 +118,11 @@ class Indonesia:
         bottom_center, mask_bottom = self.find_centroid(hsv_image, 1)  # white
 
         # DISPLAY MASKS EACH FRAME
-        # cv2.imshow("mask_top", mask_top)
-        # cv2.waitKey(0)
-        # cv2.imshow("mask_bottom", mask_bottom)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
+        cv2.imshow("mask_top", mask_top)
+        cv2.waitKey(0)
+        cv2.imshow("mask_bottom", mask_bottom)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
         print("top_center: " + str(top_center))
         print("bottom_center: " + str(bottom_center))
@@ -138,7 +138,7 @@ class Indonesia:
         if angle is None:
             print("Warning: angle computation failed due to invalid dx/dy.")
             return None
-
+        print("angle: " + str(angle))
         return float(angle)
 
     def indonesia_main(self, bot_images):
@@ -155,29 +155,36 @@ class Indonesia:
             return {}
 
         orientation = self.detect_arrow_angle(image)
+        print("1")
         huey_bbox = None
         for bot_data in self.bots["bots"]:
             if bot_data["img"] is image:
                 huey_bbox = bot_data["bbox"]
+                print("2")
                 break
 
+        print("3")
         huey = {
             "bbox": huey_bbox,
             "orientation": orientation,
-            "image_center": np.mean(huey_bbox, axis=0) if huey_bbox is not None else None,
+            "center": np.mean(huey_bbox, axis=0) if huey_bbox is not None else None,
         }
+        print("4")
 
         enemy_bots = {}
         if isinstance(self.bots, dict) and "bots" in self.bots:
+            print("5")
             for bot_data in self.bots["bots"]:
                 if bot_data["img"] is not image:
                     enemy_bots = {
                         "bbox": bot_data["bbox"],
                         "center": np.mean(bot_data["bbox"], axis=0),
                     }
+                    print("6")
                     break
 
         result = {"huey": huey, "enemy": enemy_bots}
+        print("result: " + str(result))
         return result
 
 

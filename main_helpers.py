@@ -154,8 +154,8 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
         dy = -1 * np.sin(math.pi / 180 * orientation_degrees)
 
         # Huey's center
-        start_x = int(detected_bots_with_data["huey"]["image_center"][0])
-        start_y = int(detected_bots_with_data["huey"]["image_center"][1])
+        start_x = int(detected_bots_with_data["huey"]["center"][0])
+        start_y = int(detected_bots_with_data["huey"]["center"][1])
 
         end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
         cv2.arrowedLine(image, (start_x, start_y), end_point, (255, 0, 0), 2)
