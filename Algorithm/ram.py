@@ -358,7 +358,6 @@ class Ram():
         self.recovering_until = time.time() + duration
         self.recover_speed = self.RECOVERY_SPEED_VALUES[self.recovery_step%4]
         self.recover_turn = self.RECOVERY_TURN_VALUES[self.recovery_step%4]
-        
 
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
 
@@ -377,18 +376,6 @@ class Ram():
 
         if len(self.huey_previous_orientations) > Ram.HUEY_HISTORY_BUFFER:
             self.huey_previous_orientations.pop(0)
-            
-        # if (time.time() - Ram.start_back_up_time <= Ram.BACK_UP_TIME):
-        #     print("Still backing, no calc")
-        #     return self.huey_move(Ram.BACK_UP_SPEED, Ram.BACK_UP_TURN)    
-        
-        # if time.time() < self.recovering_until:
-        #     print("Recovering...")
-        #     return self.huey_move(self.recover_speed, self.recover_turn)
-        # elif self.recovering_until > 0 and time.time() >= self.recovering_until:
-        #     print("Recovery finished")
-        #     self.recovering_until = 0
-            
         
         # If the array for enemy_previous_positions is full, then pop the first one
         self.enemy_previous_positions.append(self.enemy_position)
