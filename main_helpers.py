@@ -3,8 +3,8 @@ import numpy as np
 import math
 
 from Algorithm.ram import Ram
-from arrow.color_picker import ColorPicker
-from arrow.arrow import Arrow
+from indonesia.color_picker import ColorPicker
+from indonesia.indonesia import Indonesia
 from machine.predict import YoloModel
 from transmission.motors import Motor
 from transmission.serial_conn import OurSerial
@@ -95,7 +95,7 @@ def get_predictor(MATT_LAPTOP):
     if MATT_LAPTOP:
         predictor = YoloModel("250v12best", "TensorRT", device="cuda")
     else:
-        predictor = YoloModel("250v12best", "PT", device="mps")
+        predictor = YoloModel("100epoch11", "PT", device="mps")
     return predictor
 
 def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel):
@@ -108,11 +108,11 @@ def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, w
         weapon_motor_group = Motor(ser=ser, channel=weapon_motor_channel)
     return ser, motor_group, weapon_motor_group
 
-def first_run(predictor, warped_frame, SHOW_FRAME, arrow):
+def first_run(predictor, warped_frame, SHOW_FRAME, indonesia):
     # 6. Do an initial run of ML and Corner. Initialize Algo
     first_run_ml = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
-    arrow.set_bots(first_run_ml)
-    first_run_orientation = arrow.arrow_main([b["img"] for b in first_run_ml["bots"] if b.get("img") is not None])
+    indonesia.set_bots(first_run_ml)
+    first_run_orientation = indonesia.indonesia_main([b["img"] for b in first_run_ml["bots"] if b.get("img") is not None])
 
     if first_run_orientation and first_run_orientation["huey"] and first_run_orientation["enemy"]:
         # Ensure single enemy

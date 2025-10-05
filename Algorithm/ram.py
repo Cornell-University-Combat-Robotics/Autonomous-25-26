@@ -232,6 +232,11 @@ class Ram():
     '''
 
     def predict_desired_orientation_angle(self, our_pos: np.array, our_orientation: float, enemy_pos: np.array, enemy_velocity: np.array, dt: float):
+        i = 0
+        while our_orientation == None and i < len(self.huey_previous_orientations):
+            self.huey_orientation = our_orientation = self.huey_previous_orientations[-1-i]
+            i =- 1
+        
         enemy_future_position = self.predict_enemy_position(
             enemy_pos, enemy_velocity, dt)
         our_pos2 = np.copy(our_pos)

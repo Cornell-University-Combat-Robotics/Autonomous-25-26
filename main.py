@@ -2,7 +2,7 @@ import os
 import time
 import cv2
 from Algorithm.ram import Ram
-from arrow.arrow import Arrow
+from indonesia.indonesia import Indonesia
 from warp_main import warp
 from vid_and_img_processing.unfisheye import unfish
 from main_helpers import key_frame, read_prev_homography, make_new_homography, read_prev_colors, make_new_colors, get_predictor, get_motor_groups, first_run, display_angles
@@ -25,7 +25,7 @@ if COMP_SETTINGS:
 
 folder = test_videos_folder = os.getcwd() + "/main_files"
 frame_rate = 50
-camera_number = test_videos_folder + "/tinier_huey_arrow.mp4"
+camera_number = test_videos_folder + "/indonesia.mp4"
 # camera_number = 1
 
 if IS_TRANSMITTING:
@@ -53,7 +53,7 @@ def main(): # TODO: Add timing back
 
         # 5. Defining all subsystem objects: ML, Corner, Algorithm, Transmission
         predictor = get_predictor(MATT_LAPTOP)
-        arrow = Arrow(selected_colors, False)
+        indonesia = Indonesia(selected_colors, False)
         algorithm = None
         # TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
@@ -62,7 +62,7 @@ def main(): # TODO: Add timing back
         cv2.destroyAllWindows()
 
         if WARP_AND_COLOR_PICKING:
-            algorithm = first_run(predictor, warped_frame, SHOW_FRAME, arrow)
+            algorithm = first_run(predictor, warped_frame, SHOW_FRAME, indonesia)
         else:
             algorithm = Ram()
 
@@ -92,16 +92,14 @@ def main(): # TODO: Add timing back
 
                 # 11. Run the Warped Image through Object Detection
                 detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
-                # print("DEBUG detected_bots:", type(detected_bots), detected_bots)
                 
-                arrow.set_bots(detected_bots)
+                indonesia.set_bots(detected_bots)
                 # 12. Run Object Detection's results through Corner Detection
-                arrow_dictionary = arrow.arrow_main([b["img"] for b in detected_bots["bots"] if b.get("img") is not None])
-                move_dictionary = algorithm.ram_ram(arrow_dictionary)
-                # print("MOVE DICTIONARY: " + str(move_dictionary))
+                indonesia_dictionary = indonesia.indonesia_main([b["img"] for b in detected_bots["bots"] if b.get("img") is not None])
+                move_dictionary = algorithm.ram_ram(indonesia_dictionary)
                 
                 if DISPLAY_ANGLES:
-                    display_angles(arrow_dictionary, move_dictionary, warped_frame)
+                    display_angles(indonesia_dictionary, move_dictionary, warped_frame)
 
                 # 14. Transmitting the motor values to Huey's if we're using a live video
                 if IS_TRANSMITTING:
