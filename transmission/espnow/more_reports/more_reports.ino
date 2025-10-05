@@ -52,25 +52,25 @@ void setup(void) {
 
 // Here is where you define the sensor outputs you want to receive
 void setReports(void) {
-  Serial.println("Setting desired reports");
-  if (!bno08x.enableReport(SH2_ACCELEROMETER)) {
-    Serial.println("Could not enable accelerometer");
-  }
-  if (!bno08x.enableReport(SH2_GYROSCOPE_CALIBRATED)) {
-    Serial.println("Could not enable gyroscope");
-  }
-  if (!bno08x.enableReport(SH2_MAGNETIC_FIELD_CALIBRATED)) {
-    Serial.println("Could not enable magnetic field calibrated");
-  }
+  // Serial.println("Setting desired reports");
+  // if (!bno08x.enableReport(SH2_ACCELEROMETER)) {
+  //   Serial.println("Could not enable accelerometer");
+  // }
+  // if (!bno08x.enableReport(SH2_GYROSCOPE_CALIBRATED)) {
+  //   Serial.println("Could not enable gyroscope");
+  // }
+  // if (!bno08x.enableReport(SH2_MAGNETIC_FIELD_CALIBRATED)) {
+  //   Serial.println("Could not enable magnetic field calibrated");
+  // }
   // if (!bno08x.enableReport(SH2_LINEAR_ACCELERATION)) {
   //   Serial.println("Could not enable linear acceleration");
   // }
   // if (!bno08x.enableReport(SH2_GRAVITY)) {
   //   Serial.println("Could not enable gravity vector");
   // }
-  // if (!bno08x.enableReport(SH2_ROTATION_VECTOR)) {
-  //   Serial.println("Could not enable rotation vector");
-  // }
+  if (!bno08x.enableReport(SH2_ROTATION_VECTOR)) {
+    Serial.println("Could not enable rotation vector");
+  }
   // if (!bno08x.enableReport(SH2_GEOMAGNETIC_ROTATION_VECTOR)) {
   //   Serial.println("Could not enable geomagnetic rotation vector");
   // }
@@ -165,14 +165,14 @@ void loop() {
   //   Serial.print(" z: ");
   //   Serial.println(sensorValue.un.gyroscope.z);
   //   break;
-  case SH2_MAGNETIC_FIELD_CALIBRATED:
-    Serial.print("Magnetic Field - x: ");
-    Serial.print(sensorValue.un.magneticField.x);
-    Serial.print(" y: ");
-    Serial.print(sensorValue.un.magneticField.y);
-    Serial.print(" z: ");
-    Serial.println(sensorValue.un.magneticField.z);
-    break;
+  // case SH2_MAGNETIC_FIELD_CALIBRATED:
+  //   Serial.print("Magnetic Field - x: ");
+  //   Serial.print(sensorValue.un.magneticField.x);
+  //   Serial.print(" y: ");
+  //   Serial.print(sensorValue.un.magneticField.y);
+  //   Serial.print(" z: ");
+  //   Serial.println(sensorValue.un.magneticField.z);
+  //   break;
   // case SH2_LINEAR_ACCELERATION:
   //   Serial.print("Linear Acceration - x: ");
   //   Serial.print(sensorValue.un.linearAcceleration.x);
@@ -189,16 +189,18 @@ void loop() {
   //   Serial.print(" z: ");
   //   Serial.println(sensorValue.un.gravity.z);
   //   break;
-  // case SH2_ROTATION_VECTOR:
-  //   Serial.print("Rotation Vector - r: ");
-  //   Serial.print(sensorValue.un.rotationVector.real);
-  //   Serial.print(" i: ");
-  //   Serial.print(sensorValue.un.rotationVector.i);
-  //   Serial.print(" j: ");
-  //   Serial.print(sensorValue.un.rotationVector.j);
-  //   Serial.print(" k: ");
-  //   Serial.println(sensorValue.un.rotationVector.k);
-  //   break;
+  case SH2_ROTATION_VECTOR:
+    Serial.print("Rotation Vector - r: ");
+    Serial.print(sensorValue.un.rotationVector.real);
+    Serial.print(" i: ");
+    Serial.print(sensorValue.un.rotationVector.i);
+    Serial.print(" j: ");
+    Serial.print(sensorValue.un.rotationVector.j);
+    Serial.print(" k: ");
+    Serial.println(sensorValue.un.rotationVector.k);
+    Serial.print(" acc: ");
+    Serial.println(sensorValue.un.rotationVector.accuracy);
+    break;
   // case SH2_GEOMAGNETIC_ROTATION_VECTOR:
   //   Serial.print("Geo-Magnetic Rotation Vector - r: ");
   //   Serial.print(sensorValue.un.geoMagRotationVector.real);
@@ -276,24 +278,24 @@ void loop() {
   //   Serial.println(sensorValue.un.rawMagnetometer.z);
   //   break;
 
-  case SH2_SHAKE_DETECTOR: {
-    Serial.print("Shake Detector - shake detected on axis: ");
-    sh2_ShakeDetector_t detection = sensorValue.un.shakeDetector;
-    switch (detection.shake) {
-    case SHAKE_X:
-      Serial.println("X");
-      break;
-    case SHAKE_Y:
-      Serial.println("Y");
-      break;
-    case SHAKE_Z:
-      Serial.println("Z");
-      break;
-    default:
-      Serial.println("None");
-      break;
-    }
-  }
+  // case SH2_SHAKE_DETECTOR: {
+  //   Serial.print("Shake Detector - shake detected on axis: ");
+  //   sh2_ShakeDetector_t detection = sensorValue.un.shakeDetector;
+  //   switch (detection.shake) {
+  //   case SHAKE_X:
+  //     Serial.println("X");
+  //     break;
+  //   case SHAKE_Y:
+  //     Serial.println("Y");
+  //     break;
+  //   case SHAKE_Z:
+  //     Serial.println("Z");
+  //     break;
+  //   default:
+  //     Serial.println("None");
+  //     break;
+  //   }
+  // }
 
   // case SH2_PERSONAL_ACTIVITY_CLASSIFIER: {
 
