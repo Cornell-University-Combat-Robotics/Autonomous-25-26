@@ -150,7 +150,7 @@ void loop() {
       break;
   }
   
-  sprintf(data, sizeof(data), "{\"rotation\": {\"r\": %f} }", r);
+  sprintf(data, "{\"rotation\": {\"r\": %f} }", r);
 
   Serial.printf("%s\n", data);
 
