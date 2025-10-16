@@ -44,8 +44,8 @@ public:
 
   // Function to print the received messages from the master
   void onReceive(const uint8_t *data, size_t len, bool broadcast) {
-    Serial.printf("Received a message from master " MACSTR " (%s)\n", MAC2STR(addr()), broadcast ? "broadcast" : "unicast");
-    Serial.printf("  Message: %s\n", (char *)data);
+    //Serial.printf("Received a message from master " MACSTR " (%s)\n", MAC2STR(addr()), broadcast ? "broadcast" : "unicast");
+    Serial.printf("%s\n",data);
   }
 };
 
