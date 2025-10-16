@@ -4,7 +4,7 @@ import numpy as np
 from typing import Optional, Tuple
 import glob
 
-DISPLAY = True
+DISPLAY = False
 
 
 class Indonesia:
@@ -103,9 +103,11 @@ class Indonesia:
             print("Our robot was not detected in any image.")
             return None
 
-        cv2.imshow("our bot", best_img)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        if self.display_final_image:
+            cv2.imshow("our bot", best_img)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+        
         return best_img
 
     def detect_arrow_angle(self, image: np.ndarray) -> Optional[float]:
@@ -117,12 +119,13 @@ class Indonesia:
         top_center, mask_top = self.find_centroid(hsv_image, 0)    # red
         bottom_center, mask_bottom = self.find_centroid(hsv_image, 1)  # white
 
-        # DISPLAY MASKS EACH FRAME
-        cv2.imshow("mask_top", mask_top)
-        cv2.waitKey(0)
-        cv2.imshow("mask_bottom", mask_bottom)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        if self.display_final_image:
+            # DISPLAY MASKS EACH FRAME
+            cv2.imshow("mask_top", mask_top)
+            cv2.waitKey(0)
+            cv2.imshow("mask_bottom", mask_bottom)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
 
         print("top_center: " + str(top_center))
         print("bottom_center: " + str(bottom_center))
