@@ -12,7 +12,7 @@ from main_helpers import key_frame, read_prev_homography, make_new_homography, r
 MATT_LAPTOP = False             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
 IS_TRANSMITTING = False          # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = False         # Process every captured frame
@@ -26,7 +26,7 @@ if COMP_SETTINGS:
 folder = test_videos_folder = os.getcwd() + "/main_files"
 frame_rate = 50
 camera_number = test_videos_folder + "/indonesia.mp4"
-# camera_number = 1
+# camera_number = 2
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
