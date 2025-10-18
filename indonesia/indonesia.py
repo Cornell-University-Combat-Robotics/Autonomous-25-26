@@ -23,16 +23,14 @@ class Indonesia:
         self.bots = bots
 
     def get_contours_per_color(self, hsv_image: np.ndarray, color_index: int):
-        print ("am i here get countours per color")
         selected_color = self.selected_colors[color_index]
         h0, s0, v0 = selected_color
-        print (selected_color)
 
         hue_radius = 5          # was 10
         s_min = 120             # was 50
         v_min = 120             # was 50
 
-        lower_limit = np.array([max(0, h0 - hue_radius), s_min, v_min], dtype=np.uint8) #TODO: minus nonetype er
+        lower_limit = np.array([max(0, h0 - hue_radius), s_min, v_min], dtype=np.uint8)
         upper_limit = np.array([min(179, h0 + hue_radius), 255, 255], dtype=np.uint8)
         
         mask = cv2.inRange(hsv_image, lower_limit, upper_limit)
@@ -147,24 +145,18 @@ class Indonesia:
         return float(angle)
 
     def indonesia_main(self, bot_images):
-        print ("hi")
         if isinstance(self.bots, dict):
-            print ("hi 2")
             bot_images = [bot["img"] for bot in self.bots.get("bots", [])]
         elif isinstance(self.bots, list):
-            print ("hi 3")
             bot_images = [bot["img"] for bot in self.bots if "img" in bot]
         else:
             print("Invalid bots format.")
             return {}
         
-        print ("hello")
         image = self.detect_our_robot_main(bot_images)
-        print ("hello 2")
         if image is None:
             return {}
-        
-        print ("well hello there")
+
         orientation = self.detect_arrow_angle(image)
         print("1")
         huey_bbox = None
