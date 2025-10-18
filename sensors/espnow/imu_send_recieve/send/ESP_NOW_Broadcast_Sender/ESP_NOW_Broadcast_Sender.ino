@@ -17,6 +17,8 @@
 #include <esp_mac.h>  // For the MAC2STR and MACSTR macros
 #include <Adafruit_BNO08x.h>
 
+#include <math.h>
+
 
 /* Definitions */
 
@@ -68,12 +70,31 @@ public:
   }
 };
 
+// void quaternion_to_euler(float q_w, float q_x, float q_y, float q_z,
+//                          float* roll, float* pitch, float* yaw) {
+//   // Roll (x-axis rotation)
+//   *roll = atan2f(2.0f * (q_w * q_x + q_y * q_z), 1.0f - 2.0f * (q_x * q_x + q_y * q_y));
+  
+//   // Pitch (y-axis rotation)
+//   float sinp = 2.0f * (q_w * q_y - q_z * q_x);
+//   if (fabsf(sinp) >= 1.0f) {
+//     *pitch = copysignf(M_PI / 2.0f, sinp);  // clamp to 90 degrees
+//   }
+//   else {
+//     *pitch = asinf(sinp);
+//   }
+
+//   // Yaw (z-axis rotation)
+//   *yaw = atan2f(2.0f * (q_w * q_z + q_x * q_y), 1.0f - 2.0f * (q_y * q_y + q_z * q_z));
+// }
+
 /* Global Variables */
 
 uint32_t msg_count = 0;
 
 // Create a broadcast peer object
 ESP_NOW_Broadcast_Peer broadcast_peer(ESPNOW_WIFI_CHANNEL, WIFI_IF_STA, NULL);
+
 
 /* Main */
 
@@ -117,7 +138,13 @@ void setup() {
 
 void setReports(void) {
   Serial.println("Setting desired reports");
+  // if (! bno08x.enableReport(SH2_ORIENTATION)) {
+  //   Serial.println("Could not enable vector");
+  // }
   if (! bno08x.enableReport(SH2_ROTATION_VECTOR)) {
+    Serial.println("Could not enable vector");
+  }
+  if (! bno08x.enableReport(SH2_GRAVITY)) {
     Serial.println("Could not enable vector");
   }
 }
@@ -134,12 +161,19 @@ void loop() {
     return;
   }
 
-  char data[32];
+  char data[256];
   float r;
   float i;
   float j;
   float k;
   float accuracy;
+  // float roll;
+  // float pitch;
+  // float yaw;
+  float gravity_x;
+  float gravity_y;
+  float gravity_z;
+
   switch (sensorValue.sensorId) {
     case SH2_ROTATION_VECTOR:
       r = sensorValue.un.rotationVector.real;
@@ -147,10 +181,22 @@ void loop() {
       j = sensorValue.un.rotationVector.j;
       k = sensorValue.un.rotationVector.k;
       accuracy = sensorValue.un.rotationVector.accuracy;
+      // quaternion_to_euler(r, i, j , k, &roll, &pitch, &yaw);
       break;
+    case SH2_GRAVITY:
+      gravity_x = sensorValue.un.gravity.x;
+      gravity_y = sensorValue.un.gravity.y;
+      gravity_z = sensorValue.un.gravity.z;
+      break;
+    // case SH2_ORIENTATION:
+    //   roll = sensorValue.un.orientation.roll;
+    //   pitch = sensorValue.un.orientation.pitch;
+    //   yaw = sensorValue.un.orientation.yaw;
+    //   break;
   }
   
-  sprintf(data, "{\"rotation\": {\"r\": %f} }", r);
+  sprintf(data, "{\"rotation\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f, \"accuracy\": %f}, \"accelerometer\": {\"gravity_x\": %f, \"gravity_y\": %f, \"gravity_z\": %f}  }", r, i, j, k, accuracy, gravity_x, gravity_y, gravity_z);
+  // sprintf(data, "{\"accuracy\": {\"roll\": %f, \"pitch\": %f, \"yaw\": %f} }", r, i, j, k, accuracy);
 
   Serial.printf("%s\n", data);
 
