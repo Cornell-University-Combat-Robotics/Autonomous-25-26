@@ -62,9 +62,13 @@ def main(): # TODO: Add timing back
         cv2.destroyAllWindows()
 
         if WARP_AND_COLOR_PICKING:
+            print("FIRST RUN")
             algorithm = first_run(predictor, warped_frame, SHOW_FRAME, indonesia)
         else:
+            print("NOT FIRST RUN")
             algorithm = Ram()
+
+        print("First run is done")
 
         # ----------------------------------------------------------------------
         # 8. Match begins

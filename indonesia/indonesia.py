@@ -141,7 +141,32 @@ class Indonesia:
         if angle is None:
             print("Warning: angle computation failed due to invalid dx/dy.")
             return None
-        print("angle: " + str(angle))
+        
+        # --- Visualization ---
+        display_image = image.copy()
+        # Draw bottom and top centroids
+        cv2.circle(display_image, tuple(bottom_center), 5, (255, 255, 0), -1)  # bottom = cyan
+        cv2.circle(display_image, tuple(top_center), 5, (0, 0, 255), -1)       # top = red
+
+        # Draw arrow (orientation vector)
+        cv2.arrowedLine(display_image,
+                        tuple(bottom_center),
+                        tuple(top_center),
+                        (0, 255, 0), 2, tipLength=0.3)
+
+        # Annotate angle
+        if angle is not None:
+            cv2.putText(display_image,
+                        f"{angle:.1f} deg",
+                        (bottom_center[0] + 10, bottom_center[1] - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5, (0, 255, 0), 2, cv2.LINE_AA)
+
+        if self.display_final_image:
+            cv2.imshow("Orientation Vector", display_image)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+
         return float(angle)
 
     def indonesia_main(self, bot_images):
