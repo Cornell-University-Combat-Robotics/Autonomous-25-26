@@ -147,9 +147,14 @@ void setReports(void) {
   if (! bno08x.enableReport(SH2_GRAVITY)) {
     Serial.println("Could not enable vector");
   }
+  if (! bno08x.enableReport(SH2_GAME_ROTATION_VECTOR)) {
+    Serial.println("Could not enable vector");
+  }
 }
 
-
+static float r = 0, i = 0, j = 0, k = 0, accuracy = 0;
+static float gr = 0, gi = 0, gj = 0, gk = 0;
+static float gravity_x = 0, gravity_y = 0, gravity_z = 0;
 void loop() {
   // Broadcast a message to all devices within the network
   if (bno08x.wasReset()) {
@@ -161,18 +166,10 @@ void loop() {
     return;
   }
 
-  char data[256];
-  float r;
-  float i;
-  float j;
-  float k;
-  float accuracy;
-  // float roll;
-  // float pitch;
-  // float yaw;
-  float gravity_x;
-  float gravity_y;
-  float gravity_z;
+  char data[1024];
+
+
+
 
   switch (sensorValue.sensorId) {
     case SH2_ROTATION_VECTOR:
@@ -181,12 +178,18 @@ void loop() {
       j = sensorValue.un.rotationVector.j;
       k = sensorValue.un.rotationVector.k;
       accuracy = sensorValue.un.rotationVector.accuracy;
-      // quaternion_to_euler(r, i, j , k, &roll, &pitch, &yaw);
       break;
+      // quaternion_to_euler(r, i, j , k, &roll, &pitch, &yaw);
     case SH2_GRAVITY:
       gravity_x = sensorValue.un.gravity.x;
       gravity_y = sensorValue.un.gravity.y;
       gravity_z = sensorValue.un.gravity.z;
+      break;
+    case SH2_GAME_ROTATION_VECTOR:
+      gr = sensorValue.un.gameRotationVector.real;
+      gi = sensorValue.un.gameRotationVector.i;
+      gj = sensorValue.un.gameRotationVector.j;
+      gk = sensorValue.un.gameRotationVector.k;
       break;
     // case SH2_ORIENTATION:
     //   roll = sensorValue.un.orientation.roll;
@@ -195,7 +198,7 @@ void loop() {
     //   break;
   }
   
-  sprintf(data, "{\"rotation\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f, \"accuracy\": %f}, \"accelerometer\": {\"gravity_x\": %f, \"gravity_y\": %f, \"gravity_z\": %f}  }", r, i, j, k, accuracy, gravity_x, gravity_y, gravity_z);
+  sprintf(data, "{\"rotation\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f, \"accuracy\": %f}, \"game\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f}, \"accelerometer\": {\"gravity_x\": %f, \"gravity_y\": %f, \"gravity_z\": %f}  }", r, i, j, k, accuracy, gr, gi, gj, gk, gravity_x, gravity_y, gravity_z);
   // sprintf(data, "{\"accuracy\": {\"roll\": %f, \"pitch\": %f, \"yaw\": %f} }", r, i, j, k, accuracy);
 
   Serial.printf("%s\n", data);
