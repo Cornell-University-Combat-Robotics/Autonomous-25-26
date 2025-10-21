@@ -38,6 +38,7 @@ while (True):
         # print(f"gravity: {dict["accelerometer"]["gravity_z"]}")
     except KeyboardInterrupt:
         break 
-    except:
+    except Exception as e:
+        print(e)
         continue
     #time.sleep(0.5)
