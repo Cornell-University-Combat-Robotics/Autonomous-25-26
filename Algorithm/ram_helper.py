@@ -1,7 +1,7 @@
 import numpy as np
 import time
-import numpy as np
 import random
+import math
 
 BACK_UP_SPEED = -1
 BACK_UP_TURN = 0
@@ -11,18 +11,6 @@ LEFT_SPEED = 1
 LEFT_TURN = -1
 RIGHT_SPEED = 1
 RIGHT_TURN = 1
-RECOVERY_SPEED_VALUES = [BACK_UP_SPEED, FORWARD_SPEED, LEFT_SPEED, RIGHT_SPEED]
-RECOVERY_TURN_VALUES = [BACK_UP_TURN, FORWARD_TURN, LEFT_TURN, RIGHT_TURN]
-
-''' 
-calculate the velocity of the bot given the current and previous position
-Precondition: dt >= 0, if dt == 0, the velocity == 0; curr_pos & old_pos: 2-value array [x,y] 
-x & y: > 0 
-'''
-def calculate_velocity(old_pos: np.array, curr_pos: np.array, dt: float):
-    if (dt == 0.0):
-        return np.array([0.0, 0.0])
-    return (curr_pos - old_pos)
 
 def calculate_enemy_velocity(old_positions: list[np.array], curr_pos: np.array, dt: float):
     if len(old_positions) < 2 or dt == 0.0:
@@ -49,7 +37,7 @@ def invert_y(pos: np.array):
     return pos2
 
 """ if enemy robot predicted position is outside of arena, move it inside. """
-def check_wall(test_mode, predicted_position: np.array, arena_width=1200):
+def check_wall(predicted_position: np.array, arena_width=1200):
     flag = False
     if (predicted_position[0] > arena_width):
         predicted_position[0] = 1200
@@ -63,5 +51,27 @@ def check_wall(test_mode, predicted_position: np.array, arena_width=1200):
     if (predicted_position[1] < 0):
         predicted_position[1] = 0
         flag = True
-    if (test_mode and flag):
-        print("moved that jon")
+    print("moved that jon")
+
+
+
+def clamp(x, lo, hi):
+    return max(lo, min(hi, x))
+
+
+def to_float(x, fallback=0.0):
+    try:
+        v = float(x)
+        if math.isnan(v) or math.isinf(v):
+            return float(fallback)
+        return v
+    except Exception:
+        return float(fallback)
+    
+
+def mix_speed_turn(speed, turn):
+    # symmetric, safe motor mixing
+    left  = clamp(speed - turn, -1, 1)
+    right = clamp(speed + turn, -1, 1)
+    return left, right
+
