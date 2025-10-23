@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import os
 
+NUM_OF_COLORS = 2
+
 class ColorPicker:
     """
     A class for manually picking colors from an image.
@@ -11,21 +13,14 @@ class ColorPicker:
     def pick_colors(test_img):
         """
         Allows the user to manually pick colors for the top half and bottom half colors.
-        The user selects the front top half, followed by the bottom half and upside-down bottom half.
+        The user selects the front top half followed by the bottom half.
 
         Args:
             image_path (str): Path to the image to pick colors from.
 
         Returns:
-            list: Selected colors for the front top half, bottom half and upside-down bottom half in HSV format.
+            list: Selected colors for the front top half and bottom half in HSV format.
         """
-        # try:
-        #     test_img = cv2.imread(image_path)
-        #     if test_img is None:
-        #         raise FileNotFoundError(f"Image not found: {image_path}")
-        # except Exception as e:
-        #     print(f"Error loading image: {e}")
-        #     return []
 
         selected_colors = []
         points = []
@@ -39,7 +34,7 @@ class ColorPicker:
                 try:
                     color = test_img[y, x]  # OpenCV reads as BGR
                     hsv_color = cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_BGR2HSV)[0][0]
-                    if len(selected_colors) < 4:
+                    if len(selected_colors) <= NUM_OF_COLORS:
                         selected_colors.append(hsv_color)
                         points.append([x, y])
                         print(f"Selected color (HSV): {hsv_color}")
@@ -57,23 +52,23 @@ class ColorPicker:
             # Create a display panel for selected colors
             color_panel_height = img_copy.shape[0]
             color_panel_width = 150
-            color_panel = np.zeros((color_panel_height, color_panel_width, 3), dtype=np.uint8)
+            color_panel = np.zeros((color_panel_height, color_panel_width, NUM_OF_COLORS + 1), dtype=np.uint8)
 
-            labels = ["FrontTopHalf", "BottomHalf", "UpsideDownBottomHalf"]
+            labels = ["FrontTopHalf", "BottomHalf"]
 
             for i, hsv_color in enumerate(selected_colors):
                 bgr_color = cv2.cvtColor(np.uint8([[hsv_color]]), cv2.COLOR_HSV2BGR)[0][0]
-                start_y = i * (color_panel_height // 3)
-                end_y = (i + 1) * (color_panel_height // 3)
+                start_y = i * (color_panel_height // NUM_OF_COLORS)
+                end_y = (i + 1) * (color_panel_height // NUM_OF_COLORS)
                 color_panel[start_y:end_y, :] = bgr_color
 
                 cv2.putText(color_panel, labels[i], (10, start_y + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
             combined_image = np.hstack((img_copy, color_panel))
-            cv2.imshow("Color Picking: Pick Huey front top half, bottom half and upside-down bottom half. Press 'z' to cancel previous selection. Once 3 colors are selected, press anywhere on the screen to continue", combined_image)
+            cv2.imshow("Color Picking: Pick Huey front top half and bottom half. Press 'z' to cancel previous selection. Once 2 colors are selected, press anywhere on the screen to continue", combined_image)
 
-        cv2.imshow("Color Picking: Pick Huey front top half, bottom half and upside-down bottom half. Press 'z' to cancel previous selection. Once 3 colors are selected, press anywhere on the screen to continue", test_img)
-        cv2.setMouseCallback("Color Picking: Pick Huey front top half, bottom half and upside-down bottom half. Press 'z' to cancel previous selection. Once 3 colors are selected, press anywhere on the screen to continue", click_event)
+        cv2.imshow("Color Picking: Pick Huey front top half and bottom half. Press 'z' to cancel previous selection. Once 2 colors are selected, press anywhere on the screen to continue", test_img)
+        cv2.setMouseCallback("Color Picking: Pick Huey front top half and bottom half. Press 'z' to cancel previous selection. Once 2 colors are selected, press anywhere on the screen to continue", click_event)
 
         while True:
             key = cv2.waitKey(1) & 0xFF
@@ -91,7 +86,7 @@ class ColorPicker:
                 print("❌ Selection canceled. Exiting...")
                 selected_colors = []
                 return None
-            elif len(selected_colors) == 4:
+            elif len(selected_colors) == NUM_OF_COLORS + 1:
                 selected_colors = selected_colors[:len(selected_colors)-1]
                 print("🎨 Final Selected Colors (HSV):", selected_colors)
                 print("📌 Final Selected Points:", points)
@@ -135,7 +130,7 @@ def display_colors(selected_colors):
 
         height = 175
         width = 175
-        img = np.zeros((height, width * len(bgr_colors), 3), dtype=np.uint8)
+        img = np.zeros((height, width * len(bgr_colors), NUM_OF_COLORS), dtype=np.uint8)
 
         for idx, color in enumerate(bgr_colors):
             img[:, idx * width:(idx + 1) * width] = color
@@ -145,8 +140,6 @@ def display_colors(selected_colors):
                 label = "FrontTopHalf"
             elif idx == 1:
                 label = "BottomHalf"
-            elif idx == 2:
-                label = "UpsideDownBottomHalf"
 
             cv2.putText(img, label, (idx * width + 10, height - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA)
