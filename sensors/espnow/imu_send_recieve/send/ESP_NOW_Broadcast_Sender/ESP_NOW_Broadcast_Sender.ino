@@ -168,9 +168,6 @@ void loop() {
 
   char data[1024];
 
-
-
-
   switch (sensorValue.sensorId) {
     case SH2_ROTATION_VECTOR:
       r = sensorValue.un.rotationVector.real;
@@ -191,11 +188,6 @@ void loop() {
       gj = sensorValue.un.gameRotationVector.j;
       gk = sensorValue.un.gameRotationVector.k;
       break;
-    // case SH2_ORIENTATION:
-    //   roll = sensorValue.un.orientation.roll;
-    //   pitch = sensorValue.un.orientation.pitch;
-    //   yaw = sensorValue.un.orientation.yaw;
-    //   break;
   }
   
   sprintf(data, "{\"rotation\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f, \"accuracy\": %f}, \"game\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f}, \"accelerometer\": {\"gravity_x\": %f, \"gravity_y\": %f, \"gravity_z\": %f}  }", r, i, j, k, accuracy, gr, gi, gj, gk, gravity_x, gravity_y, gravity_z);
