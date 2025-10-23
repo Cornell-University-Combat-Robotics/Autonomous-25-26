@@ -41,10 +41,10 @@ class Ram():
             self.huey_old_speed = huey_old_speed
             self.huey_old_turn = huey_old_turn
         else:
-            self.huey_position = np.array(bots['huey'].get('center'))
-            self.huey_old_position = np.array(bots['huey'].get('center'))
-            self.huey_orientation = bots['huey'].get('orientation')
-            self.enemy_position = np.array(bots['enemy'].get('center'))
+            self.huey_position = np.array(bots['huey'].get('center') if np.array(bots['huey'].get('center')) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2),dtype=float)
+            self.huey_old_position = np.array(bots['huey'].get('center') if np.array(bots['huey'].get('center')) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2),dtype=float)
+            self.huey_orientation = float(bots['huey'].get('orientation') if bots['huey'].get('orientation') is not None else 0.0)
+            self.enemy_position = np.array(bots['enemy'].get('center') if bots['enemy'].get('center') is not None else (0.0,0.0),dtype=float)
             self.huey_old_speed = huey_old_speed
             self.huey_old_turn = huey_old_turn
 
@@ -99,17 +99,17 @@ class Ram():
         x_curr, y_curr = self.huey_position
 
         for prev_pos in self.huey_previous_positions:
-            print ("x_curr: ", x_curr)
-            print ("y_curr: ", y_curr)
-            print ("Prev Pos: ", prev_pos)
+            # print ("x_curr: ", x_curr)
+            # print ("y_curr: ", y_curr)
+            # print ("Prev Pos: ", prev_pos)
             if math.sqrt((x_curr - prev_pos[0])**2 + (y_curr - prev_pos[1])**2) < Ram.TOLERANCE:
                 print("counter ++ 1")
                 counter_pos += 1
 
         for prev_orientation in self.huey_previous_orientations:
             # TODO: work out angle range
-            print("prev_orientation: " + str(prev_orientation))
-            print("huey_orientation: " + str(self.huey_orientation))
+            # print("prev_orientation: " + str(prev_orientation))
+            # print("huey_orientation: " + str(self.huey_orientation))
             if abs(prev_orientation - self.huey_orientation) < Ram.TOLERANCE * 0.5:
                 print("counter ++ 2")
                 counter_orientation += 1
@@ -141,6 +141,8 @@ class Ram():
             return (0, 0)
         
         # return the angle in degrees
+
+
         huey_orientation_rad = np.radians(self.huey_orientation)
         orientation = np.array([math.cos(huey_orientation_rad), math.sin(huey_orientation_rad)])
         enemy_future_position = invert_y(enemy_future_position)
@@ -159,20 +161,17 @@ class Ram():
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
     def ram_ram(self, bots: dict[str, any] = None):
         if not (bots and bots["huey"]):
-            print("21")
             if self.huey_previous_positions:self.huey_previous_positions.append(self.huey_previous_positions[-1])
             print("🦐 Prev pos appended. 🦐")
             if self.huey_previous_orientations: self.huey_previous_orientations.append(self.huey_previous_orientations[-1])
+            print("🦐 Prev orient appended. 🦐")
 
             # recovery!
             if (self.check_previous_position_and_orientation()):
-                print("5")
                 print("👿Start recovery👿")
-                print("7")
                 self.recovery_sequence()
                 return self.huey_move(self.recover_speed, self.recover_turn)
             else:
-                print("8")
                 self.recovery_step = 0
                 return self.huey_move(self.huey_old_speed, self.huey_old_turn)
          
@@ -192,7 +191,6 @@ class Ram():
             self.huey_previous_positions.append(self.huey_position) #TODO: null check?
             self.huey_previous_orientations.append(self.huey_orientation)
             
-            print("2")
 
         self.huey_pos_count, self.huey_orient_count = self.huey_pos_count + 1, self.huey_orient_count + 1
 
@@ -210,77 +208,47 @@ class Ram():
         if len(self.enemy_previous_positions) > Ram.HISTORY_BUFFER:
             self.enemy_previous_positions.pop(0)
 
-        print("3")
-        
         if time.time() < self.recovering_until:
             print("🦋🌝Recovering...🌝🦋")
             return self.huey_move(self.recover_speed, self.recover_turn)
         else:
-            print("4")
             self.recovering_until = 0
         
         # Check if Huey is stationary / unfound, recover if so
         if (self.check_previous_position_and_orientation()):
-            print("5")
-            if bots and bots["huey"]:
-                print("6")
-                self.huey_position = np.array(bots['huey'].get('center')) if bots['huey'].get('center') is not None else np.array(self.huey_old_position)
-                print("huey_position: " + str(self.huey_position))
-                self.huey_previous_positions.append(self.huey_position)
-
-                self.huey_orientation = bots['huey'].get('orientation') if bots['huey'].get('orientation') is not None else 0.0 # TODO: base value??????
-                print("huey_orientation: " + str(self.huey_orientation))
-                self.huey_previous_orientations.append(self.huey_orientation) 
-                #TODO: add prev pos for when no bots seen? (since the last else is never reached)
             print("👿Start recovery👿")
-            print("7")
             self.recovery_sequence()
             return self.huey_move(self.recover_speed, self.recover_turn)
         else:
-            print("8")
             self.recovery_step = 0
 
-        print("9")
-       
-        print("10")
         # Get new position and heading values
         self.huey_position = np.array(bots['huey'].get('center')) if bots['huey'].get('center') is not None else np.array(self.huey_old_position)
-        self.huey_orientation = bots['huey'].get('orientation')
-
-        print("11")
+        self.huey_orientation = float(bots['huey'].get('orientation') if bots['huey'].get('orientation') is not None else self.huey_previous_orientations[-1])
     
         self.delta_t = time.time() - self.old_time  # record delta time
         self.old_time = time.time()
         
         if bots["enemy"]:
-            print("12")
             self.enemy_position = np.array(bots['enemy'].get('center')) # probably issue here? 
-
-            print("13")
 
             turn, speed = self.predict_desired_turn_and_speed()
 
-            print("15")
-            
             self.huey_old_turn, self.huey_old_speed = turn, speed
         
             # PID Shenanigans. Only use PID for the turn values
             if self.USE_PID and self.delta_t != 0:
                 print("PID RAH")
                 if self.delta_t > 0:
-                    print("16")
                     derivative = (self.huey_orientation - self.huey_previous_orientations[-1]) / (self.delta_t * 180.0)
                 else:
-                    print("17")
                     derivative = 0
-                print("18")
+                
                 pid_output = (turn * 1) + (derivative * 0.03 * -1)
                 turn = clamp(pid_output, -1, 1)
 
-            print("19")
                 
             return self.huey_move(speed, turn)
 
-        print("20")
 
         return self.huey_move(self.huey_old_speed, self.huey_old_turn) # TODO: can't see enemy, where do we go?
