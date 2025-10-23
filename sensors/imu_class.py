@@ -1,0 +1,86 @@
+import serial
+import json
+import time
+import math
+
+class IMU_sensor():
+
+    def __init__(self, port = "COM3", baud_rate = 115200, timeout = 1):
+        self.ser = serial.Serial(port, baud_rate, timeout=timeout)
+        self.dict = {}
+        self.roll = 0
+        self.pitch = 0
+        self.yaw = 0
+
+    def get_dict(self):
+        json_string = self.ser.readline().decode('utf-8').strip()
+        self.dict = json.loads(json_string)
+    
+    def is_upside_down(self):
+        self.get_dict()
+        return self.dict["accelerometer"]["gravity_z"] < 0
+
+    def get_yaw(self):
+        # try to get a new reading for yaw
+        self.get_dict()
+        _, _, yaw = self.quaternion_to_euler(self.dict["game"]["r"], self.dict["game"]["i"], self.dict["game"]["j"], self.dict["game"]["k"])
+        self.yaw = (yaw / math.pi) * 180
+        return f'{time.time()} : {self.yaw}'
+            
+    
+
+    def quaternion_to_euler(self, q_w, q_x, q_y, q_z):
+    # Roll (x-axis rotation)
+        self.roll = math.atan2(2 * (q_w * q_x + q_y * q_z), 1 - 2 * (q_x**2 + q_y**2))
+    
+        # Pitch (y-axis rotation)
+        self.pitch = math.asin(2 * (q_w * q_y - q_z * q_x))
+    
+        # Yaw (z-axis rotation)
+        self.yaw = math.atan2(2 * (q_w * q_z + q_x * q_y), 1 - 2 * (q_y**2 + q_z**2))
+        return self.roll, self.pitch, self.yaw
+    
+
+
+
+# THIS IS THE OLD CODE WHICH WILL BE DELETED UPON REFACTOR
+
+# windows = "COM3"
+# mac = "/dev/tty.usbserial-0001"
+# ser = serial.Serial(mac, 115200, timeout=1)  # use /dev/ttyUSB0 on Linux
+# ser.write(b"get_imu\n")
+# line = ser.readline().decode('utf-8').strip()
+
+
+# def quaternion_to_euler(q_w, q_x, q_y, q_z):
+#     # Roll (x-axis rotation)
+#     roll = math.atan2(2 * (q_w * q_x + q_y * q_z), 1 - 2 * (q_x**2 + q_y**2))
+    
+#     # Pitch (y-axis rotation)
+#     pitch = math.asin(2 * (q_w * q_y - q_z * q_x))
+    
+#     # Yaw (z-axis rotation)
+#     yaw = math.atan2(2 * (q_w * q_z + q_x * q_y), 1 - 2 * (q_y**2 + q_z**2))
+    
+#     return roll, pitch, yaw
+
+
+# while (True):
+#     #print(ser.readline().decode('utf-8').strip())
+#     try:
+#         json_string = ser.readline().decode('utf-8').strip()
+#         dict = json.loads(json_string)
+#         roll, pitch, yaw = quaternion_to_euler(dict["rotation"]["r"], dict["rotation"]["i"], dict["rotation"]["j"], dict["rotation"]["k"])
+#         groll, gpitch, gyaw = quaternion_to_euler(dict["game"]["r"], dict["game"]["i"], dict["game"]["j"], dict["game"]["k"])
+#         #print(f"dict: {dict}")
+#         yaw_to_deg = (yaw / math.pi) * 180
+#         gyaw_to_deg = (gyaw / math.pi) * 180
+#         print(f"yaw: {yaw_to_deg}")
+#         print(f"game yaw: {gyaw_to_deg}")
+#         # print(f"gravity: {dict["accelerometer"]["gravity_z"]}")
+#     except KeyboardInterrupt:
+#         break 
+#     except Exception as e:
+#         print(e)
+#         continue
+#     #time.sleep(0.5)
