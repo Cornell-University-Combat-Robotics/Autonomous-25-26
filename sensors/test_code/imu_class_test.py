@@ -2,7 +2,7 @@ import serial
 import json
 import time
 import math
-import imu_class
+import sensors.imu_class as imu_class
 
 windows = "COM3"
 mac = "/dev/tty.usbserial-0001"
@@ -19,5 +19,3 @@ while True:
     except Exception as e:
         print(e)
         continue
-
-
