@@ -70,24 +70,6 @@ public:
   }
 };
 
-// void quaternion_to_euler(float q_w, float q_x, float q_y, float q_z,
-//                          float* roll, float* pitch, float* yaw) {
-//   // Roll (x-axis rotation)
-//   *roll = atan2f(2.0f * (q_w * q_x + q_y * q_z), 1.0f - 2.0f * (q_x * q_x + q_y * q_y));
-  
-//   // Pitch (y-axis rotation)
-//   float sinp = 2.0f * (q_w * q_y - q_z * q_x);
-//   if (fabsf(sinp) >= 1.0f) {
-//     *pitch = copysignf(M_PI / 2.0f, sinp);  // clamp to 90 degrees
-//   }
-//   else {
-//     *pitch = asinf(sinp);
-//   }
-
-//   // Yaw (z-axis rotation)
-//   *yaw = atan2f(2.0f * (q_w * q_z + q_x * q_y), 1.0f - 2.0f * (q_y * q_y + q_z * q_z));
-// }
-
 /* Global Variables */
 
 uint32_t msg_count = 0;
@@ -138,9 +120,6 @@ void setup() {
 
 void setReports(void) {
   Serial.println("Setting desired reports");
-  // if (! bno08x.enableReport(SH2_ORIENTATION)) {
-  //   Serial.println("Could not enable vector");
-  // }
   if (! bno08x.enableReport(SH2_ROTATION_VECTOR)) {
     Serial.println("Could not enable vector");
   }
@@ -191,8 +170,6 @@ void loop() {
   }
   
   sprintf(data, "{\"rotation\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f, \"accuracy\": %f}, \"game\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f}, \"accelerometer\": {\"gravity_x\": %f, \"gravity_y\": %f, \"gravity_z\": %f}  }", r, i, j, k, accuracy, gr, gi, gj, gk, gravity_x, gravity_y, gravity_z);
-  // sprintf(data, "{\"accuracy\": {\"roll\": %f, \"pitch\": %f, \"yaw\": %f} }", r, i, j, k, accuracy);
-
   Serial.printf("%s\n", data);
 
   if (!broadcast_peer.send_message((uint8_t *)data, sizeof(data))) {
