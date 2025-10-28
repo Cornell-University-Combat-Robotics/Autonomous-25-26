@@ -5,7 +5,7 @@ import serial.tools.list_ports
 
 class OurSerial():
     """
-    The OurSerial module is used to establish connectio witht the arduino over serial communication
+    The OurSerial module is used to establish connection with the arduino over serial communication
 
     Attributes
     ----------
