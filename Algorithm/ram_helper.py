@@ -12,20 +12,20 @@ LEFT_TURN = -1
 RIGHT_SPEED = 1
 RIGHT_TURN = 1
 
-def calculate_enemy_velocity(old_positions: list[np.array], curr_pos: np.array, dt: float):
-    if len(old_positions) < 2 or dt == 0.0:
-        return np.array([0.0, 0.0])
+# def calculate_enemy_velocity(old_positions: list[np.array], curr_pos: np.array, dt: float):
+#     if len(old_positions) < 2 or dt == 0.0:
+#         return np.array([0.0, 0.0])
 
-    # Start from the end and look for two consecutive valid positions
-    i = len(old_positions) - 1
-    while i > 0:
-        if old_positions[i] is not None and old_positions[i-1] is not None:
-            curr_pos = old_positions[i]
-            old_pos = old_positions[i-1]
-            return np.array(curr_pos) - np.array(old_pos)
-        i -= 1
+#     # Start from the end and look for two consecutive valid positions
+#     i = len(old_positions) - 1
+#     while i > 0:
+#         if old_positions[i] is not None and old_positions[i-1] is not None:
+#             curr_pos = old_positions[i]
+#             old_pos = old_positions[i-1]
+#             return np.array(curr_pos) - np.array(old_pos)
+#         i -= 1
         
-    return np.array([0.0, 0.0])
+#     return np.array([0.0, 0.0])
 
 '''
 inverting the y position

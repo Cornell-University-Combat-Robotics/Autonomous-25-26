@@ -2,7 +2,7 @@ import math
 import time
 import numpy as np
 import random
-from .ram_helper import calculate_enemy_velocity, invert_y, check_wall, clamp, to_float, mix_speed_turn
+from .ram_helper import invert_y, check_wall, clamp, to_float, mix_speed_turn
 
 
 class Ram():
@@ -37,17 +37,15 @@ class Ram():
             # TODO: Fix orientation init
             self.huey_orientation = float(huey_orientation if huey_orientation is not None else 0.0)
             # initialize the current enemy position
-            self.enemy_position = np.array(enemy_position if enemy_position is not None else (0.0, 0.0),dtype=float)
-            self.huey_old_speed = huey_old_speed
-            self.huey_old_turn = huey_old_turn
+            self.enemy_position = np.array(enemy_position if enemy_position is not None else (0.0, 0.0), dtype=float)
         else:
-            self.huey_position = np.array(bots['huey'].get('center') if np.array(bots['huey'].get('center')) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2),dtype=float)
-            self.huey_old_position = np.array(bots['huey'].get('center') if np.array(bots['huey'].get('center')) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2),dtype=float)
+            self.huey_position = np.array(bots['huey'].get('center') if np.array(bots['huey'].get('center')) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2), dtype=float)
+            self.huey_old_position = np.array(bots['huey'].get('center') if np.array(bots['huey'].get('center')) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2), dtype=float)
             self.huey_orientation = float(bots['huey'].get('orientation') if bots['huey'].get('orientation') is not None else 0.0)
-            self.enemy_position = np.array(bots['enemy'].get('center') if bots['enemy'].get('center') is not None else (0.0,0.0),dtype=float)
-            self.huey_old_speed = huey_old_speed
-            self.huey_old_turn = huey_old_turn
+            self.enemy_position = np.array(bots['enemy'].get('center') if bots['enemy'].get('center') is not None else (0.0,0.0), dtype=float)
 
+        self.huey_old_speed = huey_old_speed
+        self.huey_old_turn = huey_old_turn
         self.left = 0
         self.right = 0
 
@@ -103,7 +101,6 @@ class Ram():
             # print ("y_curr: ", y_curr)
             # print ("Prev Pos: ", prev_pos)
             if math.sqrt((x_curr - prev_pos[0])**2 + (y_curr - prev_pos[1])**2) < Ram.TOLERANCE:
-                print("counter ++ 1")
                 counter_pos += 1
 
         for prev_orientation in self.huey_previous_orientations:
@@ -111,7 +108,6 @@ class Ram():
             # print("prev_orientation: " + str(prev_orientation))
             # print("huey_orientation: " + str(self.huey_orientation))
             if abs(prev_orientation - self.huey_orientation) < Ram.TOLERANCE * 0.5:
-                print("counter ++ 2")
                 counter_orientation += 1
 
         if counter_pos >= Ram.BACK_UP_THRESHOLD and counter_orientation >= Ram.BACK_UP_THRESHOLD:
@@ -141,7 +137,6 @@ class Ram():
             return (0, 0)
         
         # return the angle in degrees
-
 
         huey_orientation_rad = np.radians(self.huey_orientation)
         orientation = np.array([math.cos(huey_orientation_rad), math.sin(huey_orientation_rad)])
@@ -190,7 +185,6 @@ class Ram():
             print("huey_orientation: " + str(self.huey_orientation))
             self.huey_previous_positions.append(self.huey_position) #TODO: null check?
             self.huey_previous_orientations.append(self.huey_orientation)
-            
 
         self.huey_pos_count, self.huey_orient_count = self.huey_pos_count + 1, self.huey_orient_count + 1
 
@@ -247,8 +241,6 @@ class Ram():
                 pid_output = (turn * 1) + (derivative * 0.03 * -1)
                 turn = clamp(pid_output, -1, 1)
 
-                
             return self.huey_move(speed, turn)
-
 
         return self.huey_move(self.huey_old_speed, self.huey_old_turn) # TODO: can't see enemy, where do we go?
