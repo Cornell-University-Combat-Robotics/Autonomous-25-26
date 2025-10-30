@@ -169,7 +169,7 @@ void loop() {
       break;
   }
   
-  sprintf(data, "{\"rotation\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f, \"accuracy\": %f}, \"game\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f}, \"accelerometer\": {\"gravity_x\": %f, \"gravity_y\": %f, \"gravity_z\": %f}  }", r, i, j, k, accuracy, gr, gi, gj, gk, gravity_x, gravity_y, gravity_z);
+  sprintf(data, "{\"rotation\": {\"r\": %.3f, \"i\": %.3f, \"j\": %.3f, \"k\": %.3f, \"accuracy\": %.3f}, \"game\": {\"r\": %.3f, \"i\": %.3f, \"j\": %.3f, \"k\": %.3f}, \"accelerometer\": {\"gravity_x\": %.3f, \"gravity_y\": %.3f, \"gravity_z\": %.3f}  }", r, i, j, k, accuracy, gr, gi, gj, gk, gravity_x, gravity_y, gravity_z);
   Serial.printf("%s\n", data);
 
   if (!broadcast_peer.send_message((uint8_t *)data, sizeof(data))) {

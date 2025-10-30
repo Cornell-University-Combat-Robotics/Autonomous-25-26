@@ -99,6 +99,7 @@ class IMU_sensor():
         # try to get a new reading for yaw
         self.get_dict()
         _, _, yaw = self.quaternion_to_euler(self.dict["game"]["r"], self.dict["game"]["i"], self.dict["game"]["j"], self.dict["game"]["k"])
+        print(yaw)
         self.yaw = (yaw / math.pi) * 180
         return f'{time.time()} : {self.yaw}'
             
