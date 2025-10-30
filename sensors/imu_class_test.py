@@ -2,13 +2,13 @@ import serial
 import json
 import time
 import math
-import sensors.imu_class as imu_class
+import imu_class as imu_class
 
 windows = "COM3"
 mac = "/dev/tty.usbserial-0001"
 # ser = serial.Serial(mac, 115200, timeout=1)
 
-sensor = imu_class.IMU_sensor(port = mac)
+sensor = imu_class.IMU_sensor()
 
 while True:
     try:
