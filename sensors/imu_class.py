@@ -2,6 +2,8 @@ import serial
 import json
 import time
 import math
+import serial.tools.list_ports
+
 
 class IMUReadError(Exception):
     """Base exception for IMU serial read issues"""
@@ -81,8 +83,14 @@ class IMU_sensor():
         """
         Updates dict field with the latest read (TODO: add try/except to raise IMUReadError)
         """
-        json_string = self.ser.readline().decode('utf-8').strip()
-        self.dict = json.loads(json_string)
+        try:
+            json_string = self.ser.readline().decode('utf-8').strip()
+            self.dict = json.loads(json_string)
+        except UnicodeDecodeError as e:
+            print(e)
+        except json.decoder.JSONDecodeError as e:
+            print(e)
+
     
     def is_upside_down(self):
         """
@@ -100,7 +108,9 @@ class IMU_sensor():
         self.get_dict()
         _, _, yaw = self.quaternion_to_euler(self.dict["game"]["r"], self.dict["game"]["i"], self.dict["game"]["j"], self.dict["game"]["k"])
         self.yaw = (yaw / math.pi) * 180
-        return f'{time.time()} : {self.yaw}'
+        # if self.yaw < 0:
+        #     self.yaw += 360        
+        return self.yaw
             
     
 
@@ -114,7 +124,5 @@ class IMU_sensor():
         # Yaw (z-axis rotation)
         self.yaw = math.atan2(2 * (q_w * q_z + q_x * q_y), 1 - 2 * (q_y**2 + q_z**2))
         
-        if self.yaw < 0:
-            self.yaw += 360        
             
         return self.roll, self.pitch, self.yaw
