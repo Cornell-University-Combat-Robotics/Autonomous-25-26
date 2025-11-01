@@ -2,7 +2,6 @@ import math
 import os
 import cv2
 import numpy as np
-from PIL import Image
 
 
 class RobotCornerDetection:
@@ -30,7 +29,6 @@ class RobotCornerDetection:
         self.selected_colors = selected_colors
         self.display_final_image = display_final_image
         self.display_possible_hueys = display_possible_hueys
-
 
     def set_bots(self, bots: dict): # list of dictionaries
         self.bots = bots
@@ -69,9 +67,7 @@ class RobotCornerDetection:
         Returns:
             list: Contours corresponding to the given color.
         """
-        selected_color = (
-            self.selected_colors[1] if side == "front" else self.selected_colors[2]
-        )
+        selected_color = (self.selected_colors[1] if side == "front" else self.selected_colors[2])
 
         # Define the HSV range around the selected color
         # We tried using 10 for the range; It was too large and picked up orange instead of red
@@ -83,7 +79,7 @@ class RobotCornerDetection:
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         return contours
     
-    def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, color: str) -> tuple[np.ndarray | None, int] | None:
+    def find_our_bot(self, images: list[np.ndarray], bot_color_hsv) -> tuple[np.ndarray | None, int] | None:
         """
         Identifies which image contains our robot based on a predefined robot color.
 
@@ -110,20 +106,15 @@ class RobotCornerDetection:
                     continue
 
                 color_pixel_count = self.find_bot_color_pixels(image, bot_color_hsv)
-                print(color, color_pixel_count)
+                print(color_pixel_count)
 
                 if color_pixel_count > max_color_pixels:
-                    if color == "Top" and color_pixel_count > total_pixels*0.03:
-                        max_color_pixels = color_pixel_count
-                        our_bot_image = image
-                    elif color == "Bottom" and color_pixel_count > total_pixels*0.05:
-                        max_color_pixels = color_pixel_count
-                        our_bot_image = image
+                    our_bot_image = image
             
             if our_bot_image is None:
-                print(color + " color Huey is not found")
+                print("Huey is not found")
                 
-            return our_bot_image, max_color_pixels
+            return our_bot_image
         
         except Exception as e:
             print(f"Unexpected error occurred in find_our_bot: {e}")
@@ -160,25 +151,8 @@ class RobotCornerDetection:
                 cv2.destroyAllWindows()
 
             if bot_images and all(img is not None for img in bot_images):
-
-                top_color = self.selected_colors[0] # GREEN
-                bottom_color = self.selected_colors[-1] # PURPLE
-
-                our_bot_top, top_pixels = self.find_our_bot(bot_images, top_color, "Top") # Green
-                our_bot_bottom, bottom_pixels = self.find_our_bot(bot_images, bottom_color, "Bottom") # TODO: cut
-
-                if our_bot_top is not None and our_bot_bottom is not None:
-                    if top_pixels > bottom_pixels:
-                        our_bot = our_bot_top
-                    else:
-                        our_bot = our_bot_bottom
-                else:
-                    if our_bot_bottom is not None:
-                        our_bot = our_bot_bottom
-                    elif our_bot_top is not None:
-                        our_bot = our_bot_top
-                    else:
-                        our_bot = None
+                bot_color = self.selected_colors[0]
+                our_bot = self.find_our_bot(bot_images, bot_color)
 
                 return our_bot
             else:
@@ -405,7 +379,7 @@ class RobotCornerDetection:
             red_points = points[0]
             blue_points = points[1]
 
-            #TODO: check that this runs with any three points, change error
+            # TODO: check that this runs with any three points, change error
             # Ensure there are exactly two red points and at least one blue point
             if (len(red_points) + len(blue_points) < 3):
                 raise ValueError("Expected exactly 2 red points and at least 1 blue point.") #TODO
@@ -576,10 +550,14 @@ if __name__ == "__main__":
     try:
         huey_image = cv2.imread(huey_image_path)
         not_huey_image = cv2.imread(not_huey_image_path)
+
+        print("1")
         
         if huey_image is None:
+            print("2")
             raise ValueError(f"Failed to load image at path: {huey_image_path}")
         if not_huey_image is None:
+            print("3")
             raise ValueError(f"Failed to load image at path: {not_huey_image_path}")
     
     except Exception as e:
@@ -591,9 +569,13 @@ if __name__ == "__main__":
     bot2 = {"bbox": [[150, 150], [160, 160]], "img": huey_image}
     bot3 = {"bbox": [[300, 150], [400, 180]], "img": not_huey_image}
 
+    print("4")
+
     housebots = [housebot]
     bots = [bot1, bot2, bot3]
     all_bots = {"housebot": housebot, "bots": bots}
+
+    print("5")
     
     selected_colors = []
     try:
@@ -601,13 +583,19 @@ if __name__ == "__main__":
             for line in file:
                 hsv = list(map(int, line.strip().split(", ")))
                 selected_colors.append(hsv)
-        if len(selected_colors) != 4:
-            raise ValueError("The file must contain exactly 4 HSV values.")
+            print("6")
+        if len(selected_colors) != 3:
+            print("7")
+            raise ValueError("The file must contain exactly 3 HSV values.")
     
     except Exception as e:
         print(f"Error reading selected_colors.txt: {e}")
         exit(1)
     
+    print("8")
     corner_detection = RobotCornerDetection(selected_colors, True, False)
-    corner_detection.set_bots(all_bots["bots"])
+    print("9")
+    corner_detection.set_bots(all_bots)
+    print("10")
     result = corner_detection.corner_detection_main()
+    print("result: " + str(result))

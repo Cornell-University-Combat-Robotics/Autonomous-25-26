@@ -3,8 +3,6 @@ import numpy as np
 import math
 
 from Algorithm.ram import Ram
-from indonesia.color_picker import ColorPicker # TODO
-from indonesia.indonesia import Indonesia # TODO
 from corner_detection.color_picker import ColorPicker
 from corner_detection.corner_detection import RobotCornerDetection
 from machine.predict import YoloModel
@@ -113,9 +111,8 @@ def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, w
 def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection):
     # 6. Do an initial run of ML and Corner. Initialize Algo
     first_run_ml = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
-    # indonesia.set_bots(first_run_ml)
     corner_detection.set_bots(first_run_ml)
-    # first_run_orientation = indonesia.indonesia_main([b["img"] for b in first_run_ml["bots"] if b.get("img") is not None])
+    
     print("WHAT????")
     first_run_orientation = corner_detection.corner_detection_main()
     print("HELLO?????")
@@ -159,7 +156,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection):
 def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False):
     # BLUE line: Huey's Current Orientation according to Corner Detection
 
-    if detected_bots_with_data and detected_bots_with_data["huey"]["orientation"] is not None:
+    if detected_bots_with_data and detected_bots_with_data["huey"] and detected_bots_with_data["huey"]["orientation"] is not None:
         orientation_degrees = detected_bots_with_data["huey"]["orientation"]
 
         print("----- orientation_degrees: " + str(orientation_degrees))

@@ -39,7 +39,7 @@ class ColorPicker:
                 try:
                     color = test_img[y, x]  # OpenCV reads as BGR
                     hsv_color = cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_BGR2HSV)[0][0]
-                    if len(selected_colors) < 4:
+                    if len(selected_colors) < 3:
                         selected_colors.append(hsv_color)
                         points.append([x, y])
                         print(f"Selected color (HSV): {hsv_color}")
@@ -91,7 +91,7 @@ class ColorPicker:
                 print("❌ Selection canceled. Exiting...")
                 selected_colors = []
                 return None
-            elif len(selected_colors) == 4:
+            elif len(selected_colors) == 3:
                 selected_colors = selected_colors[:len(selected_colors)-1]
                 print("🎨 Final Selected Colors (HSV):", selected_colors)
                 print("📌 Final Selected Points:", points)
@@ -111,7 +111,7 @@ def save_colors_to_file(colors, output_file):
     try:
         with open(output_file, "w") as file:
             for color in colors:
-                file.write(f"{color[0]}, {color[1]}, {color[2]}, {color[3]}\n")
+                file.write(f"{color[0]}, {color[1]}, {color[2]}\n")
         print(f"Selected colors have been saved to '{output_file}'.")
     except FileNotFoundError:
         print(f"Error: Output file path '{output_file}' does not exist.")
@@ -135,7 +135,7 @@ def display_colors(selected_colors):
 
         height = 175
         width = 175
-        img = np.zeros((height, width * len(bgr_colors), 4), dtype=np.uint8) # TODO: 4 color channels?
+        img = np.zeros((height, width * len(bgr_colors), 3), dtype=np.uint8) # TODO: 4 color channels?
 
         for idx, color in enumerate(bgr_colors):
             img[:, idx * width:(idx + 1) * width] = color

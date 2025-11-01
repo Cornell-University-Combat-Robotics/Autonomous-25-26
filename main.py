@@ -24,9 +24,9 @@ if COMP_SETTINGS:
     DISPLAY_ANGLES = False
     MATT_LAPTOP = True   # Force TensorRT optimization on Matt's laptop
 
-folder = test_videos_folder = os.getcwd() + "/main_files"
+folder = os.getcwd() + "/main_files"
 frame_rate = 50
-camera_number = test_videos_folder + "/test_videos/kabedon_huey.mp4"
+camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = 2
 
 if IS_TRANSMITTING:
