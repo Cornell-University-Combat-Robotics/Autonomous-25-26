@@ -2,7 +2,8 @@ import os
 import time
 import cv2
 from Algorithm.ram import Ram
-from indonesia.indonesia import Indonesia
+#from indonesia.indonesia import Indonesia # TODO
+from corner_detection.corner_detection import RobotCornerDetection
 from warp_main import warp
 from vid_and_img_processing.unfisheye import unfish
 from main_helpers import key_frame, read_prev_homography, make_new_homography, read_prev_colors, make_new_colors, get_predictor, get_motor_groups, first_run, display_angles
@@ -13,7 +14,7 @@ MATT_LAPTOP = False             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
 WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
-IS_TRANSMITTING = True          # True if connected to live Huey
+IS_TRANSMITTING = False          # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = False         # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames are displayed
@@ -25,8 +26,8 @@ if COMP_SETTINGS:
 
 folder = test_videos_folder = os.getcwd() + "/main_files"
 frame_rate = 50
-# camera_number = test_videos_folder + "/indonesia.mp4"
-camera_number = 2
+camera_number = test_videos_folder + "/test_videos/kabedon_huey.mp4"
+# camera_number = 2
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
@@ -53,7 +54,8 @@ def main(): # TODO: Add timing back
 
         # 5. Defining all subsystem objects: ML, Corner, Algorithm, Transmission
         predictor = get_predictor(MATT_LAPTOP)
-        indonesia = Indonesia(selected_colors, False)
+        # indonesia = Indonesia(selected_colors, False)
+        corner_detection = RobotCornerDetection(selected_colors, False, False)
         algorithm = None
         # TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
@@ -63,7 +65,7 @@ def main(): # TODO: Add timing back
 
         if WARP_AND_COLOR_PICKING:
             print("FIRST RUN")
-            algorithm = first_run(predictor, warped_frame, SHOW_FRAME, indonesia)
+            algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection)
         else:
             print("NOT FIRST RUN")
             algorithm = Ram()
@@ -97,13 +99,15 @@ def main(): # TODO: Add timing back
                 # 11. Run the Warped Image through Object Detection
                 detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
                 
-                indonesia.set_bots(detected_bots)
+                #indonesia.set_bots(detected_bots)
+                corner_detection.set_bots(detected_bots)
                 # 12. Run Object Detection's results through Corner Detection
-                indonesia_dictionary = indonesia.indonesia_main([b["img"] for b in detected_bots["bots"] if b.get("img") is not None])
-                move_dictionary = algorithm.ram_ram(indonesia_dictionary)
+                # indonesia_dictionary = indonesia.indonesia_main([b["img"] for b in detected_bots["bots"] if b.get("img") is not None])
+                detected_bots_with_data = corner_detection.corner_detection_main()
+                move_dictionary = algorithm.ram_ram(detected_bots_with_data)
                 
                 if DISPLAY_ANGLES:
-                    display_angles(indonesia_dictionary, move_dictionary, warped_frame)
+                    display_angles(detected_bots_with_data, move_dictionary, warped_frame)
 
                 # 14. Transmitting the motor values to Huey's if we're using a live video
                 if IS_TRANSMITTING:

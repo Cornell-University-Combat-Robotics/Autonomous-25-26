@@ -31,6 +31,7 @@ class Ram():
                  huey_orientation=45, enemy_position=np.array([0, 0]), huey_old_turn=0, huey_old_speed=0) -> None:
         # ----------------------------- INIT -----------------------------
         if bots is None:
+            print("hi 1")
             # initialize the position and orientation of huey
             self.huey_position = np.array(huey_position if huey_position is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2), dtype=float)
             self.huey_old_position = np.array(huey_old_position if huey_old_position is not None else self.huey_position.copy(), dtype=float)
@@ -39,10 +40,15 @@ class Ram():
             # initialize the current enemy position
             self.enemy_position = np.array(enemy_position if enemy_position is not None else (0.0, 0.0), dtype=float)
         else:
-            self.huey_position = np.array(bots['huey'].get('center') if np.array(bots['huey'].get('center')) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2), dtype=float)
-            self.huey_old_position = np.array(bots['huey'].get('center') if np.array(bots['huey'].get('center')) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2), dtype=float)
-            self.huey_orientation = float(bots['huey'].get('orientation') if bots['huey'].get('orientation') is not None else 0.0)
-            self.enemy_position = np.array(bots['enemy'].get('center') if bots['enemy'].get('center') is not None else (0.0,0.0), dtype=float)
+            print("hi 2")
+            self.huey_position = np.array(bots['huey']['center'] if np.array(bots['huey']['center']) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2), dtype=float)
+            print(f"CURR POS: {self.huey_position}")
+            self.huey_old_position = np.array(bots['huey']['center'] if np.array(bots['huey']['center']) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2), dtype=float)
+            print(f"OLD POS: {self.huey_old_position}")
+            self.huey_orientation = float(bots['huey']['orientation'] if bots['huey']['orientation'] is not None else 0.0)
+            print(f"ORIENTATION: {self.huey_orientation}")
+            self.enemy_position = np.array(bots['enemy']['center'] if bots['enemy']['center'] is not None else (0.0, 0.0), dtype=float)
+            print(f"ENEMY POS: {self.enemy_position}")
 
         self.huey_old_speed = huey_old_speed
         self.huey_old_turn = huey_old_turn
@@ -217,14 +223,14 @@ class Ram():
             self.recovery_step = 0
 
         # Get new position and heading values
-        self.huey_position = np.array(bots['huey'].get('center')) if bots['huey'].get('center') is not None else np.array(self.huey_old_position)
-        self.huey_orientation = float(bots['huey'].get('orientation') if bots['huey'].get('orientation') is not None else self.huey_previous_orientations[-1])
+        self.huey_position = np.array(bots['huey']['center']) if bots['huey']['center'] is not None else np.array(self.huey_old_position)
+        self.huey_orientation = float(bots['huey']['orientation'] if bots['huey']['orientation'] is not None else self.huey_previous_orientations[-1])
     
         self.delta_t = time.time() - self.old_time  # record delta time
         self.old_time = time.time()
         
         if bots["enemy"]:
-            self.enemy_position = np.array(bots['enemy'].get('center')) # probably issue here? 
+            self.enemy_position = np.array(bots['enemy']['center']) # probably issue here? 
 
             turn, speed = self.predict_desired_turn_and_speed()
 

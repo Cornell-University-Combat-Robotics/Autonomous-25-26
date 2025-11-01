@@ -3,8 +3,10 @@ import numpy as np
 import math
 
 from Algorithm.ram import Ram
-from indonesia.color_picker import ColorPicker
-from indonesia.indonesia import Indonesia
+from indonesia.color_picker import ColorPicker # TODO
+from indonesia.indonesia import Indonesia # TODO
+from corner_detection.color_picker import ColorPicker
+from corner_detection.corner_detection import RobotCornerDetection
 from machine.predict import YoloModel
 from transmission.motors import Motor
 from transmission.serial_conn import OurSerial
@@ -108,16 +110,29 @@ def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, w
         weapon_motor_group = Motor(ser=ser, channel=weapon_motor_channel)
     return ser, motor_group, weapon_motor_group
 
-def first_run(predictor, warped_frame, SHOW_FRAME, indonesia):
+def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection):
     # 6. Do an initial run of ML and Corner. Initialize Algo
     first_run_ml = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
-    indonesia.set_bots(first_run_ml)
-    first_run_orientation = indonesia.indonesia_main([b["img"] for b in first_run_ml["bots"] if b.get("img") is not None])
+    # indonesia.set_bots(first_run_ml)
+    corner_detection.set_bots(first_run_ml)
+    # first_run_orientation = indonesia.indonesia_main([b["img"] for b in first_run_ml["bots"] if b.get("img") is not None])
+    print("WHAT????")
+    first_run_orientation = corner_detection.corner_detection_main()
+    print("HELLO?????")
+
+    print("first_run_orientation: " + str(first_run_orientation))
+    print("1")
+    print("first_run_orientation['huey']: " + str(first_run_orientation["huey"]))
+    print("2")
+    print("first_run_orientation['enemy']:" + str(first_run_orientation["enemy"]))
+    print("it failed before this")
 
     if first_run_orientation and first_run_orientation["huey"] and first_run_orientation["enemy"]:
         # Ensure single enemy
         # first_run_orientation["enemy"] = first_run_orientation["enemy"][0] # we just take the first enemy in the list
+        print("ENTERED IF!!!")
         algorithm = Ram(bots=first_run_orientation)
+        print("INITIALIZED RAMMMMMMMMMMMM")
         first_move_dictionary = algorithm.ram_ram(first_run_orientation)
 
         num_housebots = len(first_run_ml["housebot"])

@@ -25,20 +25,18 @@ class RobotCornerDetection:
                         labeled left and right corners.
             display_possible_hueys (bool): Whether to display all possible
                         images of Huey.
-            IS_FLIPPED (int): This is -1 when the bot is flipped upside down and
-                        1 when the bot is right side up
         """
         self.bots = []
         self.selected_colors = selected_colors
         self.display_final_image = display_final_image
         self.display_possible_hueys = display_possible_hueys
-        self.IS_FLIPPED = 1
 
-    def set_bots(self, bots: list): # list of dictionaries
+
+    def set_bots(self, bots: dict): # list of dictionaries
         self.bots = bots
 
     @staticmethod
-    def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list):
+    def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
         """
         Detects the number of a predefined color pixels in the given image.
 
@@ -60,7 +58,7 @@ class RobotCornerDetection:
         # Count the number of non-zero pixels in the mask
         return cv2.countNonZero(mask)
 
-    def get_contours_per_color(self, side: str, hsv_image: np.ndarray):
+    def get_contours_per_color(self, side: str, hsv_image: np.ndarray) -> list[np.ndarray]:
         """
         Retrieves contours for the front or back corners based on the manually picked color.
 
@@ -85,7 +83,7 @@ class RobotCornerDetection:
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         return contours
     
-    def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, color: str):
+    def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, color: str) -> tuple[np.ndarray | None, int] | None:
         """
         Identifies which image contains our robot based on a predefined robot color.
 
@@ -131,7 +129,7 @@ class RobotCornerDetection:
             print(f"Unexpected error occurred in find_our_bot: {e}")
             return None
     
-    def detect_our_robot_main(self, bot_images: list[np.ndarray]):
+    def detect_our_robot_main(self, bot_images: list[np.ndarray]) -> np.ndarray:
         """
         Detects the image containing our robot between two or more given images.
 
@@ -167,22 +165,18 @@ class RobotCornerDetection:
                 bottom_color = self.selected_colors[-1] # PURPLE
 
                 our_bot_top, top_pixels = self.find_our_bot(bot_images, top_color, "Top") # Green
-                our_bot_bottom, bottom_pixels = self.find_our_bot(bot_images, bottom_color, "Bottom") # Purple
+                our_bot_bottom, bottom_pixels = self.find_our_bot(bot_images, bottom_color, "Bottom") # TODO: cut
 
                 if our_bot_top is not None and our_bot_bottom is not None:
                     if top_pixels > bottom_pixels:
                         our_bot = our_bot_top
-                        self.IS_FLIPPED = 1
                     else:
                         our_bot = our_bot_bottom
-                        self.IS_FLIPPED = -1
                 else:
                     if our_bot_bottom is not None:
                         our_bot = our_bot_bottom
-                        self.IS_FLIPPED = -1
                     elif our_bot_top is not None:
                         our_bot = our_bot_top
-                        self.IS_FLIPPED = 1
                     else:
                         our_bot = None
 
@@ -195,9 +189,7 @@ class RobotCornerDetection:
             print(f"Unexpected error in detect_our_robot_main: {e}")
             return None
 
-    def find_centroids_per_color(
-        self, side: str, image: np.ndarray, hsv_image: np.ndarray
-    ):
+    def find_centroids_per_color(self, side: str, image: np.ndarray, hsv_image: np.ndarray) -> list:
         """
         Finds the centroids of a specific color (front or back) in the given image.
 
@@ -237,7 +229,7 @@ class RobotCornerDetection:
                     )
         return centroids
 
-    def find_centroids(self, image: np.ndarray):
+    def find_centroids(self, image: np.ndarray) -> np.ndarray:
         """
         Finds the centroids for the front and back corners of the robot.
 
@@ -269,7 +261,7 @@ class RobotCornerDetection:
         
         return np.array([front_array, back_array])
 
-    def distance(self, point1: tuple, point2: tuple):
+    def distance(self, point1: tuple, point2: tuple) -> float:
         """
         Calculates the Euclidean distance between two points.
 
@@ -282,7 +274,7 @@ class RobotCornerDetection:
         """
         return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
 
-    def get_missing_point(self, points: list):
+    def get_missing_point(self, points: list) -> list:
         """
         Computes the missing point to form a complete set of red and blue points.
 
@@ -361,7 +353,7 @@ class RobotCornerDetection:
             return [[], []]
 
     @staticmethod
-    def compute_tangent_angle(p1: tuple, p2: tuple): #NOTE: does not compute tangent angle anymore
+    def compute_tangent_angle(p1: tuple, p2: tuple) -> float: #NOTE: does not compute tangent angle anymore
         """
         Computes the angle of the tangent line to the front of the robot.
 
@@ -381,7 +373,7 @@ class RobotCornerDetection:
         return math.degrees(tangent_angle_rad) % 360
     
     @staticmethod
-    def compute_angle_between_midpoints(p1: tuple, p2: tuple):
+    def compute_angle_between_midpoints(p1: tuple, p2: tuple) -> float:
         """
         Computes the angle of the line between the front and back corners of robot.
 
@@ -399,7 +391,7 @@ class RobotCornerDetection:
         angle_rad = np.arctan2(dy, dx)
         return math.degrees(angle_rad) % 360
 
-    def get_left_and_right_front_points(self, points: list):
+    def get_left_and_right_front_points(self, points: list) -> list:
         """
         Determines the left and right front points of the robot.
 
@@ -467,7 +459,7 @@ class RobotCornerDetection:
             print(f"Unexpected error in get_left_and_right_front_points: {e}")
             return [None, None]
 
-    def corner_detection_main(self):
+    def corner_detection_main(self) -> tuple[dict, int] | tuple[None, int]:
         """
         Main function for detecting corners and orientation of the robot.
 
@@ -475,7 +467,7 @@ class RobotCornerDetection:
             dict: A dictionary containing details of the robot and enemy robots.
         """
         try:
-            bot_images = [bot["img"] for bot in self.bots]
+            bot_images = [bot["img"] for bot in self.bots["bots"]]
             image = self.detect_our_robot_main(bot_images)
             
             if image is not None:
@@ -486,7 +478,7 @@ class RobotCornerDetection:
 
                 if left_front is None or right_front is None:
                     print("Could not determine left/right front points")
-                    return {"huey": {}, "enemy": []}, self.IS_FLIPPED
+                    return {"huey": {}, "enemy": {}}
 
                 front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5
 
@@ -496,7 +488,7 @@ class RobotCornerDetection:
 
                 # Find the identified bot (our robot)
                 huey_bbox = None
-                for bot_data in self.bots:
+                for bot_data in self.bots["bots"]:
                     if bot_data["img"] is image:
                         huey_bbox = bot_data["bbox"]
                         break
@@ -508,16 +500,19 @@ class RobotCornerDetection:
                 }
 
                 # Enemy bots are all except the identified bot
-                enemy_bots = []
-                for bot_data in self.bots:
-                    if bot_data["img"] is not image:
-                        enemy = {
-                            "bbox": bot_data["bbox"],
-                            "center": np.mean(bot_data["bbox"], axis=0),
-                        }
-                        enemy_bots.append(enemy)
-
+                enemy_bots = {}
+                if isinstance(self.bots, dict) and "bots" in self.bots:
+                    for bot_data in self.bots["bots"]:
+                        if bot_data["img"] is not image:
+                            enemy_bots = {
+                                "bbox": bot_data["bbox"],
+                                "center": np.mean(bot_data["bbox"], axis=0),
+                            }
+                            print("6")
+                            break
+                
                 result = {"huey": huey, "enemy": enemy_bots}
+                print(result)
                 
                 if self.display_final_image:
                     # Draw the left front corner
@@ -563,14 +558,14 @@ class RobotCornerDetection:
                     cv2.waitKey(0)
                     cv2.destroyAllWindows()
 
-                return result, self.IS_FLIPPED
+                return result
             else:
                 print("Image doesn't exist")
-                return {"huey": {}, "enemy": []}, self.IS_FLIPPED
+                return {"huey": {}, "enemy": {}}
 
         except Exception as e:
             print(f"Unexpected error in corner_detection_main: {e}")
-            return None, self.IS_FLIPPED
+            return None
 
 
 if __name__ == "__main__":
