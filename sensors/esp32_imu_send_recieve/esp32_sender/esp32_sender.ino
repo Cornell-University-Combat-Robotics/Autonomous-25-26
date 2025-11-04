@@ -120,9 +120,6 @@ void setup() {
 
 void setReports(void) {
   Serial.println("Setting desired reports");
-  if (! bno08x.enableReport(SH2_ROTATION_VECTOR)) {
-    Serial.println("Could not enable vector");
-  }
   if (! bno08x.enableReport(SH2_GRAVITY)) {
     Serial.println("Could not enable vector");
   }
@@ -148,13 +145,6 @@ void loop() {
   char data[1024];
 
   switch (sensorValue.sensorId) {
-    case SH2_ROTATION_VECTOR:
-      r = sensorValue.un.rotationVector.real;
-      i = sensorValue.un.rotationVector.i;
-      j = sensorValue.un.rotationVector.j;
-      k = sensorValue.un.rotationVector.k;
-      accuracy = sensorValue.un.rotationVector.accuracy;
-      break;
       // quaternion_to_euler(r, i, j , k, &roll, &pitch, &yaw);
     case SH2_GRAVITY:
       gravity_x = sensorValue.un.gravity.x;
@@ -169,7 +159,7 @@ void loop() {
       break;
   }
   
-  sprintf(data, "{\"rotation\": {\"r\": %.3f, \"i\": %.3f, \"j\": %.3f, \"k\": %.3f, \"accuracy\": %.3f}, \"game\": {\"r\": %.3f, \"i\": %.3f, \"j\": %.3f, \"k\": %.3f}, \"accelerometer\": {\"gravity_x\": %.3f, \"gravity_y\": %.3f, \"gravity_z\": %.3f}  }", r, i, j, k, accuracy, gr, gi, gj, gk, gravity_x, gravity_y, gravity_z);
+  sprintf(data, "\"game\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f}, \"accelerometer\": {\"gravity_x\": %f, \"gravity_y\": %f, \"gravity_z\": %f}  }", gr, gi, gj, gk, gravity_x, gravity_y, gravity_z);
   Serial.printf("%s\n", data);
 
   if (!broadcast_peer.send_message((uint8_t *)data, sizeof(data))) {
