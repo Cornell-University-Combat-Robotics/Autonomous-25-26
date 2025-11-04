@@ -120,54 +120,13 @@ void setup() {
 
 void setReports(void) {
   Serial.println("Setting desired reports");
-  if (! bno08x.enableReport(SH2_ROTATION_VECTOR)) {
-    Serial.println("Could not enable vector");
-  }
   if (! bno08x.enableReport(SH2_GRAVITY)) {
     Serial.println("Could not enable vector");
   }
   if (! bno08x.enableReport(SH2_GAME_ROTATION_VECTOR)) {
     Serial.println("Could not enable vector");
   }
-  if (! bno08x.enableReport(SH2_ARVR_STABILIZED_RV)) {
-    Serial.println("Could not enable stabilized remote vector");
-  }
 }
-
-struct euler_t {
-  float yaw;
-  float pitch;
-  float roll;
-} ypr;
-
-
-void quaternionToEuler(float qr, float qi, float qj, float qk, euler_t* ypr, bool degrees = false) {
-
-
-    float sqr = sq(qr);
-    float sqi = sq(qi);
-    float sqj = sq(qj);
-    float sqk = sq(qk);
-
-    ypr->yaw = atan2(2.0 * (qi * qj + qk * qr), (sqi - sqj - sqk + sqr));
-    ypr->pitch = asin(-2.0 * (qi * qk - qj * qr) / (sqi + sqj + sqk + sqr));
-    ypr->roll = atan2(2.0 * (qj * qk + qi * qr), (-sqi - sqj + sqk + sqr));
-
-    if (degrees) {
-      ypr->yaw *= RAD_TO_DEG;
-      ypr->pitch *= RAD_TO_DEG;
-      ypr->roll *= RAD_TO_DEG;
-    }
-}
-
-void quaternionToEulerRV(sh2_RotationVectorWAcc_t* rotational_vector, euler_t* ypr, bool degrees = false) {
-    quaternionToEuler(rotational_vector->real, rotational_vector->i, rotational_vector->j, rotational_vector->k, ypr, degrees);
-}
-
-void quaternionToEulerGI(sh2_GyroIntegratedRV_t* rotational_vector, euler_t* ypr, bool degrees = false) {
-    quaternionToEuler(rotational_vector->real, rotational_vector->i, rotational_vector->j, rotational_vector->k, ypr, degrees);
-}
-
 
 static float r = 0, i = 0, j = 0, k = 0, accuracy = 0;
 static float gr = 0, gi = 0, gj = 0, gk = 0;
@@ -183,16 +142,9 @@ void loop() {
     return;
   }
 
-  char data[2048];
+  char data[1024];
 
   switch (sensorValue.sensorId) {
-    case SH2_ROTATION_VECTOR:
-      r = sensorValue.un.rotationVector.real;
-      i = sensorValue.un.rotationVector.i;
-      j = sensorValue.un.rotationVector.j;
-      k = sensorValue.un.rotationVector.k;
-      accuracy = sensorValue.un.rotationVector.accuracy;
-      break;
       // quaternion_to_euler(r, i, j , k, &roll, &pitch, &yaw);
     case SH2_GRAVITY:
       gravity_x = sensorValue.un.gravity.x;
@@ -205,14 +157,9 @@ void loop() {
       gj = sensorValue.un.gameRotationVector.j;
       gk = sensorValue.un.gameRotationVector.k;
       break;
-    case SH2_ARVR_STABILIZED_RV:
-        quaternionToEulerRV(&sensorValue.un.arvrStabilizedRV, &ypr, true);
-    
   }
-
-
-  sprintf(data, "{\"rpy\": {\"r\": %f, \"p\": %f, \"y\": %f}, \"accelerometer\": {\"gravity_x\": %f, \"gravity_y\": %f, \"gravity_z\": %f}  }", ypr.roll, ypr.pitch, ypr.yaw, gravity_x, gravity_y, gravity_z);
-  // sprintf(data, "{\"rotation\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f, \"accuracy\": %f}, \"game\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f}, \"accelerometer\": {\"gravity_x\": %f, \"gravity_y\": %f, \"gravity_z\": %f}  }", r, i, j, k, accuracy, gr, gi, gj, gk, gravity_x, gravity_y, gravity_z);
+  
+  sprintf(data, "\"game\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f}, \"accelerometer\": {\"gravity_x\": %f, \"gravity_y\": %f, \"gravity_z\": %f}  }", gr, gi, gj, gk, gravity_x, gravity_y, gravity_z);
   Serial.printf("%s\n", data);
 
   if (!broadcast_peer.send_message((uint8_t *)data, sizeof(data))) {
