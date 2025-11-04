@@ -4,7 +4,6 @@ import math
 
 from Algorithm.ram import Ram
 from corner_detection.color_picker import ColorPicker
-from corner_detection.corner_detection import RobotCornerDetection
 from machine.predict import YoloModel
 from transmission.motors import Motor
 from transmission.serial_conn import OurSerial

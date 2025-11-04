@@ -3,7 +3,6 @@ import csv
 import time
 import os 
 
-
 cursor_pos = None
 fpath = None
 fields = ['time', 'delta_time', 'bots', 'huey_pos', 'huey_facing', 'enemy_pos', 'huey_old_pos', 'huey_velocity', 'enemy_old_pos[-1]'
@@ -31,8 +30,6 @@ def obj_detection_sim(width, height):
         # print(cursor_pos)
     win.bind('<Motion>',callback)
     win.mainloop()
-
-
 
 ''' Establish Test File for saving states of Ram RAM   
 
@@ -76,4 +73,3 @@ def test_file_update(delta_time = None, bots  = None, huey_pos = None, huey_faci
                        'left_speed' : str(left_speed), 'right_speed' : str(right_speed), 'angle' : str(angle), 'direction' 
                        : str(direction)}
         writer.writerow(update_dict) 
-

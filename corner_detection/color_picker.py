@@ -39,7 +39,7 @@ class ColorPicker:
                 try:
                     color = test_img[y, x]  # OpenCV reads as BGR
                     hsv_color = cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_BGR2HSV)[0][0]
-                    if len(selected_colors) < 3:
+                    if len(selected_colors) < 4:
                         selected_colors.append(hsv_color)
                         points.append([x, y])
                         print(f"Selected color (HSV): {hsv_color}")
@@ -91,7 +91,7 @@ class ColorPicker:
                 print("❌ Selection canceled. Exiting...")
                 selected_colors = []
                 return None
-            elif len(selected_colors) == 3:
+            elif len(selected_colors) == 4:
                 selected_colors = selected_colors[:len(selected_colors)-1]
                 print("🎨 Final Selected Colors (HSV):", selected_colors)
                 print("📌 Final Selected Points:", points)

@@ -123,7 +123,6 @@ while running:
     if enemy['center'][1] < 0: enemy['center'][1] = 0
     if enemy['center'][1] > height: enemy['center'][1] = height
 
-
     # Implement DELAY is values are only fed to the algorithm after DELAY ms
     current_time = pygame.time.get_ticks()
     if current_time - last_called_time >= DELAY:  

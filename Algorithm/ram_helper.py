@@ -1,6 +1,4 @@
 import numpy as np
-import time
-import random
 import math
 
 BACK_UP_SPEED = -1
@@ -11,21 +9,6 @@ LEFT_SPEED = 1
 LEFT_TURN = -1
 RIGHT_SPEED = 1
 RIGHT_TURN = 1
-
-# def calculate_enemy_velocity(old_positions: list[np.array], curr_pos: np.array, dt: float):
-#     if len(old_positions) < 2 or dt == 0.0:
-#         return np.array([0.0, 0.0])
-
-#     # Start from the end and look for two consecutive valid positions
-#     i = len(old_positions) - 1
-#     while i > 0:
-#         if old_positions[i] is not None and old_positions[i-1] is not None:
-#             curr_pos = old_positions[i]
-#             old_pos = old_positions[i-1]
-#             return np.array(curr_pos) - np.array(old_pos)
-#         i -= 1
-        
-#     return np.array([0.0, 0.0])
 
 '''
 inverting the y position
@@ -53,11 +36,8 @@ def check_wall(predicted_position: np.array, arena_width=1200):
         flag = True
     print("moved that jon")
 
-
-
 def clamp(x, lo, hi):
     return max(lo, min(hi, x))
-
 
 def to_float(x, fallback=0.0):
     try:
@@ -68,10 +48,8 @@ def to_float(x, fallback=0.0):
     except Exception:
         return float(fallback)
     
-
 def mix_speed_turn(speed, turn):
     # symmetric, safe motor mixing
     left  = clamp(speed - turn, -1, 1)
     right = clamp(speed + turn, -1, 1)
     return left, right
-
