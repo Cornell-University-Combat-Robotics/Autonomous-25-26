@@ -81,17 +81,17 @@ class IMU_sensor():
 
     def get_dict(self):
         """
-        Updates dict field with the latest read (TODO: add try/except to raise IMUReadError)
+        Updates dict field with the latest reading from the IMU
+        Raises IMUReadError if there is an issue with reading from the IMU
         """
         try:
             json_string = self.ser.readline().decode('utf-8').strip()
             self.dict = json.loads(json_string)
         except UnicodeDecodeError as e:
-            print(e)
+            raise IMUReadError("IMU error: " + str(e))
         except json.decoder.JSONDecodeError as e:
-            print(e)
-
-    
+            raise IMUReadError("IMU error: " + str(e))
+ 
     def is_upside_down(self):
         """
         Returns: -1 if bot is upside down and 1 if the bot is right side up
@@ -101,20 +101,17 @@ class IMU_sensor():
 
     def get_yaw(self):
         """
-        Returns imu orientation from 0-360 (TODO: Make it actually do that)
-        Raises
+        Returns imu orientation from 0-360 
+        Raises IMUReadError if there is an issue with reading from the IMU
         """
         # try to get a new reading for yaw
         self.get_dict()
         _, _, yaw = self.quaternion_to_euler(self.dict["game"]["r"], self.dict["game"]["i"], self.dict["game"]["j"], self.dict["game"]["k"])
-        print(yaw)
         self.yaw = (yaw / math.pi) * 180
-        # if self.yaw < 0:
-        #     self.yaw += 360        
+        if self.yaw < 0:
+            self.yaw += 360        
         return self.yaw
             
-    
-
     def quaternion_to_euler(self, q_w, q_x, q_y, q_z):
         # Roll (x-axis rotation)
         self.roll = math.atan2(2 * (q_w * q_x + q_y * q_z), 1 - 2 * (q_x**2 + q_y**2))
@@ -124,6 +121,5 @@ class IMU_sensor():
     
         # Yaw (z-axis rotation)
         self.yaw = math.atan2(2 * (q_w * q_z + q_x * q_y), 1 - 2 * (q_y**2 + q_z**2))
-        
-            
+             
         return self.roll, self.pitch, self.yaw
