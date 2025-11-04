@@ -39,11 +39,11 @@ def main(): # TODO: Add timing back
         # 1. Start the capturing frame from the camera or pre-recorded video
         # 2. Capture initial frame by pressing '0'
         cap = cv2.VideoCapture(camera_number)
-        captured_image, map1, map2 = key_frame(cap)
+        captured_image = key_frame(cap)
 
         # 3. Use the initial frame to get a new Homography Matrix and new colors
         if WARP_AND_COLOR_PICKING:
-            warped_frame, homography_matrix, map1, map2 = make_new_homography(captured_image, False)
+            warped_frame, homography_matrix = make_new_homography(captured_image)
             selected_colors = make_new_colors(folder + "/selected_colors.txt", warped_frame)
         # 3. Or use the previously saved Homography Matrix and colors from the txt file
         else:

@@ -21,19 +21,14 @@ def invert_y(pos: np.array):
 
 """ if enemy robot predicted position is outside of arena, move it inside. """
 def check_wall(predicted_position: np.array, arena_width=1200):
-    flag = False
     if (predicted_position[0] > arena_width):
         predicted_position[0] = 1200
-        flag = True
     if (predicted_position[0] < 0):
         predicted_position[0] = 0
-        flag = True
     if (predicted_position[1] > arena_width):
         predicted_position[1] = 1200
-        flag = True
     if (predicted_position[1] < 0):
         predicted_position[1] = 0
-        flag = True
     print("moved that jon")
 
 def clamp(x, lo, hi):

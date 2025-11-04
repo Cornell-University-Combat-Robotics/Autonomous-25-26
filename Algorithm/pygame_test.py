@@ -1,7 +1,6 @@
 # Import libraries
 import pygame
 import math
-import time
 from ram import Ram
 
 # Initialize pygame

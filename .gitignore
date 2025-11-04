@@ -1,4 +1,7 @@
 **/__pycache__/
+*.pyc
+.vscode/
+.DS_Store
 main_files/captured_image.png
 main_files/homography_matrix.txt
 main_files/resized_image.png

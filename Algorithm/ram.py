@@ -24,8 +24,8 @@ class Ram():
     BACK_UP_THRESHOLD = 5  # TODO: lower number of stagnant frames to trigger Huey back up?
     RECOVERY_SPEED_VALUES = [BACK_UP_SPEED, FORWARD_SPEED, LEFT_SPEED, RIGHT_SPEED]
     RECOVERY_TURN_VALUES = [BACK_UP_TURN, FORWARD_TURN, LEFT_TURN, RIGHT_TURN]
-    recovery_step = 0
     USE_PID = True
+    recovery_step = 0
 
     def __init__(self, bots=None, huey_position=(np.array([ARENA_WIDTH, ARENA_WIDTH])), huey_old_position=(np.array([ARENA_WIDTH, ARENA_WIDTH])),
                  huey_orientation=45, enemy_position=np.array([0, 0]), huey_old_turn=0, huey_old_speed=0) -> None:
@@ -103,16 +103,11 @@ class Ram():
         x_curr, y_curr = self.huey_position
 
         for prev_pos in self.huey_previous_positions:
-            # print ("x_curr: ", x_curr)
-            # print ("y_curr: ", y_curr)
-            # print ("Prev Pos: ", prev_pos)
             if math.sqrt((x_curr - prev_pos[0])**2 + (y_curr - prev_pos[1])**2) < Ram.TOLERANCE:
                 counter_pos += 1
 
         for prev_orientation in self.huey_previous_orientations:
             # TODO: work out angle range
-            # print("prev_orientation: " + str(prev_orientation))
-            # print("huey_orientation: " + str(self.huey_orientation))
             if abs(prev_orientation - self.huey_orientation) < Ram.TOLERANCE * 0.5:
                 counter_orientation += 1
 
@@ -143,7 +138,6 @@ class Ram():
             return (0, 0)
         
         # return the angle in degrees
-
         huey_orientation_rad = np.radians(self.huey_orientation)
         orientation = np.array([math.cos(huey_orientation_rad), math.sin(huey_orientation_rad)])
         enemy_future_position = invert_y(enemy_future_position)

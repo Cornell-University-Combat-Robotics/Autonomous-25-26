@@ -8,7 +8,6 @@ from machine.predict import YoloModel
 from transmission.motors import Motor
 from transmission.serial_conn import OurSerial
 from warp_main import get_homography_mat, warp
-from vid_and_img_processing.unfisheye import prepare_undistortion_maps
 
 """
 Gets first frame of the video and returns it. If frame can't be read or video isn't being 
@@ -30,14 +29,12 @@ def key_frame(cap):
                 return captured_image
             elif key == ord("0"):  # Press '0' to capture the image and exit
                 captured_image = frame.copy()
-                h, w = captured_image.shape[:2]
-                map1, map2 = prepare_undistortion_maps(w, h)
-                return captured_image, map1, map2
+                return captured_image
         else:
             print("Failed to read frame" + "\n")
             return captured_image
     cv2.destroyAllWindows()
-    return captured_image, map1, map2
+    return captured_image
 
 def read_prev_homography(captured_image, file_path):
     homography_matrix = []
@@ -58,15 +55,15 @@ def read_prev_homography(captured_image, file_path):
     warped_frame = warp(captured_image, homography_matrix, 700, 700)
     return warped_frame, homography_matrix
 
-def make_new_homography(captured_image, UNFISHEYE, ):
+def make_new_homography(captured_image):
     if captured_image is None:
         print("No image captured. Press '0' to capture image.")
         return
     
-    homography_matrix, map1, map2 = get_homography_mat(captured_image, 700, 700, UNFISHEYE)
+    homography_matrix = get_homography_mat(captured_image, 700, 700)
     warped_frame = warp(captured_image, homography_matrix, 700, 700)
 
-    return warped_frame, homography_matrix, map1, map2
+    return warped_frame, homography_matrix
 
 def read_prev_colors(file_path):
     selected_colors = []

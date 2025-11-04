@@ -95,7 +95,6 @@ while running:
         huey = {'center': [10, 10], 'orientation': 0.0}  # Huey's position and orientation (0 degrees = along x-axis)
         enemy = {'center': [width - 10, height - 10]}  # Enemy's position
 
-
     screen.fill((255, 255, 255))  # Clear screen with white background
 
     # Handle events
@@ -151,7 +150,6 @@ while running:
     if enemy['center'][0] > width: enemy['center'][0] = width
     if enemy['center'][1] < 0: enemy['center'][1] = 0
     if enemy['center'][1] > height: enemy['center'][1] = height
-
 
     # Implement DELAY is values are only fed to the algorithm after DELAY ms
     current_time = pygame.time.get_ticks()
