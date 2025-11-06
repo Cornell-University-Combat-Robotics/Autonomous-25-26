@@ -171,12 +171,7 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
         # RED line: Huey's Desired Orientation according to Algorithm
         if move_dictionary and (move_dictionary["turn"]):
             turn = move_dictionary["turn"] # angle in degrees / 180
-            IS_BACKED = 0
-            if turn == 0 and move_dictionary["speed"] < 0:
-                print("----- IS_BACKED")
-                IS_BACKED = 180
-                cv2.putText(image, "BACKING UP", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,255), 2)
-            new_orientation_degrees = orientation_degrees + (turn * 180) + IS_BACKED
+            new_orientation_degrees = orientation_degrees + (turn * 180)
             print("----- new_orientation_degrees: " + str(new_orientation_degrees))
 
             # Components of predicted turn

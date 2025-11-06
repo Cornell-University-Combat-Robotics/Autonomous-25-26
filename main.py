@@ -12,7 +12,7 @@ MATT_LAPTOP = False             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
 WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
-IS_TRANSMITTING = False          # True if connected to live Huey
+IS_TRANSMITTING = True          # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = False         # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames are displayed
@@ -24,8 +24,10 @@ if COMP_SETTINGS:
 
 folder = os.getcwd() + "/main_files"
 frame_rate = 50
-camera_number = folder + "/test_videos/kabedon_huey.mp4"
-# camera_number = 2
+# camera_number = folder + "/test_videos/kabedon_huey.mp4"
+# camera_number = folder + "/test_videos/lazy_huey.mp4"
+# camera_number = folder + "/test_videos/huey_duet_demo.mp4"
+camera_number = 0
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
@@ -38,8 +40,11 @@ def main(): # TODO: Add timing back
     try:
         # 1. Start the capturing frame from the camera or pre-recorded video
         # 2. Capture initial frame by pressing '0'
+        print("0")
         cap = cv2.VideoCapture(camera_number)
+        print("1")
         captured_image = key_frame(cap)
+        print("2")
 
         # 3. Use the initial frame to get a new Homography Matrix and new colors
         if WARP_AND_COLOR_PICKING:
@@ -52,7 +57,6 @@ def main(): # TODO: Add timing back
 
         # 5. Defining all subsystem objects: ML, Corner, Algorithm, Transmission
         predictor = get_predictor(MATT_LAPTOP)
-        # indonesia = Indonesia(selected_colors, False)
         corner_detection = RobotCornerDetection(selected_colors, False, False)
         algorithm = None
         # TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
@@ -100,7 +104,6 @@ def main(): # TODO: Add timing back
                 #indonesia.set_bots(detected_bots)
                 corner_detection.set_bots(detected_bots)
                 # 12. Run Object Detection's results through Corner Detection
-                # indonesia_dictionary = indonesia.indonesia_main([b["img"] for b in detected_bots["bots"] if b.get("img") is not None])
                 detected_bots_with_data = corner_detection.corner_detection_main()
                 move_dictionary = algorithm.ram_ram(detected_bots_with_data)
                 
