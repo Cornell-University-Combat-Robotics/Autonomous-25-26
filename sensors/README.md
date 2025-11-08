@@ -10,7 +10,7 @@ This code contains ESP to ESP communication, as well as a class that reads data 
 ## Software Setup
 
 1. Create an `IMU_Sensor` object.
-    - if you don't know what port the ESP is on, leave port as None (default) and respond to prompt in terminal when code is run
+    - If you don't know what port the ESP is on, leave port as None (default) and respond to prompt in terminal when code is run
 
 2. Use `sensor.get_yaw()` to retrieve the robot’s orientation.  
    - Returns a value between **0° and 360°**, representing the yaw angle.
