@@ -1,18 +1,15 @@
 import unittest
-from Algorithm.ram import Ram
+from algorithm.ram import Ram
 import numpy as np
 import time
 
-
 algo = Ram()
-
 
 class TestRam(unittest.TestCase):
     def test_init(self):
         algo = Ram()
         self.assertAlmostEqual(algo.left, 0)
         self.assertAlmostEqual(algo.right, 0)
-
 
     def test_huey_move(self):
             # edge cases
@@ -40,7 +37,6 @@ class TestRam(unittest.TestCase):
             move_dict = algo.huey_move(0.7,0.2)
             self.assertAlmostEqual(move_dict['left'], 0.25)
             self.assertAlmostEqual(move_dict['right'], 0.45)
-
 
     def test_calculate_velocity(self):
             #Edge Cases:
@@ -71,7 +67,6 @@ class TestRam(unittest.TestCase):
             arr2 = np.array([-90,-20])
             np.testing.assert_almost_equal(arr1, arr2)
          
-
     def test_acceleration(self):
                  #Edge Cases:
             arr1 = algo.acceleration(np.array([0,0]),np.array([0,0]), 0)
@@ -101,8 +96,6 @@ class TestRam(unittest.TestCase):
             arr2 = np.array([-90,-20])
             np.testing.assert_almost_equal(arr1, arr2)
         
-         
-
     def test_predict_enemy_position(self):
         arr1 = algo.predict_enemy_position(np.array([0,0]), np.array([0,0]), .001)
         np.testing.assert_almost_equal(arr1, np.array([0,0]))
@@ -130,7 +123,6 @@ class TestRam(unittest.TestCase):
 
         arr1 = algo.predict_enemy_position(np.array([100,100]), np.array([-100,-100]), 0.1)
         np.testing.assert_almost_equal(arr1, np.array([90,90]))
-
 
     def test_invert_y(self):
         np.testing.assert_almost_equal(algo.invert_y(np.array([0,0])), np.array([0,0]))
@@ -188,7 +180,6 @@ class TestRam(unittest.TestCase):
         np.testing.assert_almost_equal(algo.predict_desired_orientation_angle(our_pos=np.array([100,100]), our_orientation=270,
                                                                                 enemy_pos=np.array([150,150]), enemy_velocity=np.array([200, 300]), dt = 0.1), 41.1859252)
         
-
     def test_predict_desired_turn(self):
         #Edge Cases
         np.testing.assert_almost_equal(algo.predict_desired_turn(our_pos=np.array([100,100]), our_orientation=90,  
@@ -226,7 +217,7 @@ class TestRam(unittest.TestCase):
         # bots are overlapping
         np.testing.assert_almost_equal(algo.predict_desired_turn(our_pos=np.array([100,100]), our_orientation=90,  
                                                                                 enemy_pos=np.array([100,100]), enemy_velocity=np.array([0, 0]), dt = 0.1), 0)
-        
+
     def test_desired_speed(self):
         #Edge Cases
         np.testing.assert_almost_equal(algo.predict_desired_speed(our_pos=np.array([100,100]), our_orientation=90,  
@@ -263,7 +254,7 @@ class TestRam(unittest.TestCase):
         # bots are overlapping
         np.testing.assert_almost_equal(algo.predict_desired_speed(our_pos=np.array([100,100]), our_orientation=90,  
                                                                                enemy_pos=np.array([100,100]), enemy_velocity=np.array([0, 0]), dt = 0.1), 1)
-
+        
     def test_ram_ram(self):
         algo = Ram(huey_old_position=np.array([10,10]), huey_position=np.array([10,10]), enemy_position=np.array([10,590]))
         
@@ -287,8 +278,6 @@ class TestRam(unittest.TestCase):
         self.assertAlmostEqual(values['left'],0.5, places =3)
         self.assertAlmostEqual(values['right'],0.1771477778, places =3)
 
-
-
         # enemy is currently in danger zone -- use enemy current position
         print("Test: Enemy is in the Danger Zone")
         bots4 = {'huey': {'bb': [99.13626817533684, 582.1403853383393, 20, 20], 'center': [109.13626817533684, 592.1403853383393], 'orientation': 325.0}, 'enemy': {'bb': [500, 210, 20, 20], 'center': [120, 540]}}
@@ -297,7 +286,6 @@ class TestRam(unittest.TestCase):
         self.assertAlmostEqual(values['left'], -0.258111111/2, places=3)
         self.assertAlmostEqual(values['right'], 0.4996944444, places =3)
         
-
         # if future position is our position
         print("Test: Future position is current position")
         bots5 = {'huey': {'bb': [99, 582., 20, 20], 'center': [185, 410], 'orientation': 325.0}, 'enemy': {'bb': [500, 210, 20, 20], 'center': [152.5, 475]}}

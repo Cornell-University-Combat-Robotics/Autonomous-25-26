@@ -8,21 +8,20 @@ class ColorPicker:
     """
 
     @staticmethod
-    def pick_colors(image_path):
+    def pick_colors(image):
         """
         Allows the user to manually pick colors for the robot and the front and back corners.
         The user selects the robot's color first, followed by the front and back corners.
 
         Args:
-            image_path (str): Path to the image to pick colors from.
+            image (str): The image to pick colors from.
 
         Returns:
             list: Selected colors for the robot, front corner, and back corner in HSV format.
         """
         try:
-            test_img = cv2.imread(image_path)
-            if test_img is None:
-                raise FileNotFoundError(f"Image not found: {image_path}")
+            if image is None:
+                raise FileNotFoundError(f"Image not found: {image}")
         except Exception as e:
             print(f"Error loading image: {e}")
             return []
@@ -32,14 +31,14 @@ class ColorPicker:
 
         def click_event(event, x, y, flags, param):
             if event == cv2.EVENT_LBUTTONDOWN:
-                if x < 0 or y < 0 or x >= test_img.shape[1] or y >= test_img.shape[0]:
+                if x < 0 or y < 0 or x >= image.shape[1] or y >= image.shape[0]:
                     print(f"Clicked outside the image: ({x}, {y})")
                     return
 
                 try:
-                    color = test_img[y, x]  # OpenCV reads as BGR
+                    color = image[y, x]  # OpenCV reads as BGR
                     hsv_color = cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_BGR2HSV)[0][0]
-                    if len(selected_colors) < 5:
+                    if len(selected_colors) < 4:
                         selected_colors.append(hsv_color)
                         points.append([x, y])
                         print(f"Selected color (HSV): {hsv_color}")
@@ -49,7 +48,7 @@ class ColorPicker:
                     print(f"Error processing color at ({x}, {y}): {e}")
 
         def redraw_image():
-            img_copy = test_img.copy()
+            img_copy = image.copy()
             for point in points:
                 cv2.circle(img_copy, point, 5, (0, 255, 0), -1)
                 cv2.putText(img_copy, f"{point}", point, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
@@ -59,12 +58,12 @@ class ColorPicker:
             color_panel_width = 150
             color_panel = np.zeros((color_panel_height, color_panel_width, 3), dtype=np.uint8)
 
-            labels = ["Robot", "Front", "Back", "Ventral"]
+            labels = ["Robot", "Front", "Back"]
 
             for i, hsv_color in enumerate(selected_colors):
                 bgr_color = cv2.cvtColor(np.uint8([[hsv_color]]), cv2.COLOR_HSV2BGR)[0][0]
-                start_y = i * (color_panel_height // 4)
-                end_y = (i + 1) * (color_panel_height // 4)
+                start_y = i * (color_panel_height // 3)
+                end_y = (i + 1) * (color_panel_height // 3)
                 color_panel[start_y:end_y, :] = bgr_color
 
                 cv2.putText(color_panel, labels[i], (10, start_y + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
@@ -72,7 +71,7 @@ class ColorPicker:
             combined_image = np.hstack((img_copy, color_panel))
             cv2.imshow("Color Picking: Pick Huey color, front corner, then back corner. Press 'z' to cancel previous selection. Once 3 colors are selected, press anywhere on the screen to continue", combined_image)
 
-        cv2.imshow("Color Picking: Pick Huey color, front corner, then back corner. Press 'z' to cancel previous selection. Once 3 colors are selected, press anywhere on the screen to continue", test_img)
+        cv2.imshow("Color Picking: Pick Huey color, front corner, then back corner. Press 'z' to cancel previous selection. Once 3 colors are selected, press anywhere on the screen to continue", image)
         cv2.setMouseCallback("Color Picking: Pick Huey color, front corner, then back corner. Press 'z' to cancel previous selection. Once 3 colors are selected, press anywhere on the screen to continue", click_event)
 
         while True:
@@ -91,7 +90,7 @@ class ColorPicker:
                 print("❌ Selection canceled. Exiting...")
                 selected_colors = []
                 return None
-            elif len(selected_colors) == 5:
+            elif len(selected_colors) == 4:
                 selected_colors = selected_colors[:len(selected_colors)-1]
                 print("🎨 Final Selected Colors (HSV):", selected_colors)
                 print("📌 Final Selected Points:", points)
@@ -111,7 +110,7 @@ def save_colors_to_file(colors, output_file):
     try:
         with open(output_file, "w") as file:
             for color in colors:
-                file.write(f"{color[0]}, {color[1]}, {color[2]}, {color[3]}\n")
+                file.write(f"{color[0]}, {color[1]}, {color[2]}\n")
         print(f"Selected colors have been saved to '{output_file}'.")
     except FileNotFoundError:
         print(f"Error: Output file path '{output_file}' does not exist.")
@@ -135,7 +134,7 @@ def display_colors(selected_colors):
 
         height = 175
         width = 175
-        img = np.zeros((height, width * len(bgr_colors), 4), dtype=np.uint8)
+        img = np.zeros((height, width * len(bgr_colors), 3), dtype=np.uint8) # TODO: 4 color channels?
 
         for idx, color in enumerate(bgr_colors):
             img[:, idx * width:(idx + 1) * width] = color
@@ -147,8 +146,6 @@ def display_colors(selected_colors):
                 label = "Front Corner"
             elif idx == 2:
                 label = "Back Corner"
-            elif idx == 3:
-                label = "Ventral Corner"
 
             cv2.putText(img, label, (idx * width + 10, height - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA)
@@ -169,7 +166,8 @@ if __name__ == "__main__":
         print(f"Image file does not exist at path: {image_path}")
     else:
         try:
-            selected_colors = ColorPicker.pick_colors(image_path)
+            img = cv2.imread(image_path)
+            selected_colors = ColorPicker.pick_colors(img)
             if selected_colors:
                 save_colors_to_file(selected_colors, output_file)
                 display_colors(selected_colors)

@@ -1,7 +1,6 @@
 # Import libraries
 import pygame
 import math
-import time
 from ram import Ram
 
 # Initialize pygame
@@ -122,7 +121,6 @@ while running:
     if enemy['center'][0] > width: enemy['center'][0] = width
     if enemy['center'][1] < 0: enemy['center'][1] = 0
     if enemy['center'][1] > height: enemy['center'][1] = height
-
 
     # Implement DELAY is values are only fed to the algorithm after DELAY ms
     current_time = pygame.time.get_ticks()

@@ -3,7 +3,6 @@ import csv
 import time
 import os 
 
-
 cursor_pos = None
 fpath = None
 fields = ['time', 'delta_time', 'bots', 'huey_pos', 'huey_facing', 'enemy_pos', 'huey_old_pos', 'huey_velocity', 'enemy_old_pos[-1]'
@@ -32,18 +31,16 @@ def obj_detection_sim(width, height):
     win.bind('<Motion>',callback)
     win.mainloop()
 
-
-
 ''' Establish Test File for saving states of Ram RAM   
 
     NOTE: run this from Autonomous-23-24 or the things will not save in the right place
 '''
 def test_file_init():
     global fpath
-    if 'Algorithm' in str(os.getcwd()):
+    if 'algorithm' in str(os.getcwd()):
         myDirectory = os.path.join(os.getcwd(), os.path.join('RamRamTest'))
     else:
-        myDirectory = os.path.join(os.getcwd(), os.path.join('Algorithm', 'RamRamTest'))
+        myDirectory = os.path.join(os.getcwd(), os.path.join('algorithm', 'RamRamTest'))
     i = 0
 
     # remember to join the entire file path
@@ -76,4 +73,3 @@ def test_file_update(delta_time = None, bots  = None, huey_pos = None, huey_faci
                        'left_speed' : str(left_speed), 'right_speed' : str(right_speed), 'angle' : str(angle), 'direction' 
                        : str(direction)}
         writer.writerow(update_dict) 
-

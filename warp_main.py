@@ -71,11 +71,10 @@ def get_homography_mat(frame, output_w=1200, output_h=1200):
     output_file = folder + "/homography_matrix.txt"
     with open(output_file, "w") as file:
         for row in matrix:
-            file.write(" ".join(map(str, row)) + "\n")
+            file.write(", ".join(map(str, row)) + "\n")
     print(f"Homography matrix has been saved to '{output_file}'.")
 
     return matrix
-
 
 """
 Re-combined from camera_test/warp.py, vid_and_img_processing/warp_image.py

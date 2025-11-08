@@ -2,7 +2,6 @@ import cv2
 import os
 import numpy as np
 
-
 def get_homography_mat(frame, output_w, output_h):
     corners = []
 
@@ -44,7 +43,7 @@ def get_homography_mat(frame, output_w, output_h):
 
     print("Final Selected Points:", corners)
     dest_pts = [[0, 0], [output_w, 0], [output_w, output_h], [0, output_h]]
-    matrix, status = cv2.findHomography(np.array(corners), np.array(dest_pts))
+    matrix, _ = cv2.findHomography(np.array(corners), np.array(dest_pts))
     cv2.destroyAllWindows()
     return matrix
 

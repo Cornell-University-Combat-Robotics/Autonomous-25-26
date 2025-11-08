@@ -1,8 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import json
-import csv
 
 CSV = "RamRamTest/ram_ram_test101.csv"
 
@@ -30,8 +28,6 @@ def plotTurn(df):
     facing = df['huey_facing'].tolist()
     df['row_number'] = np.arange(len(df))
 
-
-
     dfacing = []
 
     for i in range(len(facing)-1):
@@ -48,7 +44,6 @@ def plotTurn(df):
     df['turn'] = turn  
 
     df.plot('row_number',y=['turn','facing_diff'])
-
 
 fields = ['time','huey_velocity','speed','huey_facing','turn']
 df = pd.read_csv(CSV, skipinitialspace=True, usecols=fields)

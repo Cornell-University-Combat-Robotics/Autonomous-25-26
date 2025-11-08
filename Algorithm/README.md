@@ -5,7 +5,7 @@ This code tests the Ram Ram algorithm by controlling the movements of two robots
 
 ## Mode
 We have 2 mode inside ram.py
-1. `TEST_MODE`: When `True`, a csv file with inputs and outputs to the algorithm will be generated in `Algorithm/RamRamTest`
+1. `TEST_MODE`: When `True`, a csv file with inputs and outputs to the algorithm will be generated in `algorithm/RamRamTest`
 
 ## Packages
 In order to get the Algorithm code to work, you need to install the following libraries
@@ -21,13 +21,13 @@ In order to get the algo_motor_integration code to work, you need to install the
 
 ## Running the Algorithm
 
-You should be able to run the code in either the Autonomous-24-25 folder or the Algorithm folder
+You should be able to run the code in either the Autonomous-24-25 folder or the algorithm folder
 
-IF Algorithm Folder:
+IF algorithm Folder:
 Run `python3 pygame_test.py`
 
 IF Autonomous-24-25:
-Run `python3 Algorithm/pygame_test.py`
+Run `python3 algorithm/pygame_test.py`
 
 ## Testing
 
