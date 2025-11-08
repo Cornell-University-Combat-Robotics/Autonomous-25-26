@@ -1,3 +1,14 @@
+# HOW TO INSTALL REQUIREMENTS FROM VENV
+    # To set up venv:
+        # MacOS:
+        # python3 -m venv <venv-name>
+        # source <venv-name>/bin/activate
+        # Windows:
+        # python -m venv <venv-name>
+        # <venv-name>\Scripts\activate
+    # To install packages (for both systems):
+    # pip install -r requirements.txt
+
 inference==0.36.1
 numpy==2.2.4
 onnxruntime==1.19.2

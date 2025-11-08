@@ -1,7 +1,7 @@
 import os
 import time
 import cv2
-from Algorithm.ram import Ram
+from algorithm.ram import Ram
 from corner_detection.corner_detection import RobotCornerDetection
 from warp_main import warp
 from main_helpers import key_frame, read_prev_homography, make_new_homography, read_prev_colors, make_new_colors, get_predictor, get_motor_groups, first_run, display_angles
@@ -12,7 +12,7 @@ MATT_LAPTOP = False             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
 WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
-IS_TRANSMITTING = True          # True if connected to live Huey
+IS_TRANSMITTING = False         # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = False         # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames are displayed
@@ -25,9 +25,9 @@ if COMP_SETTINGS:
 folder = os.getcwd() + "/main_files"
 frame_rate = 50
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
-# camera_number = folder + "/test_videos/lazy_huey.mp4"
+camera_number = folder + "/test_videos/lazy_huey.mp4"
 # camera_number = folder + "/test_videos/huey_duet_demo.mp4"
-camera_number = 0
+# camera_number = 0
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
@@ -36,7 +36,7 @@ if IS_TRANSMITTING:
 
 # ------------------------------ BEFORE THE MATCH ------------------------------
 
-def main(): # TODO: Add timing back
+def main(): # TODO: Add timing back (kernprof)
     try:
         # 1. Start the capturing frame from the camera or pre-recorded video
         # 2. Capture initial frame by pressing '0'

@@ -76,7 +76,6 @@ def get_homography_mat(frame, output_w=1200, output_h=1200):
 
     return matrix
 
-
 """
 Re-combined from camera_test/warp.py, vid_and_img_processing/warp_image.py
 

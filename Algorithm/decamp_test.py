@@ -3,7 +3,6 @@ import pygame
 import math
 import time
 from ram import Ram
-import numpy as np
 
 # Initialize pygame
 pygame.init()

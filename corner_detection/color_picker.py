@@ -8,21 +8,20 @@ class ColorPicker:
     """
 
     @staticmethod
-    def pick_colors(image_path):
+    def pick_colors(image):
         """
         Allows the user to manually pick colors for the robot and the front and back corners.
         The user selects the robot's color first, followed by the front and back corners.
 
         Args:
-            image_path (str): Path to the image to pick colors from.
+            image (str): The image to pick colors from.
 
         Returns:
             list: Selected colors for the robot, front corner, and back corner in HSV format.
         """
         try:
-            test_img = image_path #cv2.imread(image_path)
-            if test_img is None:
-                raise FileNotFoundError(f"Image not found: {image_path}")
+            if image is None:
+                raise FileNotFoundError(f"Image not found: {image}")
         except Exception as e:
             print(f"Error loading image: {e}")
             return []
@@ -32,12 +31,12 @@ class ColorPicker:
 
         def click_event(event, x, y, flags, param):
             if event == cv2.EVENT_LBUTTONDOWN:
-                if x < 0 or y < 0 or x >= test_img.shape[1] or y >= test_img.shape[0]:
+                if x < 0 or y < 0 or x >= image.shape[1] or y >= image.shape[0]:
                     print(f"Clicked outside the image: ({x}, {y})")
                     return
 
                 try:
-                    color = test_img[y, x]  # OpenCV reads as BGR
+                    color = image[y, x]  # OpenCV reads as BGR
                     hsv_color = cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_BGR2HSV)[0][0]
                     if len(selected_colors) < 4:
                         selected_colors.append(hsv_color)
@@ -49,7 +48,7 @@ class ColorPicker:
                     print(f"Error processing color at ({x}, {y}): {e}")
 
         def redraw_image():
-            img_copy = test_img.copy()
+            img_copy = image.copy()
             for point in points:
                 cv2.circle(img_copy, point, 5, (0, 255, 0), -1)
                 cv2.putText(img_copy, f"{point}", point, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
@@ -72,7 +71,7 @@ class ColorPicker:
             combined_image = np.hstack((img_copy, color_panel))
             cv2.imshow("Color Picking: Pick Huey color, front corner, then back corner. Press 'z' to cancel previous selection. Once 3 colors are selected, press anywhere on the screen to continue", combined_image)
 
-        cv2.imshow("Color Picking: Pick Huey color, front corner, then back corner. Press 'z' to cancel previous selection. Once 3 colors are selected, press anywhere on the screen to continue", test_img)
+        cv2.imshow("Color Picking: Pick Huey color, front corner, then back corner. Press 'z' to cancel previous selection. Once 3 colors are selected, press anywhere on the screen to continue", image)
         cv2.setMouseCallback("Color Picking: Pick Huey color, front corner, then back corner. Press 'z' to cancel previous selection. Once 3 colors are selected, press anywhere on the screen to continue", click_event)
 
         while True:
@@ -167,7 +166,8 @@ if __name__ == "__main__":
         print(f"Image file does not exist at path: {image_path}")
     else:
         try:
-            selected_colors = ColorPicker.pick_colors(image_path)
+            img = cv2.imread(image_path)
+            selected_colors = ColorPicker.pick_colors(img)
             if selected_colors:
                 save_colors_to_file(selected_colors, output_file)
                 display_colors(selected_colors)

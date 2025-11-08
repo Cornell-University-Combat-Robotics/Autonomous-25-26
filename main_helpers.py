@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import math
 
-from Algorithm.ram import Ram
+from algorithm.ram import Ram
 from corner_detection.color_picker import ColorPicker
 from machine.predict import YoloModel
 from transmission.motors import Motor

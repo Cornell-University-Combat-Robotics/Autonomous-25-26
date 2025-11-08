@@ -37,10 +37,10 @@ def obj_detection_sim(width, height):
 '''
 def test_file_init():
     global fpath
-    if 'Algorithm' in str(os.getcwd()):
+    if 'algorithm' in str(os.getcwd()):
         myDirectory = os.path.join(os.getcwd(), os.path.join('RamRamTest'))
     else:
-        myDirectory = os.path.join(os.getcwd(), os.path.join('Algorithm', 'RamRamTest'))
+        myDirectory = os.path.join(os.getcwd(), os.path.join('algorithm', 'RamRamTest'))
     i = 0
 
     # remember to join the entire file path

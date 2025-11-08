@@ -4,14 +4,13 @@ import numpy as np
 import random
 from .ram_helper import invert_y, check_wall, clamp, to_float, mix_speed_turn
 
-
 class Ram():
     # ----------------------------- CONSTANTS -----------------------------
     HISTORY_BUFFER = 10  # how many previous Huey or enemy position we are recording
     DANGER_ZONE = 55
     MAX_SPEED = 1  # magnitude between 0 and 1
     MAX_TURN = 1  # between 0 and 1
-    ARENA_WIDTH = 1200  # in pixels
+    ARENA_WIDTH = 1200  # in pixels # TODO: what is our actual arena width
     TOLERANCE = 10  # how close Huey's prev pos are permitted to be
     BACK_UP_SPEED = -1
     BACK_UP_TURN = 0
@@ -31,7 +30,6 @@ class Ram():
                  huey_orientation=45, enemy_position=np.array([0, 0]), huey_old_turn=0, huey_old_speed=0) -> None:
         # ----------------------------- INIT -----------------------------
         if bots is None:
-            print("hi 1")
             # initialize the position and orientation of huey
             self.huey_position = np.array(huey_position if huey_position is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2), dtype=float)
             self.huey_old_position = np.array(huey_old_position if huey_old_position is not None else self.huey_position.copy(), dtype=float)
@@ -40,7 +38,6 @@ class Ram():
             # initialize the current enemy position
             self.enemy_position = np.array(enemy_position if enemy_position is not None else (0.0, 0.0), dtype=float)
         else:
-            print("hi 2")
             self.huey_position = np.array(bots['huey']['center'] if np.array(bots['huey']['center']) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2), dtype=float)
             print(f"CURR POS: {self.huey_position}")
             self.huey_old_position = np.array(bots['huey']['center'] if np.array(bots['huey']['center']) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2), dtype=float)
@@ -49,6 +46,8 @@ class Ram():
             print(f"ORIENTATION: {self.huey_orientation}")
             self.enemy_position = np.array(bots['enemy']['center'] if bots['enemy']['center'] is not None else (0.0, 0.0), dtype=float)
             print(f"ENEMY POS: {self.enemy_position}")
+
+            # self.huey_position = initialize_values(bots, self.ARENA_WIDTH, is_pos=True, is_enemy=False, enemy_position=enemy_position)
 
         self.huey_old_speed = huey_old_speed
         self.huey_old_turn = huey_old_turn
@@ -183,7 +182,7 @@ class Ram():
             print("ram ram 1: ")
             print("huey_position: " + str(self.huey_position))
             print("huey_orientation: " + str(self.huey_orientation))
-            self.huey_previous_positions.append(self.huey_position) #TODO: null check?
+            self.huey_previous_positions.append(self.huey_position)
             self.huey_previous_orientations.append(self.huey_orientation)
 
         self.huey_pos_count, self.huey_orient_count = self.huey_pos_count + 1, self.huey_orient_count + 1
@@ -243,4 +242,4 @@ class Ram():
 
             return self.huey_move(speed, turn)
 
-        return self.huey_move(self.huey_old_speed, self.huey_old_turn) # TODO: can't see enemy, where do we go?
+        return self.huey_move(self.huey_old_speed, self.huey_old_turn)
