@@ -359,7 +359,7 @@ def get_left_and_right_front_points(points: list) -> list:
         print(f"Unexpected error in get_left_and_right_front_points: {e}")
         return [None, None]
 
-def display_image(image: np.nparray, left_front: list, right_front: list):
+def display_image(image: np.ndarray, left_front: list, right_front: list):
     left_x, left_y = int(left_front[0]), int(left_front[1])
     right_x, right_y = int(right_front[0]), int(right_front[1])
 

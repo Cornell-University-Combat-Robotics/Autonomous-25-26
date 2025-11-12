@@ -5,6 +5,7 @@ from algorithm.ram import Ram
 from corner_detection.corner_detection import RobotCornerDetection
 from warp_main import warp
 from main_helpers import key_frame, read_prev_homography, make_new_homography, read_prev_colors, make_new_colors, get_predictor, get_motor_groups, first_run, display_angles
+from sensors.imu_class import IMU_sensor
 
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
@@ -12,10 +13,11 @@ MATT_LAPTOP = False             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
 WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
-IS_TRANSMITTING = False         # True if connected to live Huey
+IS_TRANSMITTING = True         # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = False         # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames are displayed
+IMU_ENABLED = True              # True if IMU is connected
 
 if COMP_SETTINGS:
     SHOW_FRAME = False
@@ -25,9 +27,9 @@ if COMP_SETTINGS:
 folder = os.getcwd() + "/main_files"
 frame_rate = 50
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
-camera_number = folder + "/test_videos/lazy_huey.mp4"
+# camera_number = folder + "/test_videos/lazy_huey.mp4"
 # camera_number = folder + "/test_videos/huey_duet_demo.mp4"
-# camera_number = 0
+camera_number = 0
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
@@ -50,7 +52,7 @@ def main(): # TODO: Add timing back (kernprof)
         if WARP_AND_COLOR_PICKING:
             warped_frame, homography_matrix = make_new_homography(captured_image)
             selected_colors = make_new_colors(folder + "/selected_colors.txt", warped_frame)
-        # 3. Or use the previously saved Homography Matrix and colors from the txt file
+        # 4. Or use the previously saved Homography Matrix and colors from the txt file
         else:
             warped_frame, homography_matrix = read_prev_homography(captured_image, folder + "/homography_matrix.txt")
             selected_colors = read_prev_colors(folder + "/selected_colors.txt")
@@ -59,6 +61,8 @@ def main(): # TODO: Add timing back (kernprof)
         predictor = get_predictor(MATT_LAPTOP)
         corner_detection = RobotCornerDetection(selected_colors, False, False)
         algorithm = None
+        if IMU_ENABLED:
+            imu_sensor = IMU_sensor()
         # TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
             ser, motor_group, weapon_motor_group = get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
@@ -105,6 +109,9 @@ def main(): # TODO: Add timing back (kernprof)
                 corner_detection.set_bots(detected_bots)
                 # 12. Run Object Detection's results through Corner Detection
                 detected_bots_with_data = corner_detection.corner_detection_main()
+                if IMU_ENABLED:
+                    detected_bots_with_data["huey"]["orientation"] = imu_sensor.get_yaw()
+                
                 move_dictionary = algorithm.ram_ram(detected_bots_with_data)
                 
                 if DISPLAY_ANGLES:
