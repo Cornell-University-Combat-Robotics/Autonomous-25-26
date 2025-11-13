@@ -25,7 +25,7 @@ if COMP_SETTINGS:
 folder = os.getcwd() + "/main_files"
 frame_rate = 50
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
-camera_number = folder + "/test_videos/lazy_huey.mp4"
+camera_number = folder + "/test_videos/huey_demo3.mp4"
 # camera_number = folder + "/test_videos/huey_duet_demo.mp4"
 # camera_number = 0
 
@@ -106,9 +106,11 @@ def main(): # TODO: Add timing back (kernprof)
                 # 12. Run Object Detection's results through Corner Detection
                 detected_bots_with_data = corner_detection.corner_detection_main()
                 move_dictionary = algorithm.ram_ram(detected_bots_with_data)
+
+                enemy_orientation = algorithm.enemy_orientation
                 
                 if DISPLAY_ANGLES:
-                    display_angles(detected_bots_with_data, move_dictionary, warped_frame)
+                    display_angles(detected_bots_with_data, move_dictionary, warped_frame, enemy_orientation)
 
                 # 14. Transmitting the motor values to Huey's if we're using a live video
                 if IS_TRANSMITTING:

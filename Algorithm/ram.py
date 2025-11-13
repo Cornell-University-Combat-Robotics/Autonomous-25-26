@@ -2,7 +2,7 @@ import math
 import time
 import numpy as np
 import random
-from .ram_helper import invert_y, check_wall, clamp, to_float, mix_speed_turn
+from .ram_helper import invert_y, check_wall, clamp, to_float, mix_speed_turn, initialize_values
 
 class Ram():
     # ----------------------------- CONSTANTS -----------------------------
@@ -27,7 +27,7 @@ class Ram():
     recovery_step = 0
 
     def __init__(self, bots=None, huey_position=(np.array([ARENA_WIDTH, ARENA_WIDTH])), huey_old_position=(np.array([ARENA_WIDTH, ARENA_WIDTH])),
-                 huey_orientation=45, enemy_position=np.array([0, 0]), huey_old_turn=0, huey_old_speed=0) -> None:
+                 huey_orientation=45, enemy_position=np.array([0, 0]), enemy_orientation=315, huey_old_turn=0, huey_old_speed=0) -> None:
         # ----------------------------- INIT -----------------------------
         if bots is None:
             # initialize the position and orientation of huey
@@ -37,15 +37,16 @@ class Ram():
             self.huey_orientation = float(huey_orientation if huey_orientation is not None else 0.0)
             # initialize the current enemy position
             self.enemy_position = np.array(enemy_position if enemy_position is not None else (0.0, 0.0), dtype=float)
+            # initialize the current enemy orientation
+            self.enemy_orientation = float(enemy_orientation if enemy_orientation is not None else 0.0)
+
         else:
-            self.huey_position = np.array(bots['huey']['center'] if np.array(bots['huey']['center']) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2), dtype=float)
-            print(f"CURR POS: {self.huey_position}")
-            self.huey_old_position = np.array(bots['huey']['center'] if np.array(bots['huey']['center']) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2), dtype=float)
+            self.huey_position = initialize_values(bots, self.ARENA_WIDTH, is_pos=True, is_enemy=False, enemy_position=enemy_position)
+            self.huey_old_position = initialize_values(bots, self.ARENA_WIDTH, is_pos=True, is_enemy=False, enemy_position=enemy_position)
             print(f"OLD POS: {self.huey_old_position}")
-            self.huey_orientation = float(bots['huey']['orientation'] if bots['huey']['orientation'] is not None else 0.0)
-            print(f"ORIENTATION: {self.huey_orientation}")
-            self.enemy_position = np.array(bots['enemy']['center'] if bots['enemy']['center'] is not None else (0.0, 0.0), dtype=float)
-            print(f"ENEMY POS: {self.enemy_position}")
+            self.huey_orientation = initialize_values(bots, self.ARENA_WIDTH, is_pos=False, is_enemy=False, enemy_position=enemy_position)
+            self.enemy_position = initialize_values(bots, self.ARENA_WIDTH, is_pos=True, is_enemy=True, enemy_position=enemy_position)
+            self.enemy_orientation = 315
 
             # self.huey_position = initialize_values(bots, self.ARENA_WIDTH, is_pos=True, is_enemy=False, enemy_position=enemy_position)
 
@@ -59,10 +60,15 @@ class Ram():
         self.huey_previous_positions = []
         self.huey_previous_positions.append(self.huey_position)
 
-        # initialize the enemy orientation array
+        # initialize the huey orientation array
         self.huey_orient_count = 1
         self.huey_previous_orientations = []
         self.huey_previous_orientations.append(self.huey_orientation)
+
+        # initialize the enemy orientation array
+        self.enemy_orient_count = 1
+        self.enemy_previous_orientations = []
+        self.enemy_previous_orientations.append(self.enemy_orientation)
 
         self.enemy_previous_positions = []
         self.enemy_previous_positions.append(self.enemy_position)
@@ -151,6 +157,25 @@ class Ram():
         sign = np.sign(np.cross(orientation, direction))
         angle *= sign
         return angle * (Ram.MAX_TURN / 180.0), 1-(np.sign(angle) * (angle) * (Ram.MAX_SPEED / 180.0))
+    
+    def get_enemy_orientation(self):
+        prev_pos = self.enemy_previous_positions[-2]
+        cur_pos = self.enemy_position
+
+        print("ENEMY ORIENTATION STUFF!")
+        print(prev_pos)
+        print(cur_pos)
+        trajectory = cur_pos - prev_pos
+        print (trajectory)
+        dot_prod = np.dot(trajectory, np.array([1,0]))
+        print(dot_prod)
+        trajectory_magnitude = np.linalg.norm(trajectory) if np.linalg.norm(trajectory) != 0 else 1
+        print(trajectory_magnitude)
+        cos_orientation = dot_prod/trajectory_magnitude
+        print(cos_orientation)
+        orientation = np.degrees(np.arccos(cos_orientation))
+        print(orientation)
+        return orientation
 
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
     def ram_ram(self, bots: dict[str, any] = None):
@@ -197,6 +222,8 @@ class Ram():
         # If the array for enemy_previous_positions is full, then pop the first one
         print("enemy_position: " + str(self.enemy_position))
         self.enemy_previous_positions.append(self.enemy_position)
+
+        self.enemy_orientation = self.get_enemy_orientation()
 
         if len(self.enemy_previous_positions) > Ram.HISTORY_BUFFER:
             self.enemy_previous_positions.pop(0)

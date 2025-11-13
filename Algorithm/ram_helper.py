@@ -49,8 +49,6 @@ def mix_speed_turn(speed, turn):
     right = clamp(speed + turn, -1, 1)
     return left, right
 
-# self.huey_position = np.array(bots['huey']['center'] if np.array(bots['huey']['center']) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2), dtype=float)
-
 def initialize_values(bots: list, arena_width: int, is_pos: bool, is_enemy: bool, enemy_position: np.array):
     if (is_enemy): #TODO: note done
         if (is_pos):
