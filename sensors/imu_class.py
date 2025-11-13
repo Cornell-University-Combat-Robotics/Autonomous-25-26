@@ -53,7 +53,7 @@ class IMU_sensor():
             if len(available_ports) == 0:
                 print("No ports found")
             else:
-                print("Choose a port from the options below:")
+                print("Choose a port for the SENSORS/ESP from the options below:")
                 for i in range(len(available_ports)):
                     port = available_ports[i]
                     port_dic[str(i+1)] = port.device

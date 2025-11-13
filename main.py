@@ -6,6 +6,7 @@ from corner_detection.corner_detection import RobotCornerDetection
 from warp_main import warp
 from main_helpers import key_frame, read_prev_homography, make_new_homography, read_prev_colors, make_new_colors, get_predictor, get_motor_groups, first_run, display_angles
 from sensors.imu_class import IMU_sensor
+from sensors.imu_class import IMUReadError
 
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
@@ -109,8 +110,18 @@ def main(): # TODO: Add timing back (kernprof)
                 corner_detection.set_bots(detected_bots)
                 # 12. Run Object Detection's results through Corner Detection
                 detected_bots_with_data = corner_detection.corner_detection_main()
+                print("corner works")
                 if IMU_ENABLED:
-                    detected_bots_with_data["huey"]["orientation"] = imu_sensor.get_yaw()
+                    try:
+                        if detected_bots_with_data["huey"]:  
+                            print("1")
+                            print(detected_bots_with_data["huey"]["orientation"])
+                            print("orientation: " + str(detected_bots_with_data["huey"]["orientation"]))
+                            detected_bots_with_data["huey"]["orientation"] = imu_sensor.get_yaw()
+                            print("yaw: " + str(detected_bots_with_data["huey"]["orientation"]))
+                    except IMUReadError:
+                        print("using cd orientation")
+                        pass
                 
                 move_dictionary = algorithm.ram_ram(detected_bots_with_data)
                 
