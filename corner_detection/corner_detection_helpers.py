@@ -108,7 +108,7 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
     for contour in contours:
         # Filter out small contours based on area
         area = cv2.contourArea(contour)
-        print("Area", area)
+        # print("Area", area)
         if area > 10:
             # TODO: this value is subject to change based on dimensions of our video & resize_factor
             # Compute moments for each contour

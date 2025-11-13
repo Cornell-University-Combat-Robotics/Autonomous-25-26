@@ -149,7 +149,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection):
     
     return algorithm
 
-def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False):
+def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orientation=315, initial_run=False):
     # BLUE line: Huey's Current Orientation according to Corner Detection
 
     if detected_bots_with_data and detected_bots_with_data["huey"] and detected_bots_with_data["huey"]["orientation"] is not None:
@@ -168,6 +168,20 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
         end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
         cv2.arrowedLine(image, (start_x, start_y), end_point, (255, 0, 0), 2)
 
+        print("----- enemy orientation_degrees: " + str(enemy_orientation))
+
+        if detected_bots_with_data["enemy"]:
+            # Components of enemy front arrow
+            dx = np.cos(math.pi / 180 * enemy_orientation)
+            dy = -1 * np.sin(math.pi / 180 * enemy_orientation)
+
+            # Enemy's center
+            start_x_enemy = int(detected_bots_with_data["enemy"]["center"][0])
+            start_y_enemy = int(detected_bots_with_data["enemy"]["center"][1])
+
+            end_point_enemy = (int(start_x_enemy + 300 * dx), int(start_y_enemy + 300 * dy))
+            cv2.arrowedLine(image, (start_x_enemy, start_y_enemy), end_point_enemy, (67, 255, 0), 2)
+
         # RED line: Huey's Desired Orientation according to Algorithm
         if move_dictionary and (move_dictionary["turn"]):
             turn = move_dictionary["turn"] # angle in degrees / 180
@@ -180,6 +194,8 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
 
             end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
             cv2.arrowedLine(image, (start_x, start_y), end_point, (0, 0, 255), 2)
+        
+    cv2.imshow("Battle with Predictions", image)
 
     if initial_run:
         cv2.imshow("Initial Run: Battle with Predictions. Press '0' to continue", image)
