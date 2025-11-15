@@ -3,7 +3,7 @@ import numpy as np
 import time
 
 # cap = cv2.VideoCapture('3lb_30secs.mp4')
-cap = cv2.VideoCapture(2)
+cap = cv2.VideoCapture(1)
 
 out = cv2.VideoWriter(
     'fgbg_output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 20, (1000, 1000))
