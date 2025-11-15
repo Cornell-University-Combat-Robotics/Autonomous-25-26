@@ -94,13 +94,15 @@ class RobotCornerDetection:
 
                 if left_front is None or right_front is None:
                     print("Could not determine left/right front points")
-                    return {"huey": {}, "enemy": {}}
+                    # return {"huey": {}, "enemy": {}}
+                    orientation = 0.0
+                else:
+                    # Calculate orientation
+                    front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5
 
-                front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5
-
-                back_midpoint = (centroid_points[1][0] + centroid_points[1][1]) * 0.5
-                
-                orientation = compute_angle_between_midpoints(back_midpoint, front_midpoint)
+                    back_midpoint = (centroid_points[1][0] + centroid_points[1][1]) * 0.5
+                    
+                    orientation = compute_angle_between_midpoints(back_midpoint, front_midpoint)
 
                 # Find the identified bot (our robot)
                 huey_bbox = None

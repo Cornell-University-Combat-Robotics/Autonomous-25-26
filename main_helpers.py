@@ -149,7 +149,28 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection):
     
     return algorithm
 
-def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False):
+
+# display arrow with passed in angle at the top center of the image
+def display_angle_at_top(angle_degrees, image):
+    # Calculate the center top point
+    start_x = image.shape[1] // 2
+    start_y = 200  # A bit down from the top edge
+
+    # Calculate the end point based on the angle
+    dx = int(100 * np.cos(math.radians(angle_degrees)))
+    dy = int(-100 * np.sin(math.radians(angle_degrees)))  # Negative because y-axis is downwards in images
+
+    end_x = start_x + dx
+    end_y = start_y + dy
+
+    # Draw the arrow on the image
+    cv2.arrowedLine(image, (start_x, start_y), (end_x, end_y), (255, 255, 0), 3)
+
+    cv2.imshow("Battle with Predictions", image)
+    cv2.waitKey(1)
+
+
+def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, imu = False):
     # BLUE line: Huey's Current Orientation according to Corner Detection
 
     if detected_bots_with_data and detected_bots_with_data["huey"] and detected_bots_with_data["huey"]["orientation"] is not None:
@@ -166,7 +187,10 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
         start_y = int(detected_bots_with_data["huey"]["center"][1])
 
         end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
-        cv2.arrowedLine(image, (start_x, start_y), end_point, (255, 0, 0), 2)
+        if imu:
+            cv2.arrowedLine(image, (start_x, start_y), end_point, (0, 255, 0), 2)
+        else:
+            cv2.arrowedLine(image, (start_x, start_y), end_point, (255, 0, 0), 2)
 
         # RED line: Huey's Desired Orientation according to Algorithm
         if move_dictionary and (move_dictionary["turn"]):

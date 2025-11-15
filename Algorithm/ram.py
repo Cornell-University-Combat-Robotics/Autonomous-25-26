@@ -156,13 +156,13 @@ class Ram():
     def ram_ram(self, bots: dict[str, any] = None):
         if not (bots and bots["huey"]):
             if self.huey_previous_positions:self.huey_previous_positions.append(self.huey_previous_positions[-1])
-            print("🦐 Prev pos appended. 🦐")
+            #print("🦐 Prev pos appended. 🦐")
             if self.huey_previous_orientations: self.huey_previous_orientations.append(self.huey_previous_orientations[-1])
-            print("🦐 Prev orient appended. 🦐")
+            #print("🦐 Prev orient appended. 🦐")
 
             # recovery!
             if (self.check_previous_position_and_orientation()):
-                print("👿Start recovery👿")
+                # print("👿Start recovery👿")
                 self.recovery_sequence()
                 return self.huey_move(self.recover_speed, self.recover_turn)
             else:
@@ -171,8 +171,8 @@ class Ram():
          
         self.huey_old_position = self.huey_position if self.huey_position is not None else self.huey_old_position
 
-        print("6, 7🫴🤪🫴")
-        print("6 🤷‍♀️ 7")
+        # print("6, 7🫴🤪🫴")
+        # print("6 🤷‍♀️ 7")
 
         # if we don't have any data at all about orientation
         if self.huey_orientation is None:
@@ -209,7 +209,7 @@ class Ram():
         
         # Check if Huey is stationary / unfound, recover if so
         if (self.check_previous_position_and_orientation()):
-            print("👿Start recovery👿")
+            # print("👿Start recovery👿")
             self.recovery_sequence()
             return self.huey_move(self.recover_speed, self.recover_turn)
         else:
