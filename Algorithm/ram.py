@@ -161,21 +161,23 @@ class Ram():
     def get_enemy_orientation(self):
         prev_pos = self.enemy_previous_positions[-2]
         cur_pos = self.enemy_position
-
-        print("ENEMY ORIENTATION STUFF!")
-        print(prev_pos)
-        print(cur_pos)
-        trajectory = cur_pos - prev_pos
-        print (trajectory)
-        dot_prod = np.dot(trajectory, np.array([1,0]))
-        print(dot_prod)
-        trajectory_magnitude = np.linalg.norm(trajectory) if np.linalg.norm(trajectory) != 0 else 1
-        print(trajectory_magnitude)
-        cos_orientation = dot_prod/trajectory_magnitude
-        print(cos_orientation)
-        orientation = np.degrees(np.arccos(cos_orientation))
-        print(orientation)
-        return orientation
+        
+        if abs(prev_pos[0] - cur_pos[0]) > Ram.TOLERANCE and abs(prev_pos[1] - cur_pos[1]) > Ram.TOLERANCE:
+            print("ENEMY ORIENTATION STUFF!")
+            print(prev_pos)
+            print(cur_pos)
+            trajectory = cur_pos - prev_pos
+            print (trajectory)
+            dot_prod = np.dot(trajectory, np.array([1,0]))
+            print(dot_prod)
+            trajectory_magnitude = np.linalg.norm(trajectory) if np.linalg.norm(trajectory) != 0 else 1
+            print(trajectory_magnitude)
+            cos_orientation = dot_prod/trajectory_magnitude
+            print(cos_orientation)
+            orientation = np.degrees(np.arccos(cos_orientation))
+            print(orientation)
+            return orientation
+        return 0
 
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
     def ram_ram(self, bots: dict[str, any] = None):
