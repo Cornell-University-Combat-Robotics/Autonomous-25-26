@@ -150,24 +150,22 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection):
     return algorithm
 
 
-# display arrow with passed in angle at the top center of the image
-def display_angle_at_top(angle_degrees, image):
-    # Calculate the center top point
-    start_x = image.shape[1] // 2
-    start_y = 200  # A bit down from the top edge
 
-    # Calculate the end point based on the angle
-    dx = int(100 * np.cos(math.radians(angle_degrees)))
-    dy = int(-100 * np.sin(math.radians(angle_degrees)))  # Negative because y-axis is downwards in images
 
-    end_x = start_x + dx
-    end_y = start_y + dy
-
-    # Draw the arrow on the image
-    cv2.arrowedLine(image, (start_x, start_y), (end_x, end_y), (255, 255, 0), 3)
-
-    cv2.imshow("Battle with Predictions", image)
-    cv2.waitKey(1)
+def draw_yaw_text(image, yaw_value):
+    """Draws the yaw value in degrees onto the OpenCV image window."""
+    if yaw_value is None:
+        return
+    
+    cv2.putText(
+        image,
+        f"Yaw: {yaw_value:.2f} deg",
+        (20, 40),                      # top-left
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1.2,
+        (0, 255, 255),                 # yellow
+        3
+    )
 
 
 def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, imu = False):
@@ -189,6 +187,7 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
         end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
         if imu:
             cv2.arrowedLine(image, (start_x, start_y), end_point, (0, 255, 0), 2)
+            draw_yaw_text(image, detected_bots_with_data["huey"]["orientation"])
         else:
             cv2.arrowedLine(image, (start_x, start_y), end_point, (255, 0, 0), 2)
 
@@ -204,6 +203,7 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
 
             end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
             cv2.arrowedLine(image, (start_x, start_y), end_point, (0, 0, 255), 2)
+        
 
     if initial_run:
         cv2.imshow("Initial Run: Battle with Predictions. Press '0' to continue", image)

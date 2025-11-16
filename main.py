@@ -4,7 +4,7 @@ import cv2
 from algorithm.ram import Ram
 from corner_detection.corner_detection import RobotCornerDetection
 from warp_main import warp
-from main_helpers import key_frame, read_prev_homography, make_new_homography, read_prev_colors, make_new_colors, get_predictor, get_motor_groups, first_run, display_angles, display_angle_at_top 
+from main_helpers import key_frame, read_prev_homography, make_new_homography, read_prev_colors, make_new_colors, get_predictor, get_motor_groups, first_run, display_angles, draw_yaw_text
 from sensors.imu_class import IMU_sensor
 from sensors.imu_class import IMUReadError
 
@@ -111,28 +111,32 @@ def main(): # TODO: Add timing back (kernprof)
                 # 12. Run Object Detection's results through Corner Detection
                 detected_bots_with_data = corner_detection.corner_detection_main()
                 print("📐corner works")
-                imu = False
                 if IMU_ENABLED:
                     try:
-                        if detected_bots_with_data["huey"]:  
-                            print("🧭⬆️ orientation: " + str(detected_bots_with_data["huey"]["orientation"]))
-                            yaw = imu_sensor.get_yaw()
-                            imu = True
-                            detected_bots_with_data["huey"]["orientation"] = yaw
-                            print("🧭↔️ yaw: " + str(detected_bots_with_data["huey"]["orientation"]))
-                    except IMUReadError:
-                        print("🟥 🟩 using cd orientation 🟦 🟪")
+                        print(imu_sensor.get_yaw())
+                        yaw = imu_sensor.get_yaw()
+                        
+                        print(f"yaw = {yaw}")
+                        draw_yaw_text(warped_frame,yaw)
+                    except IMUReadError as ex:
+                        print(f"🟥 Error: {ex}")
+                        print(" 🟢 using cd orientation 🟢 ")
                         pass
-                
+                    except KeyError as ex:
+                        print(f"🟥 Error: {ex}")
+                        pass
+                    except Exception as ex:
+                        print("🦅 WTF is Happening 🦅")
+                        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                        message = template.format(type(ex).__name__, ex.args)
+                        print(message)
+                        raise(ex)
                 move_dictionary = algorithm.ram_ram(detected_bots_with_data)
                 
                 if DISPLAY_ANGLES:
-                    if yaw:
-                        display_angle_at_top(yaw, warped_frame)
-                        yaw = None
-                        
-                    else:
-                        display_angles(detected_bots_with_data, move_dictionary, warped_frame)
+
+                    display_angles(detected_bots_with_data, move_dictionary, warped_frame)
+                    
 
                 # 14. Transmitting the motor values to Huey's if we're using a live video
                 if IS_TRANSMITTING:
