@@ -8,6 +8,7 @@ from machine.predict import YoloModel
 from transmission.motors import Motor
 from transmission.serial_conn import OurSerial
 from warp_main import get_homography_mat, warp
+from dithering.unsharp_mask_ahh import unsharp_mask
 
 """
 Gets first frame of the video and returns it. If frame can't be read or video isn't being 
@@ -168,3 +169,8 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
     else:
         cv2.imshow("Battle with Predictions", image)
     cv2.waitKey(1)
+
+def unsharp(detected_bots, DISPLAY):
+    for bot in detected_bots["bots"]:
+        bot["img"] = unsharp_mask(bot["img"],DISPLAY=DISPLAY)
+    return detected_bots

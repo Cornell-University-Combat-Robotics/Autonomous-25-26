@@ -15,6 +15,7 @@ from main_helpers import (
     make_new_homography,
     read_prev_colors,
     read_prev_homography,
+    unsharp
 )
 from warp_main import warp
 
@@ -27,7 +28,8 @@ WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = False         # Process every captured frame
-DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames are displayed
+DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
+UNSHARP_MASK = True             # True if unsharp mask is onre displayed
 
 if COMP_SETTINGS:
     SHOW_FRAME = False
@@ -37,7 +39,7 @@ if COMP_SETTINGS:
 folder = os.getcwd() + "/main_files"
 frame_rate = 50
 camera_number = folder + "/test_videos/kabedon_huey.mp4"
-# camera_number = folder + "/test_videos/lazy_huey.mp4"
+# camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_duet_demo.mp4"
 # camera_number = 0
 
@@ -104,7 +106,11 @@ def main(): # TODO: Add timing back (kernprof)
 
                 # 11. Run the Warped Image through Object Detection
                 detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
-                
+
+                # Unsharp Masking
+                if UNSHARP_MASK:
+                    detected_bots = unsharp(detected_bots, False) # set to true if you want to see the before after unsharp mask
+
                 #indonesia.set_bots(detected_bots)
                 corner_detection.set_bots(detected_bots)
                 # 12. Run Object Detection's results through Corner Detection
