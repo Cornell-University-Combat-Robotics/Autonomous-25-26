@@ -10,7 +10,7 @@ class Ram():
     DANGER_ZONE = 55
     MAX_SPEED = 1  # magnitude between 0 and 1
     MAX_TURN = 1  # between 0 and 1
-    ARENA_WIDTH = 1200  # in pixels # TODO: what is our actual arena width
+    ARENA_WIDTH = 700  # in pixels
     TOLERANCE = 10  # how close Huey's prev pos are permitted to be
     BACK_UP_SPEED = -1
     BACK_UP_TURN = 0
