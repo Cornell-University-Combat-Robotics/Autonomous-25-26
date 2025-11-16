@@ -52,7 +52,7 @@ def read_prev_homography(captured_image, file_path):
         print(f"Error reading homography_matrix.txt: {e}" + "\n")
         exit(1)
         
-    warped_frame = warp(captured_image, homography_matrix, 700, 700)
+    warped_frame = warp(captured_image, homography_matrix)
     return warped_frame, homography_matrix
 
 def make_new_homography(captured_image):
@@ -60,8 +60,8 @@ def make_new_homography(captured_image):
         print("No image captured. Press '0' to capture image.")
         return
     
-    homography_matrix = get_homography_mat(captured_image, 700, 700)
-    warped_frame = warp(captured_image, homography_matrix, 700, 700)
+    homography_matrix = get_homography_mat(captured_image)
+    warped_frame = warp(captured_image, homography_matrix)
 
     return warped_frame, homography_matrix
 

@@ -2,6 +2,8 @@ import math
 import cv2
 import numpy as np
 
+FONT = cv2.FONT_HERSHEY_SIMPLEX
+
 @staticmethod
 def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
     """
@@ -108,7 +110,6 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
     for contour in contours:
         # Filter out small contours based on area
         area = cv2.contourArea(contour)
-        print("Area", area)
         if area > 10:
             # TODO: this value is subject to change based on dimensions of our video & resize_factor
             # Compute moments for each contour
@@ -119,15 +120,7 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
                 cy = int(M["m01"] / M["m00"])
                 centroids.append((cx, cy))
                 cv2.circle(image, (cx, cy), 8, (0, 0, 0), -1)
-                cv2.putText(
-                    image,
-                    side,
-                    (cx + 10, cy - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    (255, 255, 0),
-                    2,
-                )
+                cv2.putText(image, side, (cx + 10, cy - 10), FONT, 0.5, (255, 255, 0), 2)
     return centroids
 
 def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
@@ -365,43 +358,12 @@ def display_image(image: np.ndarray, left_front: list, right_front: list):
     right_x, right_y = int(right_front[0]), int(right_front[1])
 
     # Draw the left front corner
-    cv2.circle(
-        image,
-        left_x, 
-        left_y,
-        5,
-        (255, 255, 255),
-        -1,
-    )
-    cv2.putText(
-        image,
-        "Left Front",
-        left_x, left_y - 30,
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.5,
-        (0, 255, 0),
-        1,
-        cv2.LINE_AA,
-    )
+    cv2.circle(image, left_x, left_y, 5, (255, 255, 255), -1,)
+    cv2.putText(image, "Left Front", left_x, left_y - 30, FONT, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
 
     # Draw the right front corner
-    cv2.circle(
-        image,
-        right_x, right_y,
-        5,
-        (255, 255, 255),
-        -1,
-    )
-    cv2.putText(
-        image,
-        "Right Front",
-        right_x, right_y, - 30,
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.5,
-        (0, 0, 255),
-        1,
-        cv2.LINE_AA,
-    )
+    cv2.circle(image, right_x, right_y, 5, (255, 255, 255), -1)
+    cv2.putText(image, "Right Front", right_x, right_y, - 30, FONT, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
 
     # Display the image
     cv2.imshow("Image with Left and Right Front Corners", image)

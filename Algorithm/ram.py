@@ -1,8 +1,17 @@
 import math
-import time
-import numpy as np
 import random
-from .ram_helper import invert_y, check_wall, clamp, to_float, mix_speed_turn
+import time
+
+import numpy as np
+
+from .ram_helper import (
+    check_wall,
+    clamp,
+    init_values,
+    invert_y,
+    mix_speed_turn,
+    to_float,
+)
 
 class Ram():
     # ----------------------------- CONSTANTS -----------------------------
@@ -38,16 +47,10 @@ class Ram():
             # initialize the current enemy position
             self.enemy_position = np.array(enemy_position if enemy_position is not None else (0.0, 0.0), dtype=float)
         else:
-            self.huey_position = np.array(bots['huey']['center'] if np.array(bots['huey']['center']) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2), dtype=float)
-            print(f"CURR POS: {self.huey_position}")
-            self.huey_old_position = np.array(bots['huey']['center'] if np.array(bots['huey']['center']) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2), dtype=float)
-            print(f"OLD POS: {self.huey_old_position}")
-            self.huey_orientation = float(bots['huey']['orientation'] if bots['huey']['orientation'] is not None else 0.0)
-            print(f"ORIENTATION: {self.huey_orientation}")
-            self.enemy_position = np.array(bots['enemy']['center'] if bots['enemy']['center'] is not None else (0.0, 0.0), dtype=float)
-            print(f"ENEMY POS: {self.enemy_position}")
-
-            # self.huey_position = initialize_values(bots, self.ARENA_WIDTH, is_pos=True, is_enemy=False, enemy_position=enemy_position)
+            self.huey_position = init_values(bots, self.ARENA_WIDTH, is_pos=True, is_huey=True)
+            self.huey_old_position = init_values(bots, self.ARENA_WIDTH, is_pos=True, is_huey=True)
+            self.huey_orientation = init_values(bots, self.ARENA_WIDTH, is_pos=False, is_huey=True)
+            self.enemy_position = init_values(bots, self.ARENA_WIDTH, is_pos=True, is_huey=False)
 
         self.huey_old_speed = huey_old_speed
         self.huey_old_turn = huey_old_turn
@@ -124,7 +127,7 @@ class Ram():
     def predict_desired_turn_and_speed(self):
         print("—————————— PREDICT_DESIRED_TURN_AND_SPEED")
         
-        check_wall(self.enemy_position, 729)
+        check_wall(self.enemy_position)
         enemy_future_position = self.enemy_position
         
         huey_position_copy = np.copy(self.huey_position)
@@ -224,9 +227,7 @@ class Ram():
         
         if bots["enemy"]:
             self.enemy_position = np.array(bots['enemy']['center']) # probably issue here? 
-
             turn, speed = self.predict_desired_turn_and_speed()
-
             self.huey_old_turn, self.huey_old_speed = turn, speed
         
             # PID Shenanigans. Only use PID for the turn values

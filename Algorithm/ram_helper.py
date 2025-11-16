@@ -9,6 +9,7 @@ LEFT_SPEED = 1
 LEFT_TURN = -1
 RIGHT_SPEED = 1
 RIGHT_TURN = 1
+ARENA_WIDTH = 700
 
 '''
 inverting the y position
@@ -20,13 +21,13 @@ def invert_y(pos: np.array):
     return pos2
 
 """ if enemy robot predicted position is outside of arena, move it inside. """
-def check_wall(predicted_position: np.array, arena_width=1200):
-    if (predicted_position[0] > arena_width):
-        predicted_position[0] = 1200
+def check_wall(predicted_position: np.array):
+    if (predicted_position[0] > ARENA_WIDTH):
+        predicted_position[0] = ARENA_WIDTH
     if (predicted_position[0] < 0):
         predicted_position[0] = 0
-    if (predicted_position[1] > arena_width):
-        predicted_position[1] = 1200
+    if (predicted_position[1] > ARENA_WIDTH):
+        predicted_position[1] = ARENA_WIDTH
     if (predicted_position[1] < 0):
         predicted_position[1] = 0
     print("moved that jon")
@@ -49,19 +50,13 @@ def mix_speed_turn(speed, turn):
     right = clamp(speed + turn, -1, 1)
     return left, right
 
-# self.huey_position = np.array(bots['huey']['center'] if np.array(bots['huey']['center']) is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2), dtype=float)
-
-def initialize_values(bots: list, arena_width: int, is_pos: bool, is_enemy: bool, enemy_position: np.array):
-    if (is_enemy): #TODO: note done
-        if (is_pos):
-            value = np.array(enemy_position if enemy_position is not None else (0.0, 0.0), dtype=float)
-        else:
-            value = np.array(bots['enemy']['center'] if bots['enemy']['center'] is not None else (0.0, 0.0), dtype=float)
-    else:
-        if (is_pos): # Huey Position
+def init_values(bots: list, arena_width: int, is_pos: bool, is_huey: bool):
+    if is_huey: 
+        if is_pos: # Huey Position
             value = np.array(bots['huey']['center'] if np.array(bots['huey']['center']) is not None else (arena_width / 2, arena_width / 2), dtype=float)
         else:       # Orientation
             value = float(bots['huey']['orientation'] if bots['huey']['orientation'] is not None else 0.0)
-    
+    else:
+        if is_pos:
+            value = np.array(bots['enemy']['center'] if bots['enemy']['center'] is not None else (0.0, 0.0), dtype=float)
     return value
-    
