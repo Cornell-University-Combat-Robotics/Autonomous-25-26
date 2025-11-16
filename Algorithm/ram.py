@@ -24,10 +24,11 @@ class Ram():
     RECOVERY_SPEED_VALUES = [BACK_UP_SPEED, FORWARD_SPEED, LEFT_SPEED, RIGHT_SPEED]
     RECOVERY_TURN_VALUES = [BACK_UP_TURN, FORWARD_TURN, LEFT_TURN, RIGHT_TURN]
     USE_PID = True
+    is_recovering = False
     recovery_step = 0
 
     def __init__(self, bots=None, huey_position=(np.array([ARENA_WIDTH, ARENA_WIDTH])), huey_old_position=(np.array([ARENA_WIDTH, ARENA_WIDTH])),
-                 huey_orientation=45, enemy_position=np.array([0, 0]), enemy_orientation=315, huey_old_turn=0, huey_old_speed=0) -> None:
+                 huey_orientation=45, enemy_position=np.array([-1, -1]), enemy_orientation=0, huey_old_turn=0, huey_old_speed=0, is_recovering=False) -> None:
         # ----------------------------- INIT -----------------------------
         if bots is None:
             # initialize the position and orientation of huey
@@ -36,9 +37,10 @@ class Ram():
             # TODO: Fix orientation init
             self.huey_orientation = float(huey_orientation if huey_orientation is not None else 0.0)
             # initialize the current enemy position
-            self.enemy_position = np.array(enemy_position if enemy_position is not None else (0.0, 0.0), dtype=float)
+            self.enemy_position = np.array(enemy_position if enemy_position is not None else (-1.0, -1.0), dtype=float)
             # initialize the current enemy orientation
             self.enemy_orientation = float(enemy_orientation if enemy_orientation is not None else 0.0)
+            self.enemy_old_orientation = 0
 
         else:
             self.huey_position = initialize_values(bots, self.ARENA_WIDTH, is_pos=True, is_enemy=False, enemy_position=enemy_position)
@@ -46,9 +48,8 @@ class Ram():
             print(f"OLD POS: {self.huey_old_position}")
             self.huey_orientation = initialize_values(bots, self.ARENA_WIDTH, is_pos=False, is_enemy=False, enemy_position=enemy_position)
             self.enemy_position = initialize_values(bots, self.ARENA_WIDTH, is_pos=True, is_enemy=True, enemy_position=enemy_position)
-            self.enemy_orientation = 315
-
-            # self.huey_position = initialize_values(bots, self.ARENA_WIDTH, is_pos=True, is_enemy=False, enemy_position=enemy_position)
+            self.enemy_orientation = 0
+            self.enemy_old_orientation = 0
 
         self.huey_old_speed = huey_old_speed
         self.huey_old_turn = huey_old_turn
@@ -82,6 +83,7 @@ class Ram():
         self.recovering_until = 2.0
         self.recover_speed = 0.5
         self.recover_turn = 0.5
+        self.is_recovering=False
     # ----------------------------- HELPER METHODS -----------------------------
 
     ''' use a PID controller to move the bot to the desired position '''
@@ -112,15 +114,16 @@ class Ram():
                 counter_pos += 1
 
         for prev_orientation in self.huey_previous_orientations:
-            # TODO: work out angle range
             if abs(prev_orientation - self.huey_orientation) < Ram.TOLERANCE * 0.5:
                 counter_orientation += 1
 
         if counter_pos >= Ram.BACK_UP_THRESHOLD and counter_orientation >= Ram.BACK_UP_THRESHOLD:
             print("check_previous_position_and_orientation returns true")
+            self.is_recovering=True
             return True
         
         print("check_previous_position_and_orientation returns false")
+        self.is_recovering=False
         return False
 
     ''' 
@@ -130,7 +133,7 @@ class Ram():
     def predict_desired_turn_and_speed(self):
         print("—————————— PREDICT_DESIRED_TURN_AND_SPEED")
         
-        check_wall(self.enemy_position, 729)
+        check_wall(self.enemy_position, arena_width=self.ARENA_WIDTH)
         enemy_future_position = self.enemy_position
         
         huey_position_copy = np.copy(self.huey_position)
@@ -159,25 +162,21 @@ class Ram():
         return angle * (Ram.MAX_TURN / 180.0), 1-(np.sign(angle) * (angle) * (Ram.MAX_SPEED / 180.0))
     
     def get_enemy_orientation(self):
-        prev_pos = self.enemy_previous_positions[-2]
+        self.enemy_old_orientation = self.enemy_orientation
+        prev_pos = self.enemy_previous_positions[-1]
         cur_pos = self.enemy_position
+        print(f"🎄🎄prev: {prev_pos}, 🎄🎄curr: {cur_pos}")
         
-        if abs(prev_pos[0] - cur_pos[0]) > Ram.TOLERANCE and abs(prev_pos[1] - cur_pos[1]) > Ram.TOLERANCE:
+        if not (np.array_equal(np.array([-1.0,-1.0]), cur_pos)) and not (np.array_equal(np.array([-1.0,-1.0]), prev_pos)) and abs(prev_pos[0] - cur_pos[0]) > 10 and abs(prev_pos[1] - cur_pos[1]) > 10:
             print("ENEMY ORIENTATION STUFF!")
-            print(prev_pos)
-            print(cur_pos)
-            trajectory = cur_pos - prev_pos
-            print (trajectory)
-            dot_prod = np.dot(trajectory, np.array([1,0]))
-            print(dot_prod)
-            trajectory_magnitude = np.linalg.norm(trajectory) if np.linalg.norm(trajectory) != 0 else 1
-            print(trajectory_magnitude)
-            cos_orientation = dot_prod/trajectory_magnitude
-            print(cos_orientation)
-            orientation = np.degrees(np.arccos(cos_orientation))
-            print(orientation)
+
+            dx = cur_pos[0] - prev_pos[0]
+            dy = cur_pos[1] - prev_pos[1]
+
+            orientation = np.degrees(np.arctan2(dy,dx))
+            print(f"❤️traj: {orientation}❤️")
             return orientation
-        return 0
+        return self.enemy_old_orientation
 
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
     def ram_ram(self, bots: dict[str, any] = None):
@@ -220,12 +219,12 @@ class Ram():
 
         if len(self.huey_previous_orientations) > Ram.HISTORY_BUFFER:
             self.huey_previous_orientations.pop(0)
-          
+
+        self.enemy_orientation = self.get_enemy_orientation()
+
         # If the array for enemy_previous_positions is full, then pop the first one
         print("enemy_position: " + str(self.enemy_position))
         self.enemy_previous_positions.append(self.enemy_position)
-
-        self.enemy_orientation = self.get_enemy_orientation()
 
         if len(self.enemy_previous_positions) > Ram.HISTORY_BUFFER:
             self.enemy_previous_positions.pop(0)
@@ -252,7 +251,7 @@ class Ram():
         self.old_time = time.time()
         
         if bots["enemy"]:
-            self.enemy_position = np.array(bots['enemy']['center']) # probably issue here? 
+            self.enemy_position = np.array(bots['enemy']['center'])
 
             turn, speed = self.predict_desired_turn_and_speed()
 

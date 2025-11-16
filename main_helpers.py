@@ -109,9 +109,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection):
     first_run_ml = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
     corner_detection.set_bots(first_run_ml)
     
-    print("WHAT????")
     first_run_orientation = corner_detection.corner_detection_main()
-    print("HELLO?????")
 
     print("first_run_orientation: " + str(first_run_orientation))
     print("1")
@@ -123,9 +121,8 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection):
     if first_run_orientation and first_run_orientation["huey"] and first_run_orientation["enemy"]:
         # Ensure single enemy
         # first_run_orientation["enemy"] = first_run_orientation["enemy"][0] # we just take the first enemy in the list
-        print("ENTERED IF!!!")
+
         algorithm = Ram(bots=first_run_orientation)
-        print("INITIALIZED RAMMMMMMMMMMMM")
         first_move_dictionary = algorithm.ram_ram(first_run_orientation)
 
         num_housebots = len(first_run_ml["housebot"])
@@ -149,8 +146,11 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection):
     
     return algorithm
 
-def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orientation=315, initial_run=False):
+def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orientation=315, is_recovering=False, initial_run=False):
+
     # BLUE line: Huey's Current Orientation according to Corner Detection
+    if is_recovering:
+        cv2.putText(image, "RECOVERING", (550, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
 
     if detected_bots_with_data and detected_bots_with_data["huey"] and detected_bots_with_data["huey"]["orientation"] is not None:
         orientation_degrees = detected_bots_with_data["huey"]["orientation"]
@@ -173,11 +173,11 @@ def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orient
         if detected_bots_with_data["enemy"]:
             # Components of enemy front arrow
             dx = np.cos(math.pi / 180 * enemy_orientation)
-            dy = -1 * np.sin(math.pi / 180 * enemy_orientation)
+            dy = np.sin(math.pi / 180 * enemy_orientation) #TODO is orientation really 0-360.
 
             # Enemy's center
             start_x_enemy = int(detected_bots_with_data["enemy"]["center"][0])
-            start_y_enemy = int(detected_bots_with_data["enemy"]["center"][1])
+            start_y_enemy = int(detected_bots_with_data["enemy"]["center"][1]) #TODO: not negative...
 
             end_point_enemy = (int(start_x_enemy + 300 * dx), int(start_y_enemy + 300 * dy))
             cv2.arrowedLine(image, (start_x_enemy, start_y_enemy), end_point_enemy, (67, 255, 0), 2)

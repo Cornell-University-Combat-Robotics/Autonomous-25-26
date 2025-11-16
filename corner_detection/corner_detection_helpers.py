@@ -23,6 +23,9 @@ def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
     mask = cv2.inRange(hsv_image, lower_limit, upper_limit)
 
     # Count the number of non-zero pixels in the mask
+    # cv2.imshow("Mask", mask)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
     return cv2.countNonZero(mask)
 
 def get_contours_per_color(side: str, hsv_image: np.ndarray, selected_colors) -> list[np.ndarray]:
@@ -84,6 +87,9 @@ def find_our_bot(images: list[np.ndarray], bot_color_hsv) -> tuple[np.ndarray | 
         if our_bot_image is None:
             print("Huey is not found")
             
+        # cv2.imshow("OUR BOT!", our_bot_image)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
         return our_bot_image
     
     except Exception as e:
@@ -109,7 +115,7 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
         # Filter out small contours based on area
         area = cv2.contourArea(contour)
         # print("Area", area)
-        if area > 10:
+        if area > 20:
             # TODO: this value is subject to change based on dimensions of our video & resize_factor
             # Compute moments for each contour
             M = cv2.moments(contour)
