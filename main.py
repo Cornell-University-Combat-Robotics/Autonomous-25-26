@@ -1,10 +1,22 @@
 import os
 import time
+
 import cv2
+
 from algorithm.ram import Ram
 from corner_detection.corner_detection import RobotCornerDetection
+from main_helpers import (
+    display_angles,
+    first_run,
+    get_motor_groups,
+    get_predictor,
+    key_frame,
+    make_new_colors,
+    make_new_homography,
+    read_prev_colors,
+    read_prev_homography,
+)
 from warp_main import warp
-from main_helpers import key_frame, read_prev_homography, make_new_homography, read_prev_colors, make_new_colors, get_predictor, get_motor_groups, first_run, display_angles
 
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
@@ -24,8 +36,8 @@ if COMP_SETTINGS:
 
 folder = os.getcwd() + "/main_files"
 frame_rate = 50
-# camera_number = folder + "/test_videos/kabedon_huey.mp4"
-camera_number = folder + "/test_videos/lazy_huey.mp4"
+camera_number = folder + "/test_videos/kabedon_huey.mp4"
+# camera_number = folder + "/test_videos/lazy_huey.mp4"
 # camera_number = folder + "/test_videos/huey_duet_demo.mp4"
 # camera_number = 0
 
@@ -96,7 +108,7 @@ def main(): # TODO: Add timing back (kernprof)
                         break
                 
                 prev = time.perf_counter()
-                warped_frame = warp(frame, homography_matrix, 700, 700)
+                warped_frame = warp(frame, homography_matrix)
 
                 # 11. Run the Warped Image through Object Detection
                 detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)

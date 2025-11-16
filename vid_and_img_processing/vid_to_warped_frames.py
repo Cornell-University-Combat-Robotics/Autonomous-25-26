@@ -20,8 +20,7 @@ def get_homography_mat(frame, output_w, output_h):
         # Select corners in the following order: top left, top right, bottom right, bottom left
         for point in corners:
             cv2.circle(frame_copy, point, 5, (0, 255, 0), -1)
-            cv2.putText(frame_copy, f"{point}", point,
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+            cv2.putText(frame_copy, f"{point}", point, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
 
         # Display the image with points
         cv2.imshow("Image", frame_copy)
@@ -61,8 +60,7 @@ def process_video(video_path, output_w=600, output_h=600, target_fps=1):
         print("Error opening video frame")
         return
 
-    frame = cv2.resize(frame, (output_w, output_h),
-                       interpolation=cv2.INTER_AREA)
+    frame = cv2.resize(frame, (output_w, output_h), interpolation=cv2.INTER_AREA)
     homography_mat = get_homography_mat(frame, output_w, output_h)
 
     fps = int(cap.get(cv2.CAP_PROP_FPS))
@@ -83,10 +81,8 @@ def process_video(video_path, output_w=600, output_h=600, target_fps=1):
     print("Starting processing")
     while ret:
         if frame_counter % coeff == 0:
-            frame = cv2.resize(frame, (output_w, output_h),
-                               interpolation=cv2.INTER_AREA)
-            warped_frame = cv2.warpPerspective(
-                frame, homography_mat, (output_w, output_h))
+            frame = cv2.resize(frame, (output_w, output_h), interpolation=cv2.INTER_AREA)
+            warped_frame = cv2.warpPerspective(frame, homography_mat, (output_w, output_h))
 
             output_img_path = output_img_folder_dir + \
                 "/" + str(frame_counter) + ".png"

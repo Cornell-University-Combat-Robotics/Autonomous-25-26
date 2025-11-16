@@ -97,9 +97,7 @@ class RobotCornerDetection:
                     return {"huey": {}, "enemy": {}}
 
                 front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5
-
                 back_midpoint = (centroid_points[1][0] + centroid_points[1][1]) * 0.5
-                
                 orientation = compute_angle_between_midpoints(back_midpoint, front_midpoint)
 
                 # Find the identified bot (our robot)
@@ -111,7 +109,7 @@ class RobotCornerDetection:
 
                 huey = {
                     "bbox": huey_bbox,
-                    "center": np.mean(huey_bbox, axis=0),
+                    "center": np.mean(huey_bbox, axis=0), # center of the bot with respect to the entire arena
                     "orientation": orientation,
                 }
 
@@ -128,51 +126,7 @@ class RobotCornerDetection:
                 
                 result = {"huey": huey, "enemy": enemy_bots}
                 if self.display_final_image:
-                    display_image()
-                
-                if self.display_final_image:
-                    # Draw the left front corner
-                    cv2.circle(
-                        image,
-                        (int(left_front[0]), int(left_front[1])),
-                        5,
-                        (255, 255, 255),
-                        -1,
-                    )
-                    cv2.putText(
-                        image,
-                        "Left Front",
-                        (int(left_front[0]), int(left_front[1]) - 30),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
-                        (0, 255, 0),
-                        1,
-                        cv2.LINE_AA,
-                    )
-
-                    # Draw the right front corner
-                    cv2.circle(
-                        image,
-                        (int(right_front[0]), int(right_front[1])),
-                        5,
-                        (255, 255, 255),
-                        -1,
-                    )
-                    cv2.putText(
-                        image,
-                        "Right Front",
-                        (int(right_front[0]), int(right_front[1]) - 30),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
-                        (0, 0, 255),
-                        1,
-                        cv2.LINE_AA,
-                    )
-
-                    # Display the image
-                    cv2.imshow("Image with Left and Right Front Corners", image)
-                    cv2.waitKey(0)
-                    cv2.destroyAllWindows()
+                    display_image(image, left_front, right_front)
 
                 return result
             else:
