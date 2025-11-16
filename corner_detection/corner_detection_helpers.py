@@ -79,6 +79,7 @@ def find_our_bot(images: list[np.ndarray], bot_color_hsv) -> tuple[np.ndarray | 
 
             if color_pixel_count > max_color_pixels:
                 our_bot_image = image
+                max_color_pixels = color_pixel_count
         
         if our_bot_image is None:
             print("Huey is not found")
