@@ -108,34 +108,19 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection):
     # 6. Do an initial run of ML and Corner. Initialize Algo
     first_run_ml = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
     corner_detection.set_bots(first_run_ml)
-    
-    print("WHAT????")
     first_run_orientation = corner_detection.corner_detection_main()
-    print("HELLO?????")
-
-    print("first_run_orientation: " + str(first_run_orientation))
-    print("1")
-    print("first_run_orientation['huey']: " + str(first_run_orientation["huey"]))
-    print("2")
-    print("first_run_orientation['enemy']:" + str(first_run_orientation["enemy"]))
-    print("it failed before this")
 
     if first_run_orientation and first_run_orientation["huey"] and first_run_orientation["enemy"]:
         # Ensure single enemy
         # first_run_orientation["enemy"] = first_run_orientation["enemy"][0] # we just take the first enemy in the list
-        print("ENTERED IF!!!")
         algorithm = Ram(bots=first_run_orientation)
-        print("INITIALIZED RAMMMMMMMMMMMM")
         first_move_dictionary = algorithm.ram_ram(first_run_orientation)
 
         num_housebots = len(first_run_ml["housebot"])
         num_bots = len(first_run_ml["bots"])
-        print("Initial Object Detection: " + str(num_housebots) +
-                " housebots, " + str(num_bots) + " bots detected")
-        print("Initial Corner Detection Output: " +
-                str(first_run_orientation))
-        print("Initial Algorithm Output: " +
-                str(first_move_dictionary))
+        print("Initial Object Detection: " + str(num_housebots) + " housebots, " + str(num_bots) + " bots detected")
+        print("Initial Corner Detection Output: " + str(first_run_orientation))
+        print("Initial Algorithm Output: " + str(first_move_dictionary))
         
         display_angles(first_run_orientation, first_move_dictionary, warped_frame, True)
         cv2.waitKey(0)
@@ -155,8 +140,6 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
     if detected_bots_with_data and detected_bots_with_data["huey"] and detected_bots_with_data["huey"]["orientation"] is not None:
         orientation_degrees = detected_bots_with_data["huey"]["orientation"]
 
-        print("----- orientation_degrees: " + str(orientation_degrees))
-
         # Components of current front arrow
         dx = np.cos(math.pi / 180 * orientation_degrees)
         dy = -1 * np.sin(math.pi / 180 * orientation_degrees)
@@ -172,7 +155,6 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
         if move_dictionary and (move_dictionary["turn"]):
             turn = move_dictionary["turn"] # angle in degrees / 180
             new_orientation_degrees = orientation_degrees + (turn * 180)
-            print("----- new_orientation_degrees: " + str(new_orientation_degrees))
 
             # Components of predicted turn
             dx = np.cos(math.pi * new_orientation_degrees / 180)

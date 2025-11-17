@@ -30,7 +30,6 @@ def check_wall(predicted_position: np.array):
         predicted_position[1] = ARENA_WIDTH
     if (predicted_position[1] < 0):
         predicted_position[1] = 0
-    print("moved that jon")
 
 def clamp(x, lo, hi):
     return max(lo, min(hi, x))

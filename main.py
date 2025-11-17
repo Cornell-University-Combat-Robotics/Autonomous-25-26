@@ -52,11 +52,8 @@ def main(): # TODO: Add timing back (kernprof)
     try:
         # 1. Start the capturing frame from the camera or pre-recorded video
         # 2. Capture initial frame by pressing '0'
-        print("0")
         cap = cv2.VideoCapture(camera_number)
-        print("1")
         captured_image = key_frame(cap)
-        print("2")
 
         # 3. Use the initial frame to get a new Homography Matrix and new colors
         if WARP_AND_COLOR_PICKING:
@@ -78,13 +75,9 @@ def main(): # TODO: Add timing back (kernprof)
         cv2.destroyAllWindows()
 
         if WARP_AND_COLOR_PICKING:
-            print("FIRST RUN")
             algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection)
         else:
-            print("NOT FIRST RUN")
             algorithm = Ram()
-
-        print("First run is done")
 
         # ----------------------------------------------------------------------
         # 8. Match begins
@@ -104,7 +97,6 @@ def main(): # TODO: Add timing back (kernprof)
 
                 if SHOW_FRAME:
                     if cv2.waitKey(1) & 0xFF == ord("q"):  # Press Q on keyboard to exit
-                        print("exit" + "\n")
                         break
                 
                 prev = time.perf_counter()

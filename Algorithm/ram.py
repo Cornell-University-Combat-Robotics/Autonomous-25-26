@@ -92,7 +92,6 @@ class Ram():
 
     ''' moves Huey backwards, forward, left, right'''
     def recovery_sequence(self):
-        print("—————————— RECOVERY_SEQUENCE. self.recovery_step: " + str(self.recovery_step))
         self.recovery_step += 1
         duration = random.uniform(0.5, 1.0)
         self.recovering_until = time.time() + duration
@@ -100,7 +99,6 @@ class Ram():
         self.recover_turn = self.RECOVERY_TURN_VALUES[self.recovery_step%4]
 
     def check_previous_position_and_orientation(self):
-        print("—————————— CHECK_PREVIOUS_POSITION_AND_ORIENTATION")
         counter_pos, counter_orientation = 0, 0
         x_curr, y_curr = self.huey_position
 
@@ -114,10 +112,8 @@ class Ram():
                 counter_orientation += 1
 
         if counter_pos >= Ram.BACK_UP_THRESHOLD and counter_orientation >= Ram.BACK_UP_THRESHOLD:
-            print("check_previous_position_and_orientation returns true")
             return True
         
-        print("check_previous_position_and_orientation returns false")
         return False
 
     ''' 
@@ -125,8 +121,6 @@ class Ram():
     Precondition: our_position & enemy_position 
     '''
     def predict_desired_turn_and_speed(self):
-        print("—————————— PREDICT_DESIRED_TURN_AND_SPEED")
-        
         check_wall(self.enemy_position)
         enemy_future_position = self.enemy_position
         
@@ -158,10 +152,10 @@ class Ram():
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
     def ram_ram(self, bots: dict[str, any] = None):
         if not (bots and bots["huey"]):
-            if self.huey_previous_positions:self.huey_previous_positions.append(self.huey_previous_positions[-1])
-            print("🦐 Prev pos appended. 🦐")
-            if self.huey_previous_orientations: self.huey_previous_orientations.append(self.huey_previous_orientations[-1])
-            print("🦐 Prev orient appended. 🦐")
+            if self.huey_previous_positions:
+                self.huey_previous_positions.append(self.huey_previous_positions[-1])
+            if self.huey_previous_orientations: 
+                self.huey_previous_orientations.append(self.huey_previous_orientations[-1])
 
             # recovery!
             if (self.check_previous_position_and_orientation()):
@@ -182,9 +176,6 @@ class Ram():
             self.huey_orientation = self.huey_previous_orientations[-1]
 
         if self.huey_pos_count % 2 == 0: # Check every other frame for stationary
-            print("ram ram 1: ")
-            print("huey_position: " + str(self.huey_position))
-            print("huey_orientation: " + str(self.huey_orientation))
             self.huey_previous_positions.append(self.huey_position)
             self.huey_previous_orientations.append(self.huey_orientation)
 
@@ -198,7 +189,6 @@ class Ram():
             self.huey_previous_orientations.pop(0)
           
         # If the array for enemy_previous_positions is full, then pop the first one
-        print("enemy_position: " + str(self.enemy_position))
         self.enemy_previous_positions.append(self.enemy_position)
 
         if len(self.enemy_previous_positions) > Ram.HISTORY_BUFFER:
@@ -232,7 +222,6 @@ class Ram():
         
             # PID Shenanigans. Only use PID for the turn values
             if self.USE_PID and self.delta_t != 0:
-                print("PID RAH")
                 if self.delta_t > 0:
                     derivative = (self.huey_orientation - self.huey_previous_orientations[-1]) / (self.delta_t * 180.0)
                 else:

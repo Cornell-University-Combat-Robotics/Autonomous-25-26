@@ -70,14 +70,12 @@ def find_our_bot(images: list[np.ndarray], bot_color_hsv) -> tuple[np.ndarray | 
         for image in images:
             
             total_pixels = np.shape(image)[0]*np.shape(image)[1]
-            print(total_pixels)
 
             if image is None:
                 print("Warning: One of the images is None, skipping...")
                 continue
 
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
-            print(color_pixel_count)
 
             if color_pixel_count > max_color_pixels:
                 our_bot_image = image
@@ -306,7 +304,6 @@ def get_left_and_right_front_points(points: list) -> list:
 
         all_points = red_points + blue_points
         center = np.mean(all_points, axis=0)
-        # print("center: " + str(center))
 
         vector1 = np.array(red_points[0]) - center
         vector2 = np.array(red_points[1]) - center
