@@ -3,6 +3,7 @@ import time
 import numpy as np
 import random
 from .ram_helper import invert_y, check_wall, clamp, to_float, mix_speed_turn, initialize_values
+from .ram_helper import invert_y, check_wall, clamp, to_float, mix_speed_turn, initialize_values
 
 class Ram():
     # ----------------------------- CONSTANTS -----------------------------
@@ -225,6 +226,8 @@ class Ram():
         # If the array for enemy_previous_positions is full, then pop the first one
         print("enemy_position: " + str(self.enemy_position))
         self.enemy_previous_positions.append(self.enemy_position)
+
+        self.enemy_orientation = self.get_enemy_orientation()
 
         if len(self.enemy_previous_positions) > Ram.HISTORY_BUFFER:
             self.enemy_previous_positions.pop(0)
