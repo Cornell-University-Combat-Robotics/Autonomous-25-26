@@ -27,7 +27,7 @@ frame_rate = 50
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/huey_demo3.mp4"
 # camera_number = folder + "/test_videos/huey_duet_demo.mp4"
-camera_number = folder + "/test_videos/tooth_divorcee_huey.mp4"
+camera_number = folder + "/test_videos/indonesian_divorce_huey.mp4"
 # camera_number = 1
 
 if IS_TRANSMITTING:

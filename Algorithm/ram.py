@@ -172,9 +172,18 @@ class Ram():
             print("ENEMY ORIENTATION STUFF!")
 
             dx = cur_pos[0] - prev_pos[0]
-            dy = cur_pos[1] - prev_pos[1]
+            dy = -1 * (cur_pos[1] - prev_pos[1])
+
+            print(f"dx💩 {dx}💩")
+            print(f"dy💩 {dy}💩")
+
+            print(f"ARCY💩 {np.arctan2(dy,dx)}💩")
 
             orientation = np.degrees(np.arctan2(dy,dx))
+
+            # if orientation < 0:
+            #     orientation += 360
+            
             print(f"❤️traj: {orientation}❤️")
             return orientation
         return self.enemy_old_orientation

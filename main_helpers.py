@@ -173,7 +173,7 @@ def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orient
         if detected_bots_with_data["enemy"]:
             # Components of enemy front arrow
             dx = np.cos(math.pi / 180 * enemy_orientation)
-            dy = np.sin(math.pi / 180 * enemy_orientation) #TODO is orientation really 0-360.
+            dy = -1 * np.sin(math.pi / 180 * enemy_orientation)
 
             # Enemy's center
             start_x_enemy = int(detected_bots_with_data["enemy"]["center"][0])
