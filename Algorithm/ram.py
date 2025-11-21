@@ -57,7 +57,7 @@ class Ram():
         self.left = 0
         self.right = 0
 
-        # initialize the enemy position array
+        # initialize the huey position array
         self.huey_pos_count = 1
         self.huey_previous_positions = []
         self.huey_previous_positions.append(self.huey_position)
@@ -67,13 +67,15 @@ class Ram():
         self.huey_previous_orientations = []
         self.huey_previous_orientations.append(self.huey_orientation)
 
+        # initialize the enemy position array
+        self.enemy_previous_positions = []
+        self.enemy_previous_positions.append(self.enemy_position)
+        self.enemy_future_position = self.enemy_position
+
         # initialize the enemy orientation array
         self.enemy_orient_count = 1
         self.enemy_previous_orientations = []
         self.enemy_previous_orientations.append(self.enemy_orientation)
-
-        self.enemy_previous_positions = []
-        self.enemy_previous_positions.append(self.enemy_position)
 
         # old time
         self.old_time = time.time()
@@ -135,23 +137,23 @@ class Ram():
         print("—————————— PREDICT_DESIRED_TURN_AND_SPEED")
         
         check_wall(self.enemy_position, arena_width=self.ARENA_WIDTH)
-        enemy_future_position = self.enemy_position
+        self.enemy_future_position = self.enemy_position
         
         huey_position_copy = np.copy(self.huey_position)
         if np.linalg.norm(self.enemy_position - huey_position_copy) < Ram.DANGER_ZONE:
-            enemy_future_position = self.enemy_position
             if np.array_equal(self.enemy_position, huey_position_copy):
                 return (0, 0)
         
-        if (np.array_equal(huey_position_copy, enemy_future_position)):
+        if (np.array_equal(huey_position_copy, self.enemy_future_position)):
             return (0, 0)
         
         # return the angle in degrees
         huey_orientation_rad = np.radians(self.huey_orientation)
         orientation = np.array([math.cos(huey_orientation_rad), math.sin(huey_orientation_rad)])
-        enemy_future_position = invert_y(enemy_future_position)
+        self.enemy_future_position = invert_y(self.enemy_future_position)
         huey_position_invert = invert_y(huey_position_copy)
-        direction = enemy_future_position - huey_position_invert
+        
+        direction = self.enemy_future_position - huey_position_invert
         
         # calculate the angle between the bot and the enemy
         ratio = np.dot(direction, orientation) / \
@@ -162,7 +164,7 @@ class Ram():
         angle *= sign
         return angle * (Ram.MAX_TURN / 180.0), 1-(np.sign(angle) * (angle) * (Ram.MAX_SPEED / 180.0))
     
-    def get_enemy_orientation(self):
+    def get_enemy_orientation(self, bots):
         self.enemy_old_orientation = self.enemy_orientation
         prev_pos = self.enemy_previous_positions[-1]
         cur_pos = self.enemy_position
@@ -173,6 +175,10 @@ class Ram():
 
             dx = cur_pos[0] - prev_pos[0]
             dy = -1 * (cur_pos[1] - prev_pos[1])
+
+            enemy_width = (math.dist(bots['enemy'].get('bbox')[1], bots['enemy'].get('bbox')[0]))/2
+
+            self.enemy_future_position += enemy_width * np.array([dx, dy])/np.linalg.norm(np.array([dx, dy]))
 
             print(f"dx💩 {dx}💩")
             print(f"dy💩 {dy}💩")
@@ -230,13 +236,11 @@ class Ram():
         if len(self.huey_previous_orientations) > Ram.HISTORY_BUFFER:
             self.huey_previous_orientations.pop(0)
 
-        self.enemy_orientation = self.get_enemy_orientation()
+        self.enemy_orientation = self.get_enemy_orientation(bots)
 
         # If the array for enemy_previous_positions is full, then pop the first one
         print("enemy_position: " + str(self.enemy_position))
         self.enemy_previous_positions.append(self.enemy_position)
-
-        self.enemy_orientation = self.get_enemy_orientation()
 
         if len(self.enemy_previous_positions) > Ram.HISTORY_BUFFER:
             self.enemy_previous_positions.pop(0)

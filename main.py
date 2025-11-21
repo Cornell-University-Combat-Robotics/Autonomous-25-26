@@ -110,9 +110,10 @@ def main(): # TODO: Add timing back (kernprof)
 
                 enemy_orientation = algorithm.enemy_orientation
                 is_recovering = algorithm.is_recovering
+                enemy_future_position = algorithm.enemy_future_position
                 
                 if DISPLAY_ANGLES:
-                    display_angles(detected_bots_with_data, move_dictionary, warped_frame, enemy_orientation, is_recovering)
+                    display_angles(detected_bots_with_data, move_dictionary, warped_frame, enemy_orientation, enemy_future_position, is_recovering)
 
                 # 14. Transmitting the motor values to Huey's if we're using a live video
                 if IS_TRANSMITTING:

@@ -146,7 +146,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection):
     
     return algorithm
 
-def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orientation=315, is_recovering=False, initial_run=False):
+def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orientation=315, enemy_future_position=np.array([0,0]),is_recovering=False, initial_run=False):
 
     # BLUE line: Huey's Current Orientation according to Corner Detection
     if is_recovering:
@@ -179,8 +179,13 @@ def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orient
             start_x_enemy = int(detected_bots_with_data["enemy"]["center"][0])
             start_y_enemy = int(detected_bots_with_data["enemy"]["center"][1]) #TODO: not negative...
 
+            # Enemy's future position
+            start_x_enemy_fut = int(enemy_future_position[0])
+            start_y_enemy_fut = -1 * int(enemy_future_position[1])
+
             end_point_enemy = (int(start_x_enemy + 300 * dx), int(start_y_enemy + 300 * dy))
             cv2.arrowedLine(image, (start_x_enemy, start_y_enemy), end_point_enemy, (67, 255, 0), 2)
+            cv2.circle(image, (start_x_enemy_fut, start_y_enemy_fut), 5, (67, 255, 0), 2 )
 
         # RED line: Huey's Desired Orientation according to Algorithm
         if move_dictionary and (move_dictionary["turn"]):
