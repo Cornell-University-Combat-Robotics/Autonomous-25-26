@@ -113,8 +113,8 @@ def main(): # TODO: Add timing back (kernprof)
                 print("📐corner works")
                 if IMU_ENABLED:
                     try:
-                        print(imu_sensor.get_yaw())
-                        yaw = imu_sensor.get_yaw()
+                        print(imu_sensor.get_yaw_continuous())
+                        yaw = imu_sensor.get_yaw_continuous()
                         
                         print(f"yaw = {yaw}")
                         draw_yaw_text(warped_frame,yaw)

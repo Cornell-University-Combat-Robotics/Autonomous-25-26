@@ -3,7 +3,8 @@ import json
 import time
 import math
 import serial.tools.list_ports
-
+import threading    
+from concurrent.futures import ThreadPoolExecutor
 
 class IMUReadError(Exception):
     """Base exception for IMU serial read issues"""
@@ -31,7 +32,9 @@ class IMU_sensor():
         self.roll = 0
         self.pitch = 0
         self.yaw = 0
+        self.dict_lock = threading.Lock()
         time.sleep(2)  # Wait for the serial connection to initialize
+        self.get_continuous_dict()
     
     def choose_port(self):
         """ 
@@ -92,6 +95,37 @@ class IMU_sensor():
         except json.decoder.JSONDecodeError as e:
             raise IMUReadError("IMU error: " + str(e))
  
+    def get_continuous_dict(self):
+        """
+        Continuously updates dict field with the latest reading from the IMU in a separate thread
+        Raises IMUReadError if there is an issue with reading from the IMU
+        """
+        def update_dict():
+            while True:
+                try:
+                    json_string = self.ser.readline().decode('utf-8').strip()
+                    new_dict = json.loads(json_string)
+                    with self.dict_lock:
+                        self.dict = new_dict
+                except UnicodeDecodeError as e:
+                    print("IMU error: " + str(e))
+                except json.decoder.JSONDecodeError as e:
+                    print("JSON error: " + str(e))
+
+        thread = threading.Thread(target=update_dict, daemon=True)
+        thread.start()
+
+    def get_yaw_continuous(self):
+        """
+        Read the yaw value from continuously updated dict field
+        """
+        with self.dict_lock:
+            _, _, yaw = self.quaternion_to_euler(self.dict["game"]["r"], self.dict["game"]["i"], self.dict["game"]["j"], self.dict["game"]["k"])
+        self.yaw = (yaw / math.pi) * 180
+        if self.yaw < 0:
+            self.yaw += 360        
+        return self.yaw
+
     def is_upside_down(self):
         """
         Returns: -1 if bot is upside down and 1 if the bot is right side up
