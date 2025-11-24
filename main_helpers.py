@@ -181,7 +181,7 @@ def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orient
 
             # Enemy's future position
             start_x_enemy_fut = int(enemy_future_position[0])
-            start_y_enemy_fut = -1 * int(enemy_future_position[1])
+            start_y_enemy_fut = int(enemy_future_position[1])
 
             end_point_enemy = (int(start_x_enemy + 300 * dx), int(start_y_enemy + 300 * dy))
             cv2.arrowedLine(image, (start_x_enemy, start_y_enemy), end_point_enemy, (67, 255, 0), 2)

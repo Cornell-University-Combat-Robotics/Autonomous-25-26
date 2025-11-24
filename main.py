@@ -11,7 +11,7 @@ from main_helpers import key_frame, read_prev_homography, make_new_homography, r
 MATT_LAPTOP = False             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = False         # Process every captured frame
@@ -111,6 +111,7 @@ def main(): # TODO: Add timing back (kernprof)
                 enemy_orientation = algorithm.enemy_orientation
                 is_recovering = algorithm.is_recovering
                 enemy_future_position = algorithm.enemy_future_position
+                print (f"🛸ENEMY FUTPOS:🛸 {enemy_future_position}")
                 
                 if DISPLAY_ANGLES:
                     display_angles(detected_bots_with_data, move_dictionary, warped_frame, enemy_orientation, enemy_future_position, is_recovering)
