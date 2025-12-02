@@ -111,11 +111,12 @@ def main(): # TODO: Add timing back (kernprof)
                 # 12. Run Object Detection's results through Corner Detection
                 detected_bots_with_data = corner_detection.corner_detection_main()
                 print("📐corner works")
+                is_flipped = 1
                 if IMU_ENABLED:
                     try:
                         print(imu_sensor.get_yaw_continuous())
                         yaw = imu_sensor.get_yaw_continuous()
-                        
+                        is_flipped = imu_sensor.get_upside_down_continuous()
                         print(f"yaw = {yaw}")
                         draw_yaw_text(warped_frame,yaw)
                     except IMUReadError as ex:
@@ -143,9 +144,9 @@ def main(): # TODO: Add timing back (kernprof)
                     speed = move_dictionary["speed"]
                     turn = move_dictionary["turn"]
                     if turn * -1 > 0:
-                        motor_group.move(speed * 0.8, turn * -1 * 0.55 + 0.2)
+                        motor_group.move(speed * 0.8*is_flipped, turn * -1 * 0.55 + 0.2)
                     else:
-                        motor_group.move(speed * 0.8, turn * -1 * 0.55 - 0.2)
+                        motor_group.move(speed * 0.8*is_flipped, turn * -1 * 0.55 - 0.2)
 
             elif DISPLAY_ANGLES:
                 display_angles(None, None, warped_frame)

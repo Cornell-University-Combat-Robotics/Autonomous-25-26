@@ -126,6 +126,16 @@ class IMU_sensor():
             self.yaw += 360        
         return self.yaw
 
+    def get_upside_down_continuous(self):
+        """
+        Read the upside down value from continuously updated dict field
+        Returns: -1 if bot is upside down and 1 if the bot is right side up
+        """
+        with self.dict_lock:
+            gravity_z = self.dict["accelerometer"]["gravity_z"]
+        return 1 if gravity_z >= 0 else -1
+
+
     def is_upside_down(self):
         """
         Returns: -1 if bot is upside down and 1 if the bot is right side up
