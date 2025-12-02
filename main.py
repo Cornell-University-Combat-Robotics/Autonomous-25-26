@@ -30,7 +30,7 @@ frame_rate = 50
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/lazy_huey.mp4"
 # camera_number = folder + "/test_videos/huey_duet_demo.mp4"
-camera_number = 0
+camera_number = 2
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
@@ -117,8 +117,9 @@ def main(): # TODO: Add timing back (kernprof)
                         print(imu_sensor.get_yaw_continuous())
                         yaw = imu_sensor.get_yaw_continuous()
                         is_flipped = imu_sensor.get_upside_down_continuous()
+                        print(f"flipped = {is_flipped}")
                         print(f"yaw = {yaw}")
-                        draw_yaw_text(warped_frame,yaw)
+                        draw_yaw_text(warped_frame,yaw,is_flipped)
                     except IMUReadError as ex:
                         print(f"🟥 Error: {ex}")
                         print(" 🟢 using cd orientation 🟢 ")
@@ -143,6 +144,7 @@ def main(): # TODO: Add timing back (kernprof)
                 if IS_TRANSMITTING:
                     speed = move_dictionary["speed"]
                     turn = move_dictionary["turn"]
+                    print(f"is flipped? {is_flipped}")
                     if turn * -1 > 0:
                         motor_group.move(speed * 0.8*is_flipped, turn * -1 * 0.55 + 0.2)
                     else:
