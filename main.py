@@ -1,10 +1,23 @@
 import os
 import time
+
 import cv2
+
 from algorithm.ram import Ram
 from corner_detection.corner_detection import RobotCornerDetection
+from main_helpers import (
+    display_angles,
+    first_run,
+    get_motor_groups,
+    get_predictor,
+    key_frame,
+    make_new_colors,
+    make_new_homography,
+    read_prev_colors,
+    read_prev_homography,
+    unsharp
+)
 from warp_main import warp
-from main_helpers import key_frame, read_prev_homography, make_new_homography, read_prev_colors, make_new_colors, get_predictor, get_motor_groups, first_run, display_angles
 
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
@@ -15,7 +28,8 @@ WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = False         # Process every captured frame
-DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames are displayed
+DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
+UNSHARP_MASK = True             # True if unsharp mask is onre displayed
 
 if COMP_SETTINGS:
     SHOW_FRAME = False
@@ -24,8 +38,8 @@ if COMP_SETTINGS:
 
 folder = os.getcwd() + "/main_files"
 frame_rate = 50
-# camera_number = folder + "/test_videos/kabedon_huey.mp4"
-camera_number = folder + "/test_videos/lazy_huey.mp4"
+camera_number = folder + "/test_videos/kabedon_huey.mp4"
+# camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_duet_demo.mp4"
 # camera_number = 0
 
@@ -40,11 +54,8 @@ def main(): # TODO: Add timing back (kernprof)
     try:
         # 1. Start the capturing frame from the camera or pre-recorded video
         # 2. Capture initial frame by pressing '0'
-        print("0")
         cap = cv2.VideoCapture(camera_number)
-        print("1")
         captured_image = key_frame(cap)
-        print("2")
 
         # 3. Use the initial frame to get a new Homography Matrix and new colors
         if WARP_AND_COLOR_PICKING:
@@ -66,13 +77,9 @@ def main(): # TODO: Add timing back (kernprof)
         cv2.destroyAllWindows()
 
         if WARP_AND_COLOR_PICKING:
-            print("FIRST RUN")
             algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection)
         else:
-            print("NOT FIRST RUN")
             algorithm = Ram()
-
-        print("First run is done")
 
         # ----------------------------------------------------------------------
         # 8. Match begins
@@ -92,15 +99,18 @@ def main(): # TODO: Add timing back (kernprof)
 
                 if SHOW_FRAME:
                     if cv2.waitKey(1) & 0xFF == ord("q"):  # Press Q on keyboard to exit
-                        print("exit" + "\n")
                         break
                 
                 prev = time.perf_counter()
-                warped_frame = warp(frame, homography_matrix, 700, 700)
+                warped_frame = warp(frame, homography_matrix)
 
                 # 11. Run the Warped Image through Object Detection
                 detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
-                
+
+                # Unsharp Masking
+                if UNSHARP_MASK:
+                    detected_bots = unsharp(detected_bots, False) # set to true if you want to see the before after unsharp mask
+
                 #indonesia.set_bots(detected_bots)
                 corner_detection.set_bots(detected_bots)
                 # 12. Run Object Detection's results through Corner Detection
