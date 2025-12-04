@@ -29,7 +29,7 @@ IS_TRANSMITTING = False         # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = False         # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
-UNSHARP_MASK = True             # True if unsharp mask is onre displayed
+UNSHARP_MASK = False             # True if unsharp mask is onre displayed
 
 if COMP_SETTINGS:
     SHOW_FRAME = False
@@ -38,9 +38,9 @@ if COMP_SETTINGS:
 
 folder = os.getcwd() + "/main_files"
 frame_rate = 50
-camera_number = folder + "/test_videos/kabedon_huey.mp4"
+# camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-# camera_number = folder + "/test_videos/huey_duet_demo.mp4"
+camera_number = folder + "/test_videos/is_it_fat_enough_huey.mp4"
 # camera_number = 0
 
 if IS_TRANSMITTING:
@@ -118,7 +118,7 @@ def main(): # TODO: Add timing back (kernprof)
                 move_dictionary = algorithm.ram_ram(detected_bots_with_data)
                 
                 if DISPLAY_ANGLES:
-                    display_angles(detected_bots_with_data, move_dictionary, warped_frame)
+                    display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering)
 
                 # 14. Transmitting the motor values to Huey's if we're using a live video
                 if IS_TRANSMITTING:
