@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
+HUEY_COLOR_PERCENTAGE_THRESHOLD = 0.3 #Find this by testing
 
 @staticmethod
 def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
@@ -88,7 +89,7 @@ def find_our_bot(images: list[np.ndarray], bot_color_hsv) -> tuple[np.ndarray | 
             color_percentage = color_pixel_count/image_area
             print(color_percentage)
 
-            if color_percentage > max_color_percentage:
+            if (color_percentage > max_color_percentage) and (color_percentage > HUEY_COLOR_PERCENTAGE_THRESHOLD):
                 our_bot_image = image
                 max_color_percentage = color_percentage
         
