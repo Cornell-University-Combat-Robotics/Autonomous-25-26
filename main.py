@@ -29,7 +29,9 @@ IS_TRANSMITTING = False         # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = False         # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
-UNSHARP_MASK = False             # True if unsharp mask is onre displayed
+UNSHARP_MASK = False            # True if unsharp mask is onre displayed
+CAN_RECOVER = True             # True if want recovery
+#TODO: don't recover on first frame
 
 if COMP_SETTINGS:
     SHOW_FRAME = False
@@ -115,7 +117,7 @@ def main(): # TODO: Add timing back (kernprof)
                 corner_detection.set_bots(detected_bots)
                 # 12. Run Object Detection's results through Corner Detection
                 detected_bots_with_data = corner_detection.corner_detection_main()
-                move_dictionary = algorithm.ram_ram(detected_bots_with_data)
+                move_dictionary = algorithm.ram_ram(detected_bots_with_data, CAN_RECOVER)
                 
                 if DISPLAY_ANGLES:
                     display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering)
