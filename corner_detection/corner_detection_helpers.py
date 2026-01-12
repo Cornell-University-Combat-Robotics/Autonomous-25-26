@@ -25,7 +25,7 @@ def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
     mask = cv2.inRange(hsv_image, lower_limit, upper_limit)
 
     # Count the number of non-zero pixels in the mask
-    # cv2.imshow("Mask", mask)
+    # cv2.imshow("Robot Mask", mask)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
     return cv2.countNonZero(mask)
@@ -50,6 +50,11 @@ def get_contours_per_color(side: str, hsv_image: np.ndarray, selected_colors) ->
     upper_limit = np.array([min(179, selected_color[0] + 10), 255, 255])
 
     mask = cv2.inRange(hsv_image, lower_limit, upper_limit)
+
+    # cv2.imshow("Corners Mask", mask)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return contours
 
@@ -119,7 +124,6 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
         image_area = image.size
         contour_area = cv2.contourArea(contour)
         contour_percent = contour_area/image_area
-        # print("Area", area)
         if contour_percent > 0.005: # area > 20
             # TODO: this value is subject to change based on dimensions of our video & resize_factor
             # Compute moments for each contour

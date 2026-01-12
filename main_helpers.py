@@ -135,7 +135,9 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection):
     
     return algorithm
 
-def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False):
+def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False):
+    if is_recovering:
+        cv2.putText(image, "RECOVERING", (550, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
     # BLUE line: Huey's Current Orientation according to Corner Detection
 
     if detected_bots_with_data and detected_bots_with_data["huey"] and detected_bots_with_data["huey"]["orientation"] is not None:
