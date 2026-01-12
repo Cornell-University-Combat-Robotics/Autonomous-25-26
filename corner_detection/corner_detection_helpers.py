@@ -2,6 +2,8 @@ import math
 import cv2
 import numpy as np
 
+FONT = cv2.FONT_HERSHEY_SIMPLEX
+
 @staticmethod
 def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
     """
@@ -23,6 +25,9 @@ def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
     mask = cv2.inRange(hsv_image, lower_limit, upper_limit)
 
     # Count the number of non-zero pixels in the mask
+    # cv2.imshow("Robot Mask", mask)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
     return cv2.countNonZero(mask)
 
 def get_contours_per_color(side: str, hsv_image: np.ndarray, selected_colors) -> list[np.ndarray]:
@@ -45,6 +50,11 @@ def get_contours_per_color(side: str, hsv_image: np.ndarray, selected_colors) ->
     upper_limit = np.array([min(179, selected_color[0] + 10), 255, 255])
 
     mask = cv2.inRange(hsv_image, lower_limit, upper_limit)
+
+    # cv2.imshow("Corners Mask", mask)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return contours
 
@@ -62,28 +72,32 @@ def find_our_bot(images: list[np.ndarray], bot_color_hsv) -> tuple[np.ndarray | 
         if not images:
             raise ValueError("The input image list is empty.")
         
-        max_color_pixels = -1
+        max_color_percentage = -1
         our_bot_image = None
 
         for image in images:
             
             total_pixels = np.shape(image)[0]*np.shape(image)[1]
-            print(total_pixels)
 
             if image is None:
                 print("Warning: One of the images is None, skipping...")
                 continue
 
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
-            print(color_pixel_count)
+            image_area = image.size
+            color_percentage = color_pixel_count/image_area
+            print(color_percentage)
 
-            if color_pixel_count > max_color_pixels:
+            if color_percentage > max_color_percentage:
                 our_bot_image = image
-                max_color_pixels = color_pixel_count
+                max_color_percentage = color_percentage
         
         if our_bot_image is None:
             print("Huey is not found")
             
+        # cv2.imshow("OUR BOT!", our_bot_image)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
         return our_bot_image
     
     except Exception as e:
@@ -107,9 +121,10 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
     centroids = []
     for contour in contours:
         # Filter out small contours based on area
-        area = cv2.contourArea(contour)
-        # print("Area", area)
-        if area > 10:
+        image_area = image.size
+        contour_area = cv2.contourArea(contour)
+        contour_percent = contour_area/image_area
+        if contour_percent > 0.005: # area > 20
             # TODO: this value is subject to change based on dimensions of our video & resize_factor
             # Compute moments for each contour
             M = cv2.moments(contour)
@@ -119,15 +134,7 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
                 cy = int(M["m01"] / M["m00"])
                 centroids.append((cx, cy))
                 cv2.circle(image, (cx, cy), 8, (0, 0, 0), -1)
-                cv2.putText(
-                    image,
-                    side,
-                    (cx + 10, cy - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    (255, 255, 0),
-                    2,
-                )
+                cv2.putText(image, side, (cx + 10, cy - 10), FONT, 0.5, (255, 255, 0), 2)
     return centroids
 
 def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
@@ -313,7 +320,6 @@ def get_left_and_right_front_points(points: list) -> list:
 
         all_points = red_points + blue_points
         center = np.mean(all_points, axis=0)
-        # print("center: " + str(center))
 
         vector1 = np.array(red_points[0]) - center
         vector2 = np.array(red_points[1]) - center
@@ -365,43 +371,12 @@ def display_image(image: np.ndarray, left_front: list, right_front: list):
     right_x, right_y = int(right_front[0]), int(right_front[1])
 
     # Draw the left front corner
-    cv2.circle(
-        image,
-        left_x, 
-        left_y,
-        5,
-        (255, 255, 255),
-        -1,
-    )
-    cv2.putText(
-        image,
-        "Left Front",
-        left_x, left_y - 30,
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.5,
-        (0, 255, 0),
-        1,
-        cv2.LINE_AA,
-    )
+    cv2.circle(image, left_x, left_y, 5, (255, 255, 255), -1,)
+    cv2.putText(image, "Left Front", left_x, left_y - 30, FONT, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
 
     # Draw the right front corner
-    cv2.circle(
-        image,
-        right_x, right_y,
-        5,
-        (255, 255, 255),
-        -1,
-    )
-    cv2.putText(
-        image,
-        "Right Front",
-        right_x, right_y, - 30,
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.5,
-        (0, 0, 255),
-        1,
-        cv2.LINE_AA,
-    )
+    cv2.circle(image, right_x, right_y, 5, (255, 255, 255), -1)
+    cv2.putText(image, "Right Front", right_x, right_y, - 30, FONT, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
 
     # Display the image
     cv2.imshow("Image with Left and Right Front Corners", image)
