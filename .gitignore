@@ -1,5 +1,7 @@
 **/__pycache__/
 *.pyc
+venv/*
+**/venv
 .vscode/
 .DS_Store
 main_files/captured_image.png
