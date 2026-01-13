@@ -1,10 +1,11 @@
 import os
 import time
-
+import pandas as pd
 import cv2
-
+import matplotlib.pyplot as plt
 from algorithm.ram import Ram
 from corner_detection.corner_detection import RobotCornerDetection
+import color_percentages_graphing
 from main_helpers import (
     display_angles,
     first_run,
@@ -147,6 +148,8 @@ def main(): # TODO: Add timing back (kernprof)
     except Exception as exception:
         print("UNKNOWN EXCEPTION FAILURE. PROCEEDING TO CLEAN UP:", exception)
     finally:
+        ## Newbie trial
+        color_percentages_graphing.makeGraph()
         if IS_TRANSMITTING: # Motors need to be cleaned up correctly
             try:
                 if 'motor_group' in locals():

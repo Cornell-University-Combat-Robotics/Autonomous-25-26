@@ -1,7 +1,8 @@
 import math
 import cv2
 import numpy as np
-
+import csv
+import pandas as pd
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 @staticmethod
@@ -89,18 +90,19 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
             color_percentage = color_pixel_count/image_area
 
             bot_color_percentages.append(color_percentage)
-
-            print("Color Percentage: " + str(color_percentage))
                   
             if not first_run and (color_percentage > max_color_percentage) and (color_percentage > self.huey_color_percentage_threshold):
                 our_bot_image = image
                 max_color_percentage = color_percentage
+
+        bot_color_percentages.sort()
+        self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2]))
+
         
         if our_bot_image is None:
             print("Huey is not found")
         
         if first_run and len(bot_color_percentages) > 1:
-            bot_color_percentages.sort()
             self.huey_color_percentage_threshold = (bot_color_percentages[-1] + bot_color_percentages[-2]) / 2
             print("Threshold: " + str(self.huey_color_percentage_threshold))
         elif first_run and len(bot_color_percentages) == 1:

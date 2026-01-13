@@ -9,7 +9,7 @@ class RobotCornerDetection:
     based on their unique colors and shapes.
     """
     
-    def __init__(self, selected_colors: list, display_final_image: bool = False, display_possible_hueys: bool = False):
+    def __init__(self, selected_colors: list, display_final_image: bool = False, display_possible_hueys: bool = False, color_percentage_rows = [("huey", "enemy")]):
         """
         Initializes the RobotCornerDetection class.
 
@@ -28,7 +28,8 @@ class RobotCornerDetection:
         self.selected_colors = selected_colors
         self.display_final_image = display_final_image
         self.display_possible_hueys = display_possible_hueys
-        self.huey_color_percentage_threshold = 0 #Find this by testing
+        self.huey_color_percentage_threshold = 0 
+        self.color_percentage_rows = color_percentage_rows
 
 
     def set_bots(self, bots: dict):
