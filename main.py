@@ -39,8 +39,8 @@ if COMP_SETTINGS:
 folder = os.getcwd() + "/main_files"
 frame_rate = 50
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
-# camera_number = folder + "/test_videos/huey_hell.mp4"
-camera_number = folder + "/test_videos/is_it_fat_enough_huey.mp4"
+camera_number = folder + "/test_videos/huey_hell.mp4"
+# camera_number = folder + "/test_videos/is_it_fat_enough_huey.mp4"
 # camera_number = 0
 
 if IS_TRANSMITTING:

@@ -3,7 +3,6 @@ import cv2
 import numpy as np
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
-HUEY_COLOR_PERCENTAGE_THRESHOLD = 0.3 #Find this by testing
 
 @staticmethod
 def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
@@ -59,7 +58,7 @@ def get_contours_per_color(side: str, hsv_image: np.ndarray, selected_colors) ->
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return contours
 
-def find_our_bot(images: list[np.ndarray], bot_color_hsv) -> tuple[np.ndarray | None, int] | None:
+def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False) -> tuple[np.ndarray | None, int] | None:
     """
     Identifies which image contains our robot based on a predefined robot color.
 
@@ -72,9 +71,11 @@ def find_our_bot(images: list[np.ndarray], bot_color_hsv) -> tuple[np.ndarray | 
     try:
         if not images:
             raise ValueError("The input image list is empty.")
-        
+        print("Location A")
         max_color_percentage = -1
         our_bot_image = None
+
+        bot_color_percentages = []
 
         for image in images:
             
@@ -83,21 +84,32 @@ def find_our_bot(images: list[np.ndarray], bot_color_hsv) -> tuple[np.ndarray | 
             if image is None:
                 print("Warning: One of the images is None, skipping...")
                 continue
-
+            print("Location X")
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
             image_area = image.size
             color_percentage = color_pixel_count/image_area
-            print(color_percentage)
-
-            if (color_percentage > max_color_percentage) and (color_percentage > HUEY_COLOR_PERCENTAGE_THRESHOLD):
+            print("Location Y")
+            bot_color_percentages.append(color_percentage)
+            print("Location Z")
+            print("Color Percentage: " + str(color_percentage))
+                  
+            if not first_run and (color_percentage > max_color_percentage) and (color_percentage > self.huey_color_percentage_threshold):
                 our_bot_image = image
                 max_color_percentage = color_percentage
         
         if our_bot_image is None:
             print("Huey is not found")
+        
+        if first_run and len(bot_color_percentages) > 1:
+            bot_color_percentages.sort()
+            self.huey_color_percentage_threshold = (bot_color_percentages[-1] + bot_color_percentages[-2]) / 2
+            print("Threshold: " + str(self.huey_color_percentage_threshold))
+        else:
+            print("No threshold created")
             
+
         # cv2.imshow("OUR BOT!", our_bot_image)
-        # cv2.waitKey(0)
+        # cv2.waitKey(0)1
         # cv2.destroyAllWindows()
         return our_bot_image
     

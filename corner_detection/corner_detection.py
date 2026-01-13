@@ -28,11 +28,13 @@ class RobotCornerDetection:
         self.selected_colors = selected_colors
         self.display_final_image = display_final_image
         self.display_possible_hueys = display_possible_hueys
+        self.huey_color_percentage_threshold = 0 #Find this by testing
+
 
     def set_bots(self, bots: dict):
         self.bots = bots
     
-    def detect_our_robot_main(self, bot_images: list[np.ndarray]) -> np.ndarray:
+    def detect_our_robot_main(self, bot_images: list[np.ndarray], first_run=False) -> np.ndarray:
         """
         Detects the image containing our robot between two or more given images.
 
@@ -64,7 +66,7 @@ class RobotCornerDetection:
 
             if bot_images and all(img is not None for img in bot_images):
                 bot_color = self.selected_colors[0]
-                our_bot = find_our_bot(bot_images, bot_color)
+                our_bot = find_our_bot(self, bot_images, bot_color, first_run)
 
                 return our_bot
             else:
@@ -75,7 +77,7 @@ class RobotCornerDetection:
             print(f"Unexpected error in detect_our_robot_main: {e}")
             return None
 
-    def corner_detection_main(self) -> dict | None:
+    def corner_detection_main(self, first_run=False) -> dict | None:
         """
         Main function for detecting corners and orientation of the robot.
 
@@ -84,7 +86,7 @@ class RobotCornerDetection:
         """
         try:
             bot_images = [bot["img"] for bot in self.bots["bots"]]
-            image = self.detect_our_robot_main(bot_images)
+            image = self.detect_our_robot_main(bot_images, first_run)
             
             if image is not None:
                 centroid_points = find_centroids(image, self.selected_colors)
