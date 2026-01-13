@@ -148,8 +148,15 @@ def main(): # TODO: Add timing back (kernprof)
     except Exception as exception:
         print("UNKNOWN EXCEPTION FAILURE. PROCEEDING TO CLEAN UP:", exception)
     finally:
-        ## Newbie trial
-        color_percentages_graphing.makeGraph()
+
+        ## Newbie squadron trial
+        try:
+            color_df = pd.DataFrame(corner_detection.color_percentage_rows)
+            color_df.to_csv("color_output.csv", index=True)
+            # color_percentages_graphing.makeGraph()
+        except Exception as color_exception:
+            print("Data collection failed:", color_exception)
+
         if IS_TRANSMITTING: # Motors need to be cleaned up correctly
             try:
                 if 'motor_group' in locals():
