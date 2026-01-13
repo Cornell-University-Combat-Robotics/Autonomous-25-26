@@ -5,7 +5,7 @@ import cv2
 import matplotlib.pyplot as plt
 from algorithm.ram import Ram
 from corner_detection.corner_detection import RobotCornerDetection
-import color_percentages_graphing
+# import color_percentages_graphing
 from main_helpers import (
     display_angles,
     first_run,

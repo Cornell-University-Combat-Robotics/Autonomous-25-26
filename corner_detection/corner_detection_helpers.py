@@ -19,8 +19,9 @@ def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     # Define the HSV range for the robot's color
-    lower_limit = np.array([max(0, bot_color_hsv[0] - 10), 50, 50])
-    upper_limit = np.array([min(179, bot_color_hsv[0] + 10), 255, 255])
+    # lower_limit = np.array([max(0, bot_color_hsv[0] - 3), max(0, bot_color_hsv[1] - 20), max(0, bot_color_hsv[2] - 20)])
+    lower_limit = np.array([max(0, bot_color_hsv[0] - 3), 75, 75])
+    upper_limit = np.array([min(179, bot_color_hsv[0] + 3), 255, 220])
 
     # Create a mask for the robot's color in the image
     mask = cv2.inRange(hsv_image, lower_limit, upper_limit)
@@ -86,7 +87,7 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
                 continue
             
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
-            image_area = image.size
+            image_area = image.size/3
             color_percentage = color_pixel_count/image_area
 
             bot_color_percentages.append(color_percentage)
@@ -136,7 +137,7 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
     centroids = []
     for contour in contours:
         # Filter out small contours based on area
-        image_area = image.size
+        image_area = image.size/3
         contour_area = cv2.contourArea(contour)
         contour_percent = contour_area/image_area
         if contour_percent > 0.005: # area > 20
