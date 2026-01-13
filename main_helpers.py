@@ -92,7 +92,7 @@ def get_predictor(MATT_LAPTOP):
     if MATT_LAPTOP:
         predictor = YoloModel("250v12best", "TensorRT", device="cuda")
     else:
-        predictor = YoloModel("100epoch11", "PT", device="mps")
+        predictor = YoloModel("jan13best", "PT", device="mps")
     return predictor
 
 def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel):
