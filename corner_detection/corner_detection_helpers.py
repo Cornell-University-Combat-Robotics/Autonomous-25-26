@@ -71,7 +71,6 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
     try:
         if not images:
             raise ValueError("The input image list is empty.")
-        print("Location A")
         max_color_percentage = -1
         our_bot_image = None
 
@@ -84,13 +83,13 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
             if image is None:
                 print("Warning: One of the images is None, skipping...")
                 continue
-            print("Location X")
+            
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
             image_area = image.size
             color_percentage = color_pixel_count/image_area
-            print("Location Y")
+
             bot_color_percentages.append(color_percentage)
-            print("Location Z")
+
             print("Color Percentage: " + str(color_percentage))
                   
             if not first_run and (color_percentage > max_color_percentage) and (color_percentage > self.huey_color_percentage_threshold):
@@ -104,8 +103,9 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
             bot_color_percentages.sort()
             self.huey_color_percentage_threshold = (bot_color_percentages[-1] + bot_color_percentages[-2]) / 2
             print("Threshold: " + str(self.huey_color_percentage_threshold))
-        else:
-            print("No threshold created")
+        elif first_run and len(bot_color_percentages) == 1:
+            self.huey_color_percentage_threshold = bot_color_percentages[0] - 0.05
+            print("Threshold: " + str(self.huey_color_percentage_threshold))
             
 
         # cv2.imshow("OUR BOT!", our_bot_image)
