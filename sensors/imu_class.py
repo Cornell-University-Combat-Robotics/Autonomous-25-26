@@ -33,6 +33,9 @@ class IMU_sensor():
         self.pitch = 0
         self.yaw = 0
         self.dict_lock = threading.Lock()
+        self.error_lock = threading.Lock()
+        self.errorCounter = 0
+        self.goodTime = time.time()
         time.sleep(2)  # Wait for the serial connection to initialize
         self.get_continuous_dict()
     
@@ -103,17 +106,30 @@ class IMU_sensor():
         def update_dict():
             while True:
                 try:
+                    # print(f"error count: {self.errorCounter}")
                     json_string = self.ser.readline().decode('utf-8').strip()
                     new_dict = json.loads(json_string)
                     with self.dict_lock:
                         self.dict = new_dict
+                    with self.error_lock:
+                        self.errorCounter = 0
+                        self.goodTime = time.time()
                 except UnicodeDecodeError as e:
-                    print("IMU error: " + str(e))
+                    # print("IMU error: " + str(e))
+                    with self.error_lock:
+                        self.errorCounter += 1
+                        print(f"time since good: {time.time()-self.goodTime}")
                 except json.decoder.JSONDecodeError as e:
-                    print("JSON error: " + str(e))
-
+                    # print("JSON error: " + str(e))
+                    with self.error_lock:
+                        self.errorCounter += 1
+                        print(f"time since good: {time.time()-self.goodTime}")
         thread = threading.Thread(target=update_dict, daemon=True)
         thread.start()
+        
+    def check_valid(self, threshold):
+        with self.error_lock:
+            return time.time()-self.goodTime <= threshold
 
     def get_yaw_continuous(self):
         """
