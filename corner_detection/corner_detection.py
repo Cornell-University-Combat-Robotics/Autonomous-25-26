@@ -9,7 +9,7 @@ class RobotCornerDetection:
     based on their unique colors and shapes.
     """
     
-    def __init__(self, selected_colors: list, display_final_image: bool = False, display_possible_hueys: bool = False, color_percentage_rows = [("huey", "enemy")]):
+    def __init__(self, selected_colors: list, display_final_image: bool = False, display_possible_hueys: bool = False, color_percentage_rows = []):
         """
         Initializes the RobotCornerDetection class.
 
