@@ -1,6 +1,7 @@
 import math
 import random
 import time
+import cv2
 
 import numpy as np
 
@@ -100,7 +101,11 @@ class Ram():
         self.recover_speed = self.RECOVERY_SPEED_VALUES[self.recovery_step%4]
         self.recover_turn = self.RECOVERY_TURN_VALUES[self.recovery_step%4]
 
-    def check_previous_position_and_orientation(self):
+    def check_previous_position_and_orientation(self, can_recover: bool = True):
+        if not can_recover:
+            self.is_recovering=False
+            return False
+        
         counter_pos, counter_orientation = 0, 0
         x_curr, y_curr = self.huey_position
 
@@ -153,7 +158,7 @@ class Ram():
         return angle * (Ram.MAX_TURN / 180.0), 1-(np.sign(angle) * (angle) * (Ram.MAX_SPEED / 180.0))
 
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
-    def ram_ram(self, bots: dict[str, any] = None):
+    def ram_ram(self, bots: dict[str, any] = None, can_recover: bool = True):
         # if not (bots and bots["huey"]):
         #     if self.huey_previous_positions:
         #         self.huey_previous_positions.append(self.huey_previous_positions[-1])
@@ -235,7 +240,14 @@ class Ram():
 
         #     return self.huey_move(speed, turn)
 
-        # return self.huey_move(self.huey_old_speed, self.huey_old_turn)    
+        # return self.huey_move(self.huey_old_speed, self.huey_old_turn)   
+        
+        if cv2.waitKey(1) & 0xFF == ord("r"):  # Press Q on keyboard to exit
+            self.huey_previous_positions = []
+            self.huey_previous_orientations = []
+            self.huey_previous_positions.append(self.huey_position)
+            self.huey_previous_orientations.append(self.huey_orientation)
+
         if self.huey_pos_count % 5 == 0:
             self.huey_previous_positions.append(self.huey_position)
             self.huey_previous_orientations.append(self.huey_orientation)
@@ -263,7 +275,7 @@ class Ram():
         else:
             self.recovering_until = 0
             
-        if (self.check_previous_position_and_orientation()):
+        if (self.check_previous_position_and_orientation(can_recover)):
             if (bots and bots["huey"] and len(bots["huey"]) > 0):
                 self.huey_position = np.array(bots['huey'].get('center'))
                 self.huey_previous_positions.append(self.huey_position)
