@@ -4,7 +4,8 @@ from corner_detection.corner_detection import RobotCornerDetection
 
 def makeGraph():  
     # Read the CSV file
-    df = pd.read_csv("color_output.csv", index_col = 0)
+    # df = pd.read_csv("color_output.csv", index_col = 0)
+    df = pd.read_csv("ColorPercentageData.csv")
 
     # Print diagnostic information
 
