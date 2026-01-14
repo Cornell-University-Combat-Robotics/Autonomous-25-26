@@ -23,14 +23,14 @@ from warp_main import warp
 
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
-MATT_LAPTOP = False             # True if running on Matt's laptop
+MATT_LAPTOP = True             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
 WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
-SHOW_FRAME = True               # Show camera feed frames
+SHOW_FRAME = False               # Show camera feed frames
 IS_ORIGINAL_FPS = False         # Process every captured frame
-DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
+DISPLAY_ANGLES = False     # Only show angles if frames a
 UNSHARP_MASK = False            # True if unsharp mask is onre displayed
 CAN_RECOVER = False             # True if want recovery
 PROFILE_LINES = True            # True to display timing info for functions
@@ -42,7 +42,7 @@ if COMP_SETTINGS:
     MATT_LAPTOP = True   # Force TensorRT optimization on Matt's laptop
 
 folder = os.getcwd() + "/main_files"
-frame_rate = 60
+frame_rate = 30
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
@@ -68,7 +68,7 @@ else:
         return func
 # ------------------------------ BEFORE THE MATCH ------------------------------
 @profile
-def main(): # TODO: Add timing back (kernprof)
+def main():
     stream = None
     try:
         # 1. Start the capturing frame from the camera or pre-recorded video
@@ -108,11 +108,12 @@ def main(): # TODO: Add timing back (kernprof)
 
         while stream.isOpened() and not stream.stopped:
             time_elapsed = time.perf_counter() - prev
-            print("FPS: " + str(1/time_elapsed))
             # 10. Warp image using the Homography Matrix
             if IS_ORIGINAL_FPS or time_elapsed > 1.0 / frame_rate:
+                print("FPS: " + str(1/time_elapsed))
                 prev = time.perf_counter()
                 ret, frame = stream.read()
+                print("Frame number: " + str(stream.frameCount()))
 
                 if not ret:
                     print("Failed to capture image" + "\n")
