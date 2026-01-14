@@ -11,7 +11,7 @@ from .ram_helper import (
     init_values,
     invert_y,
     mix_speed_turn,
-    to_float,
+    to_float
 )
 
 class Ram():
@@ -30,7 +30,7 @@ class Ram():
     LEFT_TURN = -1
     RIGHT_SPEED = 1
     RIGHT_TURN = 1
-    BACK_UP_THRESHOLD = 5  # TODO: lower number of stagnant frames to trigger Huey back up?
+    BACK_UP_THRESHOLD = 5  # TODO: lower number of stagnant frames to trigger Huey back up? MOVE TO HELPERS
     RECOVERY_SPEED_VALUES = [BACK_UP_SPEED* 0.5, FORWARD_SPEED* 0.5, LEFT_SPEED* 0.5, RIGHT_SPEED* 0.5] 
     RECOVERY_TURN_VALUES = [BACK_UP_TURN, FORWARD_TURN, LEFT_TURN, RIGHT_TURN]
     USE_PID = True
@@ -48,11 +48,17 @@ class Ram():
             self.huey_orientation = float(huey_orientation if huey_orientation is not None else 0.0)
             # initialize the current enemy position
             self.enemy_position = np.array(enemy_position if enemy_position is not None else (0.0, 0.0), dtype=float)
+            self.huey_girth = 67
+            
         else:
             self.huey_position = init_values(bots, self.ARENA_WIDTH, is_pos=True, is_huey=True)
             self.huey_old_position = init_values(bots, self.ARENA_WIDTH, is_pos=True, is_huey=True)
             self.huey_orientation = init_values(bots, self.ARENA_WIDTH, is_pos=False, is_huey=True)
             self.enemy_position = init_values(bots, self.ARENA_WIDTH, is_pos=True, is_huey=False)
+            if bots["huey"] and len(bots["huey"]) > 0:
+                self.huey_girth = (math.dist(bots['huey'].get('bbox')[1], bots['huey'].get('bbox')[0]))/2
+            else:
+                self.huey_girth = 67
 
         self.huey_old_speed = huey_old_speed
         self.huey_old_turn = huey_old_turn
@@ -123,6 +129,70 @@ class Ram():
             return True
         self.is_recovering=False
         return False
+    
+    def check_arena_edge(self):
+        counter_pos = 0
+        counter_orientation = 0
+        x_curr, y_curr = self.huey_position
+        
+        for prev_pos in self.huey_previous_positions:
+            if x_curr == prev_pos[0] and y_curr == prev_pos[1]:
+                counter_pos += 1
+
+        for prev_orientation in self.huey_previous_orientations:
+            if prev_orientation == self.huey_orientation:
+                counter_orientation += 1
+
+        # print(f"💅POPOS:💅 {self.huey_position}")
+        # print(f"🛸ORORIE:🛸 {self.huey_orientation}")
+        # print(f"🦒🦒🦒GIRTH {self.huey_girth}")
+
+        if counter_pos >= Ram.BACK_UP_THRESHOLD and counter_orientation >= Ram.BACK_UP_THRESHOLD:
+
+            # Huey against left wall
+            if (self.huey_position[0] < self.huey_girth):
+                if (0 <= self.huey_orientation < 45 or 315 < self.huey_orientation <= 359):
+                    print("👿 AGAINST A LEFT WALL, FORWARD 👿")
+                    return 1
+                else:
+                    print("👼 AGAINST A LEFT WALL, BACK 👼")
+                    return -1
+
+            # Huey against right wall
+            elif self.huey_position[0] > 700 - self.huey_girth:
+                if 135 < self.huey_orientation <= 225:
+                    print("🦋 AGAINST A RIGHT WALL, FORWARD 🦋")
+                    return 1
+                else:
+                    print("🐛 AGAINST A RIGHT WALL, BACK 🐛")
+                    return -1
+
+            # Huey against top wall
+            elif self.huey_position[1] < self.huey_girth:
+                if 225 < self.huey_orientation <= 315:
+                    print("🌝 AGAINST A TOP WALL, FORWARD 🌝")
+                    return 1
+                else:
+                    print("🌚 AGAINST A TOP WALL, BACK 🌚")
+                    return -1
+
+            # Huey against bottom wall
+            elif self.huey_position[1] > 700 - self.huey_girth:
+                if 45 < self.huey_orientation <= 135:
+                    print("🦐 AGAINST A BOTTOM WALL, FORWARD 🦐")
+                    return 1
+                else:
+                    print("🍤 AGAINST A BOTTOM WALL, BACK 🍤")
+                    return -1
+            
+            print("NO BACKY FORY💀💀💀")
+            return 0
+        
+
+        # if forward:
+        #     return self.huey_move(self.FORWARD_SPEED, self.FORWARD_TURN)
+        # else: 
+        #     return self.huey_move(self.BACK_UP_SPEED, self.BACK_UP_TURN)
 
     ''' 
     Returns the predicted desired orientation angle of the bot given all parameters, NOTE: the positive direction is counterclockwise
@@ -274,6 +344,16 @@ class Ram():
             return self.huey_move(self.recover_speed, self.recover_turn)
         else:
             self.recovering_until = 0
+
+        # backup = self.check_arena_edge()
+        # if backup == 1:
+        #     return self.huey_move(self.FORWARD_SPEED, self.FORWARD_TURN)
+        # elif backup == -1:
+        #     return self.huey_move(self.BACK_UP_SPEED, self.BACK_UP_TURN)
+
+        # print(f"💅POPOS:💅 {self.huey_position}")
+        # print(f"🛸ORORIE:🛸 {self.huey_orientation}")
+        # print(f"🦒🦒🦒GIRTH {self.huey_girth}")
             
         if (self.check_previous_position_and_orientation(can_recover)):
             if (bots and bots["huey"] and len(bots["huey"]) > 0):
@@ -291,6 +371,7 @@ class Ram():
             self.recovery_step = 0
         
         if bots and bots["huey"] and len(bots["huey"])>0:
+            self.huey_girth = (math.dist(bots['huey'].get('bbox')[1], bots['huey'].get('bbox')[0]))/2
             self.huey_position = np.array(bots['huey'].get('center'))
             self.huey_orientation = bots['huey'].get('orientation')
 
