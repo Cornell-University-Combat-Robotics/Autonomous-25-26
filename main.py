@@ -5,7 +5,6 @@ import cv2
 import matplotlib.pyplot as plt
 from algorithm.ram import Ram
 from corner_detection.corner_detection import RobotCornerDetection
-import color_percentages_graphing
 from main_helpers import (
     display_angles,
     first_run,
@@ -30,7 +29,7 @@ IS_TRANSMITTING = False         # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = False         # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
-UNSHARP_MASK = True             # True if unsharp mask is onre displayed
+UNSHARP_MASK = False             # True if unsharp mask is onre displayed
 
 if COMP_SETTINGS:
     SHOW_FRAME = False
@@ -39,9 +38,10 @@ if COMP_SETTINGS:
 
 folder = os.getcwd() + "/main_files"
 frame_rate = 50
-# camera_number = folder + "/test_videos/kabedon_huey.mp4"
+#camera_number = folder + "/test_videos/kabedon_huey.mp4"
 camera_number = folder + "/test_videos/huey_hell.mp4"
-# camera_number = folder + "/test_videos/is_it_fat_enough_huey.mp4"
+#camera_number = folder + "/test_videos/huey_duet_demo.mp4"
+#camera_number = folder + "/test_videos/nhrl_arena.mp4"
 # camera_number = 0
 
 if IS_TRANSMITTING:

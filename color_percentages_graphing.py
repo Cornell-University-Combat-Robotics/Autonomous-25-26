@@ -4,8 +4,8 @@ from corner_detection.corner_detection import RobotCornerDetection
 
 def makeGraph():  
     # Read the CSV file
-    # df = pd.read_csv("color_output.csv", index_col = 0)
-    df = pd.read_csv("ColorPercentageData.csv")
+    df = pd.read_csv("color_output.csv", index_col = 0)
+    #df = pd.read_csv("ColorPercentageData.csv")
 
     # Print diagnostic information
 
@@ -54,7 +54,7 @@ def makeGraph():
     ax.set_ylabel('Percentage', fontsize=12)
     ax.set_title('Color Percentage Data Visualization', fontsize=14, fontweight='bold')
     ax.set_ylim(0, 0.5)
-    ax.set_xticks([i * 30 for i in range(40)])
+    ax.set_xticks([i * 50 for i in range(40)])
     ax.set_yticks([i * 0.1 for i in range(5)])  # 0, 0.1, 0.2, ..., 1.0
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f'{y:.1f}'))
     ax.grid(True, alpha=0.3)

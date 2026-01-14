@@ -73,12 +73,11 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
         if not images:
             raise ValueError("The input image list is empty.")
         max_color_percentage = -1
-        our_bot_image = None
+        our_bot_image = None 
 
         bot_color_percentages = []
 
         for image in images:
-            
             total_pixels = np.shape(image)[0]*np.shape(image)[1]
 
             if image is None:
@@ -86,30 +85,45 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
                 continue
             
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
-            image_area = image.size
+            image_area = image.size/3
             color_percentage = color_pixel_count/image_area
 
             bot_color_percentages.append(color_percentage)
-                  
-            if not first_run and (color_percentage > max_color_percentage) and (color_percentage > self.huey_color_percentage_threshold):
+            #check if the next if statement is redundant since we are tracking the percentages with the list...
+            # and sorting it to find the max. potentially, we do not need this calculation. Another note,
+            # the color percentages are very variable during the match so i don't know if we should just 
+            # continuously set a max.      
+            if color_percentage > max_color_percentage:
                 our_bot_image = image
                 max_color_percentage = color_percentage
 
         bot_color_percentages.sort()
-        self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2]))
-
+        #self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2]))
         
+        if first_run: #Set initial threshold
+            if len(bot_color_percentages) > 1:
+                self.huey_color_percentage_threshold = (bot_color_percentages[-1] + bot_color_percentages[-2]) / 2
+                print("Threshold: " + str(self.huey_color_percentage_threshold))
+            elif len(bot_color_percentages) == 1:
+                self.huey_color_percentage_threshold = bot_color_percentages[0] - 0.05
+                print("Threshold: " + str(self.huey_color_percentage_threshold))
+        elif len(bot_color_percentages) == 1 and max_color_percentage < self.huey_color_percentage_threshold:
+            our_bot_image = None
+        
+        #Writing information to be graphed
+        if len(bot_color_percentages) == 2:
+            self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2],self.huey_color_percentage_threshold))
+        if len(bot_color_percentages) == 1:
+            if bot_color_percentages[0] > self.huey_color_percentage_threshold:
+                self.color_percentage_rows.append((bot_color_percentages[0], 0,self.huey_color_percentage_threshold))
+            else:
+                self.color_percentage_rows.append((0, bot_color_percentages[0], self.huey_color_percentage_threshold))
+        elif len(bot_color_percentages) == 0:
+            self.color_percentage_rows.append((0, 0, self.huey_color_percentage_threshold))
+
         if our_bot_image is None:
             print("Huey is not found")
-        
-        if first_run and len(bot_color_percentages) > 1:
-            self.huey_color_percentage_threshold = (bot_color_percentages[-1] + bot_color_percentages[-2]) / 2
-            print("Threshold: " + str(self.huey_color_percentage_threshold))
-        elif first_run and len(bot_color_percentages) == 1:
-            self.huey_color_percentage_threshold = bot_color_percentages[0] - 0.05
-            print("Threshold: " + str(self.huey_color_percentage_threshold))
             
-
         # cv2.imshow("OUR BOT!", our_bot_image)
         # cv2.waitKey(0)1
         # cv2.destroyAllWindows()
@@ -136,7 +150,7 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
     centroids = []
     for contour in contours:
         # Filter out small contours based on area
-        image_area = image.size
+        image_area = image.size/3
         contour_area = cv2.contourArea(contour)
         contour_percent = contour_area/image_area
         if contour_percent > 0.005: # area > 20
