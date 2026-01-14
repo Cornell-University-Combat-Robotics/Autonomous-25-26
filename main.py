@@ -21,7 +21,7 @@ from warp_main import warp
 
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
-MATT_LAPTOP = True             # True if running on Matt's laptop
+MATT_LAPTOP = False             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
 WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
@@ -43,8 +43,8 @@ frame_rate = 50
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-# camera_number = folder + "/test_videos/huey_duet_demo.mp4"
-camera_number = 1
+camera_number = folder + "/test_videos/huey_duet_demo.mp4"
+# camera_number = 1
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
