@@ -4,6 +4,7 @@ import time
 from line_profiler import LineProfiler
 import cv2
 
+from camera_stream import CameraStream
 from algorithm.ram import Ram
 from corner_detection.corner_detection import RobotCornerDetection
 from main_helpers import (
@@ -25,14 +26,14 @@ from warp_main import warp
 MATT_LAPTOP = False             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
-IS_ORIGINAL_FPS = True         # Process every captured frame
+IS_ORIGINAL_FPS = False         # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
 UNSHARP_MASK = False            # True if unsharp mask is onre displayed
 CAN_RECOVER = False             # True if want recovery
-PROFILE_LINES = False            # True to display timing info for functions
+PROFILE_LINES = True            # True to display timing info for functions
 #TODO: don't recover on first frame
 
 if COMP_SETTINGS:
@@ -45,8 +46,8 @@ frame_rate = 60
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-camera_number = folder + "/test_videos/huey_duet_demo.mp4"
-# camera_number = 1
+# camera_number = folder + "/test_videos/huey_duet_demo.mp4"
+camera_number = 1
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
@@ -68,11 +69,12 @@ else:
 # ------------------------------ BEFORE THE MATCH ------------------------------
 @profile
 def main(): # TODO: Add timing back (kernprof)
+    stream = None
     try:
         # 1. Start the capturing frame from the camera or pre-recorded video
         # 2. Capture initial frame by pressing '0'
-        cap = cv2.VideoCapture(camera_number)
-        captured_image = key_frame(cap)
+        stream = CameraStream(camera_number).start()
+        captured_image = key_frame(stream)
 
         # 3. Use the initial frame to get a new Homography Matrix and new colors
         if WARP_AND_COLOR_PICKING:
@@ -100,16 +102,17 @@ def main(): # TODO: Add timing back (kernprof)
 
         # ----------------------------------------------------------------------
         # 8. Match begins
-        if cap.isOpened() == False:
+        if stream.isOpened() == False:
             print("Error opening video file" + "\n")
         prev = 0
 
-        while cap.isOpened():
+        while stream.isOpened() and not stream.stopped:
             time_elapsed = time.perf_counter() - prev
             print("FPS: " + str(1/time_elapsed))
             # 10. Warp image using the Homography Matrix
             if IS_ORIGINAL_FPS or time_elapsed > 1.0 / frame_rate:
-                ret, frame = cap.read()
+                prev = time.perf_counter()
+                ret, frame = stream.read()
 
                 if not ret:
                     print("Failed to capture image" + "\n")
@@ -119,7 +122,6 @@ def main(): # TODO: Add timing back (kernprof)
                     if cv2.waitKey(1) & 0xFF == ord("q"):  # Press Q on keyboard to exit
                         break
                 
-                prev = time.perf_counter()
                 warped_frame = warp(frame, homography_matrix)
 
                 # 11. Run the Warped Image through Object Detection
@@ -153,7 +155,7 @@ def main(): # TODO: Add timing back (kernprof)
             if SHOW_FRAME and not DISPLAY_ANGLES:
                 cv2.imshow("Bounding boxes (no angles)", warped_frame)
 
-        cap.release()
+        stream.stop()
         print("============================")
         print("Video finished successfully!")
 
@@ -174,8 +176,8 @@ def main(): # TODO: Add timing back (kernprof)
             except Exception as motor_exception:
                 print("Motor cleanup failed:", motor_exception)
 
-        if 'cap' in locals():
-            cap.release()
+        if stream:
+            stream.stop()
             cv2.destroyAllWindows()
         if PROFILE_LINES:
             profiler.print_stats(output_unit=1e-03)
