@@ -30,7 +30,7 @@ SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = False         # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
 UNSHARP_MASK = False            # True if unsharp mask is onre displayed
-CAN_RECOVER = True             # True if want recovery
+CAN_RECOVER = False             # True if want recovery
 #TODO: don't recover on first frame
 
 if COMP_SETTINGS:
