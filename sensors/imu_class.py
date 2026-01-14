@@ -118,12 +118,12 @@ class IMU_sensor():
                     # print("IMU error: " + str(e))
                     with self.error_lock:
                         self.errorCounter += 1
-                        print(f"time since good: {time.time()-self.goodTime}")
+                        # print(f"time since good: {time.time()-self.goodTime}")
                 except json.decoder.JSONDecodeError as e:
-                    # print("JSON error: " + str(e))
+                    print("JSON error: " + str(e))
                     with self.error_lock:
                         self.errorCounter += 1
-                        print(f"time since good: {time.time()-self.goodTime}")
+                        # print(f"time since good: {time.time()-self.goodTime}")
         thread = threading.Thread(target=update_dict, daemon=True)
         thread.start()
         

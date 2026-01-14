@@ -167,11 +167,16 @@ void loop() {
       mj = sensorValue.un.rotationVector.j;
       mk = sensorValue.un.rotationVector.k;
       break;
+  }
   
-  sprintf(data, "\"game\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f}, \"accelerometer\": {\"gravity_x\": %f, \"gravity_y\": %f, \"gravity_z\": %f}, \"magnetometer\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f} }", gr, gi, gj, gk, gravity_x, gravity_y, gravity_z, mr, mi, mj, mk);
+  sprintf(data, "{ \"game\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f}, \"accelerometer\": {\"gravity_x\": %f, \"gravity_y\": %f, \"gravity_z\": %f}, \"magnetometer\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f} }", gr, gi, gj, gk, gravity_x, gravity_y, gravity_z, mr, mi, mj, mk);
   Serial.printf("%s\n", data);
 
   if (!broadcast_peer.send_message((uint8_t *)data, sizeof(data))) {
     Serial.println("Failed to broadcast message");
   }
 }
+
+
+
+
