@@ -139,9 +139,17 @@ class IMU_sensor():
             _, _, yaw = self.quaternion_to_euler(self.dict["game"]["r"], self.dict["game"]["i"], self.dict["game"]["j"], self.dict["game"]["k"])
         self.yaw = (yaw / math.pi) * 180
         if self.yaw < 0:
-            self.yaw += 360        
+            self.yaw += 360
         return self.yaw
 
+    def get_field_continuous(self, field, subfield):
+        """
+        Read [field][subfield] from continuously updated dict field
+        """
+        with self.dict_lock:
+            return self.dict[field][subfield]
+
+    
     def get_upside_down_continuous(self):
         """
         Read the upside down value from continuously updated dict field

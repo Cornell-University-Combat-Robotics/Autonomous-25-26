@@ -1,0 +1,233 @@
+import os
+import time
+
+import cv2
+
+from algorithm.ram import Ram
+from corner_detection.corner_detection import RobotCornerDetection
+from main_helpers import (
+    display_angles,
+    first_run,
+    get_motor_groups,
+    get_predictor,
+    key_frame,
+    make_new_colors,
+    make_new_homography,
+    read_prev_colors,
+    read_prev_homography,
+    unsharp
+)
+from warp_main import warp
+from main_helpers import key_frame, read_prev_homography, make_new_homography, read_prev_colors, make_new_colors, get_predictor, get_motor_groups, first_run, display_angles, draw_yaw_text
+from sensors.imu_class import IMU_sensor
+from sensors.imu_class import IMUReadError
+import matplotlib.pyplot as plt
+from collections import deque
+
+# ------------------------------ GLOBAL VARIABLES ------------------------------
+
+MATT_LAPTOP = False             # True if running on Matt's laptop
+JANK_CONTROLLER = False         # True if using backup controller
+COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
+WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
+IS_TRANSMITTING = True         # True if connected to live Huey
+SHOW_FRAME = True               # Show camera feed frames
+IS_ORIGINAL_FPS = False         # Process every captured frame
+DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
+UNSHARP_MASK = False             # True if unsharp mask is onre displayed
+IMU_ENABLED = True              # True if IMU is connected
+PLOT_ORIENTATION = True        # True if plotting orientation data from IMU and corner detection
+MAX_POINTS = 300                # Max points to show in orientation plot
+
+if COMP_SETTINGS:
+    SHOW_FRAME = False
+    DISPLAY_ANGLES = False
+    MATT_LAPTOP = True   # Force TensorRT optimization on Matt's laptop
+
+folder = os.getcwd() + "/main_files"
+frame_rate = 50
+# camera_number = folder + "/test_videos/kabedon_huey.mp4"
+# camera_number = folder + "/test_videos/lazy_huey.mp4"
+# camera_number = folder + "/test_videos/huey_duet_demo.mp4"
+camera_number = 0
+
+if IS_TRANSMITTING:
+    speed_motor_channel = 1
+    turn_motor_channel = 3
+    weapon_motor_channel = 4
+
+time_buffer = deque(maxlen=MAX_POINTS)
+imu_yaw_buffer = deque(maxlen=MAX_POINTS)
+cd_yaw_buffer = deque(maxlen=MAX_POINTS)
+
+plot_start_time = time.perf_counter()
+
+if PLOT_ORIENTATION and IMU_ENABLED:
+    plt.ion()  # interactive mode
+    fig, ax = plt.subplots(figsize=(8, 4))
+
+    imu_line, = ax.plot([], [], label="IMU Yaw", linewidth=2)
+    cd_line, = ax.plot([], [], label="Corner Detection Yaw", linestyle="--")
+
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Yaw (deg)")
+    ax.set_title("Real-Time Orientation Comparison")
+    ax.legend()
+    ax.grid(True)
+    plt.show()
+
+# ------------------------------ BEFORE THE MATCH ------------------------------
+
+def main(): # TODO: Add timing back (kernprof)
+    try:
+        # 1. Start the capturing frame from the camera or pre-recorded video
+        # 2. Capture initial frame by pressing '0'
+        cap = cv2.VideoCapture(camera_number)
+        captured_image = key_frame(cap)
+
+        # 3. Use the initial frame to get a new Homography Matrix and new colors
+        if WARP_AND_COLOR_PICKING:
+            warped_frame, homography_matrix = make_new_homography(captured_image)
+            selected_colors = make_new_colors(folder + "/selected_colors.txt", warped_frame)
+        # 4. Or use the previously saved Homography Matrix and colors from the txt file
+        else:
+            warped_frame, homography_matrix = read_prev_homography(captured_image, folder + "/homography_matrix.txt")
+            selected_colors = read_prev_colors(folder + "/selected_colors.txt")
+
+        # 5. Defining all subsystem objects: ML, Corner, Algorithm, Transmission
+        predictor = get_predictor(MATT_LAPTOP)
+        corner_detection = RobotCornerDetection(selected_colors, False, False)
+        algorithm = None
+        if IMU_ENABLED:
+            imu_sensor = IMU_sensor()
+        # TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
+        if IS_TRANSMITTING:
+            ser, motor_group, weapon_motor_group = get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
+        
+        cv2.destroyAllWindows()
+
+        if WARP_AND_COLOR_PICKING:
+            algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection)
+        else:
+            algorithm = Ram()
+
+        # ----------------------------------------------------------------------
+        # 8. Match begins
+        if cap.isOpened() == False:
+            print("Error opening video file" + "\n")
+        prev = 0
+
+        while cap.isOpened():
+            time_elapsed = time.perf_counter() - prev
+            # 10. Warp image using the Homography Matrix
+            if IS_ORIGINAL_FPS or time_elapsed > 1.0 / frame_rate:
+                ret, frame = cap.read()
+
+                if not ret:
+                    print("Failed to capture image" + "\n")
+                    break
+
+                if SHOW_FRAME:
+                    if cv2.waitKey(1) & 0xFF == ord("q"):  # Press Q on keyboard to exit
+                        break
+                
+                prev = time.perf_counter()
+                warped_frame = warp(frame, homography_matrix)
+
+                # 11. Run the Warped Image through Object Detection
+                detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
+
+                # Unsharp Masking
+                if UNSHARP_MASK:
+                    detected_bots = unsharp(detected_bots, False) # set to true if you want to see the before after unsharp mask
+
+                #indonesia.set_bots(detected_bots)
+                corner_detection.set_bots(detected_bots)
+                # 12. Run Object Detection's results through Corner Detection
+                detected_bots_with_data = corner_detection.corner_detection_main()
+                print("📐corner works")
+                is_flipped = 1
+                if IMU_ENABLED:
+                    try:
+                        print(imu_sensor.get_yaw_continuous())
+                        yaw = imu_sensor.get_yaw_continuous()
+                        is_flipped = imu_sensor.get_upside_down_continuous()
+                        print(f"flipped = {is_flipped}")
+                        print(f"yaw = {yaw}")
+                        draw_yaw_text(warped_frame,yaw,is_flipped)
+                    except IMUReadError as ex:
+                        print(f"🟥 Error: {ex}")
+                        print(" 🟢 using cd orientation 🟢 ")
+                        pass
+                    except KeyError as ex:
+                        print(f"🟥 Error: {ex}")
+                        pass
+                    except Exception as ex:
+                        print("🦅 WTF is Happening 🦅")
+                        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                        message = template.format(type(ex).__name__, ex.args)
+                        print(message)
+                        raise(ex)
+                move_dictionary = algorithm.ram_ram(detected_bots_with_data)
+
+
+                # 13. Plotting the orientation data if IMU is enabled and plotting is on
+                gyro_yaw = imu_sensor.get_field_continuous("gyroscope", "z")
+        
+                if PLOT_ORIENTATION and IMU_ENABLED:
+                    current_time = time.perf_counter() - plot_start_time
+                    imu_yaw_buffer.append(yaw)
+                    cd_yaw_buffer.append(detected_bots_with_data["huey"]["orientation"])
+                    time_buffer.append(current_time)
+
+                    imu_line.set_data(time_buffer, imu_yaw_buffer)
+                    cd_line.set_data(time_buffer, cd_yaw_buffer)
+                    ax.relim()
+                    ax.autoscale_view()
+                    plt.pause(0.001)
+                if DISPLAY_ANGLES:
+                    display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering)
+
+                # 14. Transmitting the motor values to Huey's if we're using a live video
+                if IS_TRANSMITTING:
+                    speed = move_dictionary["speed"]
+                    turn = move_dictionary["turn"]
+                    print(f"is flipped? {is_flipped}")
+                    if turn * -1 > 0:
+                        motor_group.move(speed * 0.8*is_flipped, turn * -1 * 0.55 + 0.2)
+                    else:
+                        motor_group.move(speed * 0.8*is_flipped, turn * -1 * 0.55 - 0.2)
+
+            elif DISPLAY_ANGLES:
+                display_angles(None, None, warped_frame)
+
+            if SHOW_FRAME and not DISPLAY_ANGLES:
+                cv2.imshow("Bounding boxes (no angles)", warped_frame)
+
+        cap.release()
+        print("============================")
+        print("Video finished successfully!")
+
+        if SHOW_FRAME:
+            cv2.destroyAllWindows()
+
+    except KeyboardInterrupt:
+        print("KEYBOARD INTERRUPT CLEAN UP")
+    except Exception as exception:
+        print("UNKNOWN EXCEPTION FAILURE. PROCEEDING TO CLEAN UP:", exception)
+    finally:
+        if IS_TRANSMITTING: # Motors need to be cleaned up correctly
+            try:
+                if 'motor_group' in locals():
+                    motor_group.stop()
+                if 'ser' in locals():
+                    ser.cleanup()
+            except Exception as motor_exception:
+                print("Motor cleanup failed:", motor_exception)
+
+        if 'cap' in locals():
+            cap.release()
+            cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    main()
