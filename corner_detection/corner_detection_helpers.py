@@ -19,7 +19,7 @@ def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     # Define the HSV range for the robot's color
-    lower_limit = np.array([max(0, bot_color_hsv[0] - 3), 75, 125])
+    lower_limit = np.array([max(0, bot_color_hsv[0] - 3), 125, 125])
     upper_limit = np.array([min(179, bot_color_hsv[0] + 3), 255, 255])
 
     # Create a mask for the robot's color in the image
