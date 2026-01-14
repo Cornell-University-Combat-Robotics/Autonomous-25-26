@@ -5,7 +5,7 @@ import cv2
 import matplotlib.pyplot as plt
 from algorithm.ram import Ram
 from corner_detection.corner_detection import RobotCornerDetection
-# import color_percentages_graphing
+import color_percentages_graphing
 from main_helpers import (
     display_angles,
     first_run,
@@ -30,7 +30,7 @@ IS_TRANSMITTING = False         # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = False         # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
-UNSHARP_MASK = False             # True if unsharp mask is onre displayed
+UNSHARP_MASK = True             # True if unsharp mask is onre displayed
 
 if COMP_SETTINGS:
     SHOW_FRAME = False
@@ -149,10 +149,14 @@ def main(): # TODO: Add timing back (kernprof)
         print("UNKNOWN EXCEPTION FAILURE. PROCEEDING TO CLEAN UP:", exception)
     finally:
 
-        ## Newbie trial
-        color_df = pd.DataFrame(corner_detection.color_percentage_rows)
-        color_df.to_csv("color_output.csv", index=True)
-        # color_percentages_graphing.makeGraph()
+        ## Newbie squadron trial
+        try:
+            color_df = pd.DataFrame(corner_detection.color_percentage_rows)
+            color_df.to_csv("color_output.csv", index=True)
+            # color_percentages_graphing.makeGraph()
+        except Exception as color_exception:
+            print("Data collection failed:", color_exception)
+
         if IS_TRANSMITTING: # Motors need to be cleaned up correctly
             try:
                 if 'motor_group' in locals():
