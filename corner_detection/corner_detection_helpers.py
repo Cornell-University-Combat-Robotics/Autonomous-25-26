@@ -86,7 +86,7 @@ def find_our_bot(images: list[np.ndarray], bot_color_hsv) -> tuple[np.ndarray | 
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
             image_area = image.size/3
             color_percentage = color_pixel_count/image_area
-            print(color_percentage)
+            # print(color_percentage)
 
             if color_percentage > max_color_percentage:
                 our_bot_image = image

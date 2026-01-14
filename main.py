@@ -1,6 +1,7 @@
 import os
 import time
 
+from line_profiler import LineProfiler
 import cv2
 
 from algorithm.ram import Ram
@@ -27,10 +28,11 @@ COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
 WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
-IS_ORIGINAL_FPS = False         # Process every captured frame
+IS_ORIGINAL_FPS = True         # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
 UNSHARP_MASK = False            # True if unsharp mask is onre displayed
 CAN_RECOVER = False             # True if want recovery
+PROFILE_LINES = False            # True to display timing info for functions
 #TODO: don't recover on first frame
 
 if COMP_SETTINGS:
@@ -39,7 +41,7 @@ if COMP_SETTINGS:
     MATT_LAPTOP = True   # Force TensorRT optimization on Matt's laptop
 
 folder = os.getcwd() + "/main_files"
-frame_rate = 50
+frame_rate = 60
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
@@ -51,8 +53,20 @@ if IS_TRANSMITTING:
     turn_motor_channel = 3
     weapon_motor_channel = 4
 
-# ------------------------------ BEFORE THE MATCH ------------------------------
+if PROFILE_LINES:
+    profiler = LineProfiler()
 
+    def profile(func):
+        def inner(*args, **kwargs):
+            profiler.add_function(func)
+            profiler.enable_by_count()
+            return func(*args, **kwargs)
+        return inner
+else:
+    def profile(func):
+        return func
+# ------------------------------ BEFORE THE MATCH ------------------------------
+@profile
 def main(): # TODO: Add timing back (kernprof)
     try:
         # 1. Start the capturing frame from the camera or pre-recorded video
@@ -92,6 +106,7 @@ def main(): # TODO: Add timing back (kernprof)
 
         while cap.isOpened():
             time_elapsed = time.perf_counter() - prev
+            print("FPS: " + str(1/time_elapsed))
             # 10. Warp image using the Homography Matrix
             if IS_ORIGINAL_FPS or time_elapsed > 1.0 / frame_rate:
                 ret, frame = cap.read()
@@ -162,6 +177,8 @@ def main(): # TODO: Add timing back (kernprof)
         if 'cap' in locals():
             cap.release()
             cv2.destroyAllWindows()
+        if PROFILE_LINES:
+            profiler.print_stats(output_unit=1e-03)
 
 if __name__ == "__main__":
     main()
