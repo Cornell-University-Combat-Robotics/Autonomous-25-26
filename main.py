@@ -1,11 +1,8 @@
 import os
 import time
-<<<<<<< HEAD
 
 from line_profiler import LineProfiler
-=======
 import pandas as pd
->>>>>>> position
 import cv2
 import matplotlib.pyplot as plt
 from algorithm.ram import Ram
@@ -45,21 +42,12 @@ if COMP_SETTINGS:
     MATT_LAPTOP = True   # Force TensorRT optimization on Matt's laptop
 
 folder = os.getcwd() + "/main_files"
-<<<<<<< HEAD
-frame_rate = 60
-# camera_number = folder + "/test_videos/kabedon_huey.mp4"
-# camera_number = folder + "/test_videos/kabedon_huey.mp4"
-# camera_number = folder + "/test_videos/huey_hell.mp4"
-camera_number = folder + "/test_videos/huey_duet_demo.mp4"
-# camera_number = 1
-=======
 frame_rate = 50
 #camera_number = folder + "/test_videos/kabedon_huey.mp4"
 camera_number = folder + "/test_videos/huey_hell.mp4"
 #camera_number = folder + "/test_videos/huey_duet_demo.mp4"
 #camera_number = folder + "/test_videos/nhrl_arena.mp4"
 # camera_number = 0
->>>>>>> position
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
