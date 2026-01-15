@@ -107,15 +107,17 @@ def main():
         if stream.isOpened() == False:
             print("Error opening video file" + "\n")
         prev = 0
+        last_frame = 0
 
         while stream.isOpened() and not stream.stopped:
             time_elapsed = time.perf_counter() - prev
             # 10. Warp image using the Homography Matrix
-            if IS_ORIGINAL_FPS or time_elapsed > 1.0 / frame_rate:
+            if (IS_ORIGINAL_FPS or time_elapsed > 1.0 / frame_rate) and stream.frameCount() > last_frame:
                 print("FPS: " + str(1/time_elapsed))
                 prev = time.perf_counter()
                 ret, frame = stream.read()
                 print("Frame number: " + str(stream.frameCount()))
+                last_frame = stream.frameCount()
 
                 if not ret:
                     print("Failed to capture image" + "\n")
