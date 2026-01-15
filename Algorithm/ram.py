@@ -30,7 +30,8 @@ class Ram():
     LEFT_TURN = -1
     RIGHT_SPEED = 1
     RIGHT_TURN = 1
-    BACK_UP_THRESHOLD = 5  # TODO: lower number of stagnant frames to trigger Huey back up? MOVE TO HELPERS
+    BACK_UP_THRESHOLD = 5  # TODO: lower number of stagnant frames to trigger Huey back up?
+    EDGE_THRESHOLD = 10 
     RECOVERY_SPEED_VALUES = [BACK_UP_SPEED* 0.5, FORWARD_SPEED* 0.5, LEFT_SPEED* 0.5, RIGHT_SPEED* 0.5] 
     RECOVERY_TURN_VALUES = [BACK_UP_TURN, FORWARD_TURN, LEFT_TURN, RIGHT_TURN]
     USE_PID = True
@@ -112,19 +113,21 @@ class Ram():
             self.is_recovering=False
             return False
         
-        counter_pos, counter_orientation = 0, 0
+        counter_pos = 0
         x_curr, y_curr = self.huey_position
 
         for prev_pos in self.huey_previous_positions:
             if math.sqrt((x_curr - prev_pos[0])**2 + (y_curr - prev_pos[1])**2) < Ram.TOLERANCE:
                 counter_pos += 1
 
-        for prev_orientation in self.huey_previous_orientations:
-            # TODO: work out angle range
-            if abs(prev_orientation - self.huey_orientation) < Ram.TOLERANCE * 0.5:
-                counter_orientation += 1
+        # for prev_orientation in self.huey_previous_orientations:
+        #     # TODO: work out angle range
+        #     if abs(prev_orientation - self.huey_orientation) < Ram.TOLERANCE * 0.5:
+        #         counter_orientation += 1
 
-        if counter_pos >= Ram.BACK_UP_THRESHOLD and counter_orientation >= Ram.BACK_UP_THRESHOLD:
+        print("🍀SPORADIH🍀🍀🍀")
+
+        if counter_pos >= Ram.BACK_UP_THRESHOLD:
             self.is_recovering=True
             return True
         self.is_recovering=False
@@ -147,8 +150,7 @@ class Ram():
         # print(f"🛸ORORIE:🛸 {self.huey_orientation}")
         # print(f"🦒🦒🦒GIRTH {self.huey_girth}")
 
-        if counter_pos >= Ram.BACK_UP_THRESHOLD and counter_orientation >= Ram.BACK_UP_THRESHOLD:
-
+        if Ram.BACK_UP_THRESHOLD > counter_pos and counter_pos >= Ram.EDGE_THRESHOLD and Ram.BACK_UP_THRESHOLD > counter_orientation and counter_orientation >= Ram.EDGE_THRESHOLD:
             # Huey against left wall
             if (self.huey_position[0] < self.huey_girth):
                 if (0 <= self.huey_orientation < 45 or 315 < self.huey_orientation <= 359):
