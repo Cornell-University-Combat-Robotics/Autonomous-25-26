@@ -36,6 +36,7 @@ DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
 UNSHARP_MASK = False            # True if unsharp mask is onre displayed
 CAN_RECOVER = False             # True if want recovery
 PROFILE_LINES = True            # True to display timing info for functions
+CAMERA_STREAM = True
 #TODO: don't recover on first frame
 
 if COMP_SETTINGS:
@@ -75,8 +76,12 @@ def main():
     try:
         # 1. Start the capturing frame from the camera or pre-recorded video
         # 2. Capture initial frame by pressing '0'
-        stream = CameraStream(camera_number).start()
-        captured_image = key_frame(stream)
+        if CAMERA_STREAM:
+            stream = CameraStream(camera_number).start()
+            captured_image = key_frame(stream, CAMERA_STREAM)
+        else:
+            cap = cv2.VideoCapture(camera_number)
+            captured_image = key_frame(cap, CAMERA_STREAM)
 
         # 3. Use the initial frame to get a new Homography Matrix and new colors
         if WARP_AND_COLOR_PICKING:
@@ -104,20 +109,26 @@ def main():
 
         # ----------------------------------------------------------------------
         # 8. Match begins
-        if stream.isOpened() == False:
-            print("Error opening video file" + "\n")
+        if CAMERA_STREAM:
+            if stream.isOpened() == False:
+                print("Error opening video file" + "\n")
+        else:
+            if cap.isOpened() == False:
+                print("Error opening video file" + "\n")
         prev = 0
         last_frame = 0
 
-        while stream.isOpened() and not stream.stopped:
+        while (CAMERA_STREAM and stream.isOpened() and not stream.stopped) or (not CAMERA_STREAM and cap.isOpened()):
             time_elapsed = time.perf_counter() - prev
             # 10. Warp image using the Homography Matrix
-            if (IS_ORIGINAL_FPS or time_elapsed > 1.0 / frame_rate) and stream.frameCount() > last_frame:
+            if (IS_ORIGINAL_FPS or time_elapsed > 1.0 / frame_rate) and (not CAMERA_STREAM or stream.frameCount() > last_frame):
                 print("FPS: " + str(1/time_elapsed))
                 prev = time.perf_counter()
-                ret, frame = stream.read()
-                print("Frame number: " + str(stream.frameCount()))
-                last_frame = stream.frameCount()
+                if CAMERA_STREAM:
+                    ret, frame = stream.read()
+                    print("Frame number: " + str(stream.frameCount()))
+                    last_frame = stream.frameCount()
+                else: ret, frame = cap.read()
 
                 if not ret:
                     print("Failed to capture image" + "\n")
@@ -160,7 +171,8 @@ def main():
             if SHOW_FRAME and not DISPLAY_ANGLES:
                 cv2.imshow("Bounding boxes (no angles)", warped_frame)
 
-        stream.stop()
+        if CAMERA_STREAM:
+            stream.stop()
         print("============================")
         print("Video finished successfully!")
 
@@ -190,9 +202,14 @@ def main():
             except Exception as motor_exception:
                 print("Motor cleanup failed:", motor_exception)
 
-        if stream:
-            stream.stop()
+        if CAMERA_STREAM:
+            if stream:
+                stream.stop()
+                cv2.destroyAllWindows()
+        elif cap != None:
+            cap.release()
             cv2.destroyAllWindows()
+
         if PROFILE_LINES:
             profiler.print_stats(output_unit=1e-03)
 
