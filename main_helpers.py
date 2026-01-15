@@ -14,12 +14,12 @@ from dithering.unsharp_mask_ahh import unsharp_mask
 Gets first frame of the video and returns it. If frame can't be read or video isn't being 
 processed will print the problem, and return captured_image as none. 
 """
-def key_frame(stream):
+def key_frame(stream, CAMERA_STREAM):
     captured_image = None
     if stream == None:
             print("Error opening camera stream" + "\n")
 
-    while stream.isOpened() and not stream.stopped:
+    while (CAMERA_STREAM and stream.isOpened() and not stream.stopped) or stream.isOpened():
         ret, frame = stream.read()
 
         if ret and frame is not None:
