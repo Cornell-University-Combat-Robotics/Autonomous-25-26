@@ -47,7 +47,7 @@ frame_rate = 30
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_duet_demo.mp4"
-camera_number = 1
+camera_number = 0
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
