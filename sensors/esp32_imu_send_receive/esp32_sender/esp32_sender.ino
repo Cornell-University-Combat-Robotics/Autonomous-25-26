@@ -126,16 +126,12 @@ void setReports(void) {
   if (! bno08x.enableReport(SH2_GAME_ROTATION_VECTOR)) {
     Serial.println("Could not enable vector");
   }
-  if(! bno08x.enableReport(SH2_GYROSCOPE_CALIBRATED)) {
-    Serial.println("Could not enable vector");
-  }
 }
 
 static float r = 0, i = 0, j = 0, k = 0, accuracy = 0;
 static float gr = 0, gi = 0, gj = 0, gk = 0;
 static float gravity_x = 0, gravity_y = 0, gravity_z = 0;
 static float mr = 0, mi = 0, mj = 0, mk = 0;
-static float gyro_x = 0, gyro_y = 0, gyro_z = 0;
 void loop() {
   // Broadcast a message to all devices within the network
   if (bno08x.wasReset()) {
@@ -162,14 +158,9 @@ void loop() {
       gj = sensorValue.un.gameRotationVector.j;
       gk = sensorValue.un.gameRotationVector.k;
       break;
-    case SH2_GYROSCOPE_CALIBRATED:
-      gyro_x = sensorValue.un.gyroscope.x;
-      gyro_x = sensorValue.un.gyroscope.y;
-      gyro_x = sensorValue.un.gyroscope.z;
-      break;
   }
   
-  sprintf(data, "{ \"game\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f}, \"accelerometer\": {\"gravity_x\": %f, \"gravity_y\": %f, \"gravity_z\": %f}, \"gyroscope\": {\"x\": %f, \"y\": %f, \"z\": %f} }", gr, gi, gj, gk, gravity_x, gravity_y, gravity_z, gyro_x, gyro_y, gyro_z);
+  sprintf(data, "{ \"game\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f}, \"accelerometer\": {\"gravity_x\": %f, \"gravity_y\": %f, \"gravity_z\": %f} }", gr, gi, gj, gk, gravity_x, gravity_y, gravity_z);
   Serial.printf("%s\n", data);
 
   if (!broadcast_peer.send_message((uint8_t *)data, sizeof(data))) {

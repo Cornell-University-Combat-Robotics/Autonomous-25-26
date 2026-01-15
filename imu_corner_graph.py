@@ -172,14 +172,27 @@ def main(): # TODO: Add timing back (kernprof)
 
 
                 # 13. Plotting the orientation data if IMU is enabled and plotting is on
-                gyro_yaw = imu_sensor.get_field_continuous("gyroscope", "z")
+                # gyro_yaw = imu_sensor.get_field_continuous("gyroscope", "z")
         
                 if PLOT_ORIENTATION and IMU_ENABLED:
                     current_time = time.perf_counter() - plot_start_time
-                    imu_yaw_buffer.append(yaw)
-                    cd_yaw_buffer.append(detected_bots_with_data["huey"]["orientation"])
                     time_buffer.append(current_time)
-
+                    try:
+                        imu_yaw_buffer.append(yaw)
+                        cd_yaw_buffer.append(detected_bots_with_data["huey"]["orientation"])
+                    except KeyboardInterrupt:
+                        raise KeyboardInterrupt
+                    except:
+                        #if (imu_yaw_buffer.__len__<time_buffer.__len__):
+                        #    imu_yaw_buffer.append(0.0)
+                        #elif (cd_yaw_buffer.__len__<time_buffer.__len__):
+                        #    cd_yaw_buffer.append(0.0)
+                        print(time_buffer)
+                        print(imu_yaw_buffer)
+                        print(cd_yaw_buffer)
+                        imu_yaw_buffer.append(0.0)
+                        cd_yaw_buffer.append(0.0)
+                        
                     imu_line.set_data(time_buffer, imu_yaw_buffer)
                     cd_line.set_data(time_buffer, cd_yaw_buffer)
                     ax.relim()
