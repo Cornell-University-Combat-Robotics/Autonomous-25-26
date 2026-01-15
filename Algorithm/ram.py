@@ -30,13 +30,16 @@ class Ram():
     LEFT_TURN = -1
     RIGHT_SPEED = 1
     RIGHT_TURN = 1
-    BACK_UP_THRESHOLD = 5  # TODO: lower number of stagnant frames to trigger Huey back up?
-    EDGE_THRESHOLD = 10 
+    BACK_UP_THRESHOLD = 10  # TODO: lower number of stagnant frames to trigger Huey back up?
+    EDGE_THRESHOLD = 5
     RECOVERY_SPEED_VALUES = [BACK_UP_SPEED* 0.5, FORWARD_SPEED* 0.5, LEFT_SPEED* 0.5, RIGHT_SPEED* 0.5] 
     RECOVERY_TURN_VALUES = [BACK_UP_TURN, FORWARD_TURN, LEFT_TURN, RIGHT_TURN]
     USE_PID = True
     is_recovering = False
+    is_backing = False
     recovery_step = 0
+    against_wall = ""
+    moving_forward = False
 
     def __init__(self, bots=None, huey_position=(np.array([ARENA_WIDTH, ARENA_WIDTH])), huey_old_position=(np.array([ARENA_WIDTH, ARENA_WIDTH])),
                  huey_orientation=45, enemy_position=np.array([0, 0]), huey_old_turn=0, huey_old_speed=0, is_recovering=False) -> None:
@@ -89,6 +92,7 @@ class Ram():
         self.recover_speed = 0.5
         self.recover_turn = 0.5
         self.is_recovering = False
+        self.is_backing = False
     # ----------------------------- HELPER METHODS -----------------------------
 
     ''' use a PID controller to move the bot to the desired position '''
@@ -133,7 +137,10 @@ class Ram():
         self.is_recovering=False
         return False
     
-    def check_arena_edge(self):
+    def check_arena_edge(self, can_recover: bool = True):
+        if not can_recover:
+            self.is_recovering=False
+            return False
         counter_pos = 0
         counter_orientation = 0
         x_curr, y_curr = self.huey_position
@@ -146,55 +153,63 @@ class Ram():
             if prev_orientation == self.huey_orientation:
                 counter_orientation += 1
 
-        # print(f"💅POPOS:💅 {self.huey_position}")
-        # print(f"🛸ORORIE:🛸 {self.huey_orientation}")
-        # print(f"🦒🦒🦒GIRTH {self.huey_girth}")
+        print(f"💅POPOS:💅 {self.huey_position}")
+        print(f"🛸ORORIE:🛸 {self.huey_orientation}")
+        print(f"🦒🦒🦒GIRTH {self.huey_girth}")
+        print(f"🇦🇮COUNTER POS {counter_pos}")
+        print(f"😹COUNTER EDGE {counter_orientation}")
 
         if Ram.BACK_UP_THRESHOLD > counter_pos and counter_pos >= Ram.EDGE_THRESHOLD and Ram.BACK_UP_THRESHOLD > counter_orientation and counter_orientation >= Ram.EDGE_THRESHOLD:
             # Huey against left wall
             if (self.huey_position[0] < self.huey_girth):
+                self.against_wall = "LEFT"
                 if (0 <= self.huey_orientation < 45 or 315 < self.huey_orientation <= 359):
                     print("👿 AGAINST A LEFT WALL, FORWARD 👿")
+                    self.moving_forward = True
                     return 1
                 else:
                     print("👼 AGAINST A LEFT WALL, BACK 👼")
+                    self.moving_forward = False
                     return -1
 
             # Huey against right wall
             elif self.huey_position[0] > 700 - self.huey_girth:
+                self.against_wall = "RIGHT"
                 if 135 < self.huey_orientation <= 225:
                     print("🦋 AGAINST A RIGHT WALL, FORWARD 🦋")
+                    self.moving_forward = True
                     return 1
                 else:
                     print("🐛 AGAINST A RIGHT WALL, BACK 🐛")
+                    self.moving_forward = False
                     return -1
 
             # Huey against top wall
             elif self.huey_position[1] < self.huey_girth:
+                self.against_wall = "TOP"
                 if 225 < self.huey_orientation <= 315:
                     print("🌝 AGAINST A TOP WALL, FORWARD 🌝")
+                    self.moving_forward = True
                     return 1
                 else:
                     print("🌚 AGAINST A TOP WALL, BACK 🌚")
+                    self.moving_forward = False
                     return -1
 
             # Huey against bottom wall
             elif self.huey_position[1] > 700 - self.huey_girth:
+                self.against_wall = "BOTTOM"
                 if 45 < self.huey_orientation <= 135:
                     print("🦐 AGAINST A BOTTOM WALL, FORWARD 🦐")
+                    self.moving_forward = True
                     return 1
                 else:
                     print("🍤 AGAINST A BOTTOM WALL, BACK 🍤")
+                    self.moving_forward = False
                     return -1
             
             print("NO BACKY FORY💀💀💀")
             return 0
-        
-
-        # if forward:
-        #     return self.huey_move(self.FORWARD_SPEED, self.FORWARD_TURN)
-        # else: 
-        #     return self.huey_move(self.BACK_UP_SPEED, self.BACK_UP_TURN)
 
     ''' 
     Returns the predicted desired orientation angle of the bot given all parameters, NOTE: the positive direction is counterclockwise
@@ -231,88 +246,6 @@ class Ram():
 
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
     def ram_ram(self, bots: dict[str, any] = None, can_recover: bool = True):
-        # if not (bots and bots["huey"]):
-        #     if self.huey_previous_positions:
-        #         self.huey_previous_positions.append(self.huey_previous_positions[-1])
-        #     if self.huey_previous_orientations: 
-        #         self.huey_previous_orientations.append(self.huey_previous_orientations[-1])
-
-        #     # recovery!
-        #     if (self.check_previous_position_and_orientation()):
-        #         print("👿Start recovery👿")
-        #         self.recovery_sequence()
-        #         return self.huey_move(self.recover_speed, self.recover_turn)
-        #     else:
-        #         self.recovery_step = 0
-        #         return self.huey_move(self.huey_old_speed, self.huey_old_turn)
-         
-        # self.huey_old_position = self.huey_position if self.huey_position is not None else self.huey_old_position
-
-        # print("6, 7🫴🤪🫴")
-        # print("6 🤷‍♀️ 7")
-
-        # # if we don't have any data at all about orientation
-        # if self.huey_orientation is None:
-        #     self.huey_orientation = self.huey_previous_orientations[-1]
-
-        # if self.huey_pos_count % 2 == 0: # Check every other frame for stationary
-        #     self.huey_previous_positions.append(self.huey_position)
-        #     self.huey_previous_orientations.append(self.huey_orientation)
-
-        # self.huey_pos_count, self.huey_orient_count = self.huey_pos_count + 1, self.huey_orient_count + 1
-
-        # # Save Huey's last 10 positions & orientations
-        # if len(self.huey_previous_positions) > Ram.HISTORY_BUFFER:
-        #     self.huey_previous_positions.pop(0)
-
-        # if len(self.huey_previous_orientations) > Ram.HISTORY_BUFFER:
-        #     self.huey_previous_orientations.pop(0)
-          
-        # # If the array for enemy_previous_positions is full, then pop the first one
-        # self.enemy_previous_positions.append(self.enemy_position)
-
-        # if len(self.enemy_previous_positions) > Ram.HISTORY_BUFFER:
-        #     self.enemy_previous_positions.pop(0)
-
-        # if time.time() < self.recovering_until:
-        #     print("🦋🌝Recovering...🌝🦋")
-        #     return self.huey_move(self.recover_speed, self.recover_turn)
-        # else:
-        #     self.recovering_until = 0
-        
-        # # Check if Huey is stationary / unfound, recover if so
-        # if (self.check_previous_position_and_orientation()):
-        #     print("👿Start recovery👿")
-        #     self.recovery_sequence()
-        #     return self.huey_move(self.recover_speed, self.recover_turn)
-        # else:
-        #     self.recovery_step = 0
-
-        # # Get new position and heading values
-        # self.huey_position = np.array(bots['huey']['center']) if bots['huey']['center'] is not None else np.array(self.huey_old_position)
-        # self.huey_orientation = float(bots['huey']['orientation'] if bots['huey']['orientation'] is not None else self.huey_previous_orientations[-1])
-    
-        # self.delta_t = time.time() - self.old_time  # record delta time
-        # self.old_time = time.time()
-        
-        # if bots["enemy"]:
-        #     self.enemy_position = np.array(bots['enemy']['center']) # probably issue here? 
-        #     turn, speed = self.predict_desired_turn_and_speed()
-        #     self.huey_old_turn, self.huey_old_speed = turn, speed
-        
-        #     # PID Shenanigans. Only use PID for the turn values
-        #     if self.USE_PID and self.delta_t != 0:
-        #         if self.delta_t > 0:
-        #             derivative = (self.huey_orientation - self.huey_previous_orientations[-1]) / (self.delta_t * 180.0)
-        #         else:
-        #             derivative = 0
-                
-        #         pid_output = (turn * 1) + (derivative * 0.03 * -1)
-        #         turn = clamp(pid_output, -1, 1)
-
-        #     return self.huey_move(speed, turn)
-
-        # return self.huey_move(self.huey_old_speed, self.huey_old_turn)   
         
         if cv2.waitKey(1) & 0xFF == ord("r"):  # Press Q on keyboard to exit
             self.huey_previous_positions = []
@@ -347,15 +280,18 @@ class Ram():
         else:
             self.recovering_until = 0
 
-        # backup = self.check_arena_edge()
-        # if backup == 1:
-        #     return self.huey_move(self.FORWARD_SPEED, self.FORWARD_TURN)
-        # elif backup == -1:
-        #     return self.huey_move(self.BACK_UP_SPEED, self.BACK_UP_TURN)
-
         # print(f"💅POPOS:💅 {self.huey_position}")
         # print(f"🛸ORORIE:🛸 {self.huey_orientation}")
         # print(f"🦒🦒🦒GIRTH {self.huey_girth}")
+
+        backup = self.check_arena_edge()
+        if backup == 1:
+            self.is_backing = True
+            return self.huey_move(self.FORWARD_SPEED, self.FORWARD_TURN)
+        elif backup == -1:
+            self.is_backing = True
+            return self.huey_move(self.BACK_UP_SPEED, self.BACK_UP_TURN)
+        self.is_backing = False
             
         if (self.check_previous_position_and_orientation(can_recover)):
             if (bots and bots["huey"] and len(bots["huey"]) > 0):
@@ -379,7 +315,12 @@ class Ram():
 
             self.delta_t = time.time() - self.old_time
             self.old_time = time.time()
-            
+        else:
+            self.huey_previous_positions.append(self.huey_previous_positions[-1])
+            self.huey_previous_orientations.append(self.huey_previous_orientations[-1])
+            print("Prev pos appended.")
+            return self.huey_move(self.huey_old_speed, self.huey_old_turn)
+
         if bots["enemy"]:
             self.enemy_position = np.array(bots['enemy']['center']) # probably issue here? 
             turn, speed = self.predict_desired_turn_and_speed()
