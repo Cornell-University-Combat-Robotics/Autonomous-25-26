@@ -2,9 +2,11 @@ import os
 import time
 
 from line_profiler import LineProfiler
+import pandas as pd
 import cv2
 
 from camera_stream import CameraStream
+import matplotlib.pyplot as plt
 from algorithm.ram import Ram
 from corner_detection.corner_detection import RobotCornerDetection
 from main_helpers import (
@@ -168,6 +170,15 @@ def main():
     except Exception as exception:
         print("UNKNOWN EXCEPTION FAILURE. PROCEEDING TO CLEAN UP:", exception)
     finally:
+
+        ## Newbie squadron trial
+        try:
+            color_df = pd.DataFrame(corner_detection.color_percentage_rows)
+            color_df.to_csv("color_output.csv", index=True)
+            # color_percentages_graphing.makeGraph()
+        except Exception as color_exception:
+            print("Data collection failed:", color_exception)
+
         if IS_TRANSMITTING: # Motors need to be cleaned up correctly
             try:
                 if 'motor_group' in locals():
