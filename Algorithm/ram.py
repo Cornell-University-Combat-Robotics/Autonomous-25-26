@@ -302,6 +302,9 @@ class Ram():
 
             return self.huey_move(speed, turn)
         else:
-            self.huey_previous_positions.append(self.huey_previous_positions[-1])
-            print("Prev pos appended.")
-            return self.huey_move(self.huey_old_speed, self.huey_old_turn)
+            print("enemy bot not detected, previous position appended")
+            self.enemy_previous_positions.append(self.enemy_previous_positions[-1])
+            self.enemy_position = self.enemy_previous_positions[-1]
+            turn, speed = self.predict_desired_turn_and_speed()
+            self.huey_old_turn, self.huey_old_speed = turn, speed
+            return self.huey_move(speed, turn)
