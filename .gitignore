@@ -14,3 +14,7 @@ main_files/selected_colors.txt
 main_files/warped_frame.png
 venv/
 testvenv/
+color_output.csv
+color_percentage_graph.png
+color_percentages_graphing.py
+venv/
