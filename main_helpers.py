@@ -14,13 +14,13 @@ from dithering.unsharp_mask_ahh import unsharp_mask
 Gets first frame of the video and returns it. If frame can't be read or video isn't being 
 processed will print the problem, and return captured_image as none. 
 """
-def key_frame(cap):
+def key_frame(stream):
     captured_image = None
-    if cap.isOpened() == False:
-            print("Error opening video file" + "\n")
+    if stream == None:
+            print("Error opening camera stream" + "\n")
 
-    while cap.isOpened():
-        ret, frame = cap.read()
+    while stream.isOpened() and not stream.stopped:
+        ret, frame = stream.read()
 
         if ret and frame is not None:
             cv2.imshow("Press 'q' to quit. Press '0' to capture the image", frame)
