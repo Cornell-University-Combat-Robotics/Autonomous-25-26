@@ -54,6 +54,8 @@ class Ram():
             self.enemy_position = np.array(enemy_position if enemy_position is not None else (0.0, 0.0), dtype=float)
             self.huey_girth = 67
             
+            self.huey_girth = 67
+            
         else:
             self.huey_position = init_values(bots, self.ARENA_WIDTH, is_pos=True, is_huey=True)
             self.huey_old_position = init_values(bots, self.ARENA_WIDTH, is_pos=True, is_huey=True)
@@ -129,6 +131,9 @@ class Ram():
         #     if abs(prev_orientation - self.huey_orientation) < Ram.TOLERANCE * 0.5:
         #         counter_orientation += 1
 
+        print("🍀SPORADIH🍀🍀🍀")
+
+        if counter_pos >= Ram.BACK_UP_THRESHOLD:
         print("🍀SPORADIH🍀🍀🍀")
 
         if counter_pos >= Ram.BACK_UP_THRESHOLD:
