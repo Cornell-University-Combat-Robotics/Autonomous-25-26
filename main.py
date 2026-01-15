@@ -25,14 +25,14 @@ from warp_main import warp
 
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
-MATT_LAPTOP = True             # True if running on Matt's laptop
+MATT_LAPTOP = False             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
 WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
-SHOW_FRAME = False               # Show camera feed frames
+SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = False         # Process every captured frame
-DISPLAY_ANGLES = False     # Only show angles if frames a
+DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
 UNSHARP_MASK = False            # True if unsharp mask is onre displayed
 CAN_RECOVER = False             # True if want recovery
 PROFILE_LINES = True            # True to display timing info for functions
