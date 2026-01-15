@@ -19,11 +19,7 @@ def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     # Define the HSV range for the robot's color
-<<<<<<< HEAD
-    lower_limit = np.array([max(0, bot_color_hsv[0] - 3), 75, 75])
-=======
     lower_limit = np.array([max(0, bot_color_hsv[0] - 3), 125, 125])
->>>>>>> position
     upper_limit = np.array([min(179, bot_color_hsv[0] + 3), 255, 255])
 
     # Create a mask for the robot's color in the image
@@ -91,10 +87,6 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
             image_area = image.size/3
             color_percentage = color_pixel_count/image_area
-<<<<<<< HEAD
-            # print(color_percentage)
-=======
->>>>>>> position
 
             bot_color_percentages.append(color_percentage)
             #check if the next if statement is redundant since we are tracking the percentages with the list...
