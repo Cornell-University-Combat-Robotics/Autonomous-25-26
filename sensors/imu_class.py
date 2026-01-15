@@ -38,7 +38,9 @@ class IMU_sensor():
         self.goodTime = time.time()
         time.sleep(2)  # Wait for the serial connection to initialize
         self.get_continuous_dict()
-    
+        self.cali_angle = 0
+        self.cali_lock = threading.Lock()
+
     def choose_port(self):
         """ 
         Allows user to determine what port the esp32 is on
@@ -120,7 +122,7 @@ class IMU_sensor():
                         self.errorCounter += 1
                         # print(f"time since good: {time.time()-self.goodTime}")
                 except json.decoder.JSONDecodeError as e:
-                    print("JSON error: " + str(e))
+                    # print("JSON error: " + str(e))
                     with self.error_lock:
                         self.errorCounter += 1
                         # print(f"time since good: {time.time()-self.goodTime}")
@@ -131,6 +133,25 @@ class IMU_sensor():
         with self.error_lock:
             return time.time()-self.goodTime <= threshold
 
+    def calibrate_yaw(self, camera_read, sensor_read):
+        """
+        Calibrates the imu orientation to be aligned with the camera orientation
+        """
+        with self.cali_lock:
+            self.cali_angle = sensor_read - camera_read
+
+    def get_yaw_uncali(self):
+        """
+        Read the yaw value from continuously updated dict field
+        """
+        with self.dict_lock:
+            _, _, yaw = self.quaternion_to_euler(self.dict["game"]["r"], self.dict["game"]["i"], self.dict["game"]["j"], self.dict["game"]["k"])
+        self.yaw = (yaw / math.pi) * 180
+        if self.yaw < 0:
+            self.yaw += 360
+            print(f"UNCALIBRATED YAW: {self.yaw}")
+        return self.yaw
+    
     def get_yaw_continuous(self):
         """
         Read the yaw value from continuously updated dict field
@@ -140,6 +161,10 @@ class IMU_sensor():
         self.yaw = (yaw / math.pi) * 180
         if self.yaw < 0:
             self.yaw += 360
+            print(f"UNCALIBRATED YAW: {self.yaw}")
+        with self.cali_lock:
+            self.yaw = (self.yaw - self.cali_angle) % 360
+            print(f"CALIBRATED YAW: {self.yaw}")
         return self.yaw
 
     def get_field_continuous(self, field, subfield):

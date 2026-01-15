@@ -23,6 +23,7 @@ from sensors.imu_class import IMU_sensor
 from sensors.imu_class import IMUReadError
 import matplotlib.pyplot as plt
 from collections import deque
+import numpy as np
 
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
@@ -55,7 +56,7 @@ if IS_TRANSMITTING:
     speed_motor_channel = 1
     turn_motor_channel = 3
     weapon_motor_channel = 4
-
+    
 time_buffer = deque(maxlen=MAX_POINTS)
 imu_yaw_buffer = deque(maxlen=MAX_POINTS)
 cd_yaw_buffer = deque(maxlen=MAX_POINTS)
@@ -100,6 +101,8 @@ def main(): # TODO: Add timing back (kernprof)
         algorithm = None
         if IMU_ENABLED:
             imu_sensor = IMU_sensor()
+            cali_yaw = 0
+
         # TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
             ser, motor_group, weapon_motor_group = get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
@@ -121,6 +124,13 @@ def main(): # TODO: Add timing back (kernprof)
             time_elapsed = time.perf_counter() - prev
             # 10. Warp image using the Homography Matrix
             if IS_ORIGINAL_FPS or time_elapsed > 1.0 / frame_rate:
+                if IMU_ENABLED:
+                    try:
+                        cali_yaw = imu_sensor.get_yaw_uncali()
+                    except IMUReadError as ex:
+                        print(f"🟥 Error: {ex}")
+                        
+
                 ret, frame = cap.read()
 
                 if not ret:
@@ -149,11 +159,15 @@ def main(): # TODO: Add timing back (kernprof)
                 is_flipped = 1
                 if IMU_ENABLED:
                     try:
-                        print(imu_sensor.get_yaw_continuous())
+                        if detected_bots_with_data.get("huey") is not None:
+                            if detected_bots_with_data.get("huey").get("orientation") is not None:
+                                print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
+                                imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
+                        #print(imu_sensor.get_yaw_continuous())
                         yaw = imu_sensor.get_yaw_continuous()
                         is_flipped = imu_sensor.get_upside_down_continuous()
-                        print(f"flipped = {is_flipped}")
-                        print(f"yaw = {yaw}")
+                        #print(f"flipped = {is_flipped}")
+                        #print(f"yaw = {yaw}")
                         draw_yaw_text(warped_frame,yaw,is_flipped)
                     except IMUReadError as ex:
                         print(f"🟥 Error: {ex}")
@@ -176,28 +190,26 @@ def main(): # TODO: Add timing back (kernprof)
         
                 if PLOT_ORIENTATION and IMU_ENABLED:
                     current_time = time.perf_counter() - plot_start_time
-                    time_buffer.append(current_time)
+                    imu_yaw_val = np.nan
+                    cd_yaw_val  = np.nan
+
+                    if 'yaw' in locals():
+                        imu_yaw_val = yaw
                     try:
-                        imu_yaw_buffer.append(yaw)
-                        cd_yaw_buffer.append(detected_bots_with_data["huey"]["orientation"])
-                    except KeyboardInterrupt:
-                        raise KeyboardInterrupt
-                    except:
-                        #if (imu_yaw_buffer.__len__<time_buffer.__len__):
-                        #    imu_yaw_buffer.append(0.0)
-                        #elif (cd_yaw_buffer.__len__<time_buffer.__len__):
-                        #    cd_yaw_buffer.append(0.0)
-                        print(time_buffer)
-                        print(imu_yaw_buffer)
-                        print(cd_yaw_buffer)
-                        imu_yaw_buffer.append(0.0)
-                        cd_yaw_buffer.append(0.0)
-                        
+                        cd_yaw_val = detected_bots_with_data["huey"]["orientation"]
+                    except Exception:
+                        pass
+
+                    time_buffer.append(current_time)
+                    imu_yaw_buffer.append(imu_yaw_val)
+                    cd_yaw_buffer.append(cd_yaw_val)
+    
                     imu_line.set_data(time_buffer, imu_yaw_buffer)
                     cd_line.set_data(time_buffer, cd_yaw_buffer)
                     ax.relim()
                     ax.autoscale_view()
-                    plt.pause(0.001)
+                    plt.pause(0.01)
+
                 if DISPLAY_ANGLES:
                     display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering)
 
@@ -218,6 +230,9 @@ def main(): # TODO: Add timing back (kernprof)
                 cv2.imshow("Bounding boxes (no angles)", warped_frame)
 
         cap.release()
+        time_buffer.clear()
+        imu_yaw_buffer.clear()
+        cd_yaw_buffer.clear()
         print("============================")
         print("Video finished successfully!")
 
