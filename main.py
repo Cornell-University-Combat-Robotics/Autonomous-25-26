@@ -26,15 +26,14 @@ from warp_main import warp
 MATT_LAPTOP = False             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
-IS_TRANSMITTING = True           # True if connected to live Huey
+WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
+IS_TRANSMITTING = False           # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = True         # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
 UNSHARP_MASK = False            # True if unsharp mask is onre displayed
 CAN_RECOVER = True             # True if want recovery
 PROFILE_LINES = False            # True to display timing info for functions
-#TODO: don't recover on first frame
 
 if COMP_SETTINGS:
     SHOW_FRAME = False
@@ -46,8 +45,8 @@ frame_rate = 50
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-# camera_number = folder + "/test_videos/huey_bottom_in_n_out.mp4"
-camera_number = 2
+camera_number = folder + "/test_videos/huey_bottom_in_n_out.mp4"
+# camera_number = 2
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1

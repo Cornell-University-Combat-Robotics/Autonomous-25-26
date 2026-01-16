@@ -17,7 +17,7 @@ from .ram_helper import (
 class Ram():
     # ----------------------------- CONSTANTS -----------------------------
     HISTORY_BUFFER = 20  # how many previous Huey or enemy position we are recording
-    DANGER_ZONE = 55
+    DANGER_ZONE = 55 # TODO: for smarter algo
     MAX_SPEED = 1  # magnitude between 0 and 1
     MAX_TURN = 1  # between 0 and 1
     ARENA_WIDTH = 700  # in pixels
@@ -30,16 +30,17 @@ class Ram():
     LEFT_TURN = -1
     RIGHT_SPEED = 1
     RIGHT_TURN = 1
-    BACK_UP_THRESHOLD = 20  # TODO: lower number of stagnant frames to trigger Huey back up?
+    BACK_UP_THRESHOLD = 15  # > Double EDGE_THRESHOLD
     EDGE_THRESHOLD = 5
     RECOVERY_SPEED_VALUES = [BACK_UP_SPEED* 0.5, FORWARD_SPEED* 0.5, LEFT_SPEED* 0.5, RIGHT_SPEED* 0.5] 
     RECOVERY_TURN_VALUES = [BACK_UP_TURN, FORWARD_TURN, LEFT_TURN, RIGHT_TURN]
     USE_PID = True
     is_recovering = False
     is_backing = False
+    reverse = 0
     recovery_step = 0
     against_wall = ""
-    moving_forward = False
+    moving_forward = -1
 
     def __init__(self, bots=None, huey_position=(np.array([ARENA_WIDTH, ARENA_WIDTH])), huey_old_position=(np.array([ARENA_WIDTH, ARENA_WIDTH])),
                  huey_orientation=45, enemy_position=np.array([0, 0]), huey_old_turn=0, huey_old_speed=0, is_recovering=False) -> None:
@@ -159,55 +160,61 @@ class Ram():
         print(f"🇦🇮COUNTER POS {counter_pos}")
         print(f"😹COUNTER EDGE {counter_orientation}")
 
+        self.reverse = 1
+
+        if Ram.BACK_UP_THRESHOLD > counter_pos and counter_pos >= Ram.EDGE_THRESHOLD*2 and Ram.BACK_UP_THRESHOLD > counter_orientation and counter_orientation >= Ram.EDGE_THRESHOLD*2:
+            self.reverse = -1
+
         if Ram.BACK_UP_THRESHOLD > counter_pos and counter_pos >= Ram.EDGE_THRESHOLD and Ram.BACK_UP_THRESHOLD > counter_orientation and counter_orientation >= Ram.EDGE_THRESHOLD:
             # Huey against left wall
             if (self.huey_position[0] < self.huey_girth):
                 self.against_wall = "LEFT"
                 if (0 <= self.huey_orientation < 45 or 315 < self.huey_orientation <= 359):
                     print("👿 AGAINST A LEFT WALL, FORWARD 👿")
-                    self.moving_forward = True
-                    return 1
+                    self.moving_forward = 1 * self.reverse
+                    return 1 * self.reverse
                 else:
                     print("👼 AGAINST A LEFT WALL, BACK 👼")
-                    self.moving_forward = False
-                    return -1
+                    self.moving_forward = -1 * self.reverse
+                    return -1 * self.reverse
 
             # Huey against right wall
             elif self.huey_position[0] > 700 - self.huey_girth:
                 self.against_wall = "RIGHT"
                 if 135 < self.huey_orientation <= 225:
                     print("🦋 AGAINST A RIGHT WALL, FORWARD 🦋")
-                    self.moving_forward = True
-                    return 1
+                    self.moving_forward = 1 * self.reverse
+                    return 1 * self.reverse
                 else:
                     print("🐛 AGAINST A RIGHT WALL, BACK 🐛")
-                    self.moving_forward = False
-                    return -1
+                    self.moving_forward = -1 * self.reverse
+                    return -1 * self.reverse
 
             # Huey against top wall
             elif self.huey_position[1] < self.huey_girth:
                 self.against_wall = "TOP"
                 if 225 < self.huey_orientation <= 315:
                     print("🌝 AGAINST A TOP WALL, FORWARD 🌝")
-                    self.moving_forward = True
-                    return 1
+                    self.moving_forward = 1 * self.reverse
+                    return 1 * self.reverse
                 else:
                     print("🌚 AGAINST A TOP WALL, BACK 🌚")
-                    self.moving_forward = False
-                    return -1
+                    self.moving_forward = -1 * self.reverse
+                    return -1 * self.reverse
 
             # Huey against bottom wall
             elif self.huey_position[1] > 700 - self.huey_girth:
                 self.against_wall = "BOTTOM"
                 if 45 < self.huey_orientation <= 135:
                     print("🦐 AGAINST A BOTTOM WALL, FORWARD 🦐")
-                    self.moving_forward = True
-                    return 1
+                    self.moving_forward = 1 * self.reverse
+                    return 1 * self.reverse
                 else:
                     print("🍤 AGAINST A BOTTOM WALL, BACK 🍤")
-                    self.moving_forward = False
-                    return -1
+                    self.moving_forward = -1 * self.reverse
+                    return -1 * self.reverse
             
+            self.moving_forward = 0
             print("NO BACKY FORY💀💀💀")
             return 0
 
