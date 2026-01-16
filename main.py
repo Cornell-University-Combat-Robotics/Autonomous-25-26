@@ -53,8 +53,8 @@ frame_rate = 30
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/lazy_huey.mp4"
-# camera_number = folder + "/test_videos/huey_duet_demo.mp4"
-camera_number = 0
+camera_number = folder + "/test_videos/huey_duet_demo.mp4"
+# camera_number = 0
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
@@ -165,6 +165,7 @@ def main():
                 corner_detection.set_bots(detected_bots)
                 # 12. Run Object Detection's results through Corner Detection
                 detected_bots_with_data = corner_detection.corner_detection_main()
+                print(detected_bots_with_data)
                 print("📐corner works")
                 is_flipped = 1
                 valid = imu_sensor.check_valid(1)

@@ -280,8 +280,11 @@ class Ram():
                 self.huey_position = np.array(bots['huey'].get('center'))
                 self.huey_previous_positions.append(self.huey_position)
 
-                self.huey_orientation = bots['huey'].get('orientation')
-                self.huey_previous_orientations.append(self.huey_orientation)
+                if bots["huey"].get("orientation"):
+                    self.huey_orientation = bots['huey'].get('orientation')
+                    self.huey_previous_orientations.append(self.huey_orientation)
+                else:
+                    self.huey_previous_orientations.append(self.huey_previous_orientations[-1])
             else:
                 self.huey_previous_positions.append(self.huey_previous_positions[-1])
             print("Start recovery")
@@ -292,7 +295,8 @@ class Ram():
         
         if bots and bots["huey"] and len(bots["huey"])>0:
             self.huey_position = np.array(bots['huey'].get('center'))
-            self.huey_orientation = bots['huey'].get('orientation')
+            if bots["huey"].get("orientation"):
+                self.huey_orientation = bots['huey'].get('orientation')
 
             self.delta_t = time.time() - self.old_time
             self.old_time = time.time()
