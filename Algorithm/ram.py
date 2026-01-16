@@ -134,7 +134,7 @@ class Ram():
         print("🍀SPORADIH🍀🍀🍀")
 
         if counter_pos >= Ram.BACK_UP_THRESHOLD:
-        print("🍀SPORADIH🍀🍀🍀")
+            print("🍀SPORADIH🍀🍀🍀")
 
         if counter_pos >= Ram.BACK_UP_THRESHOLD:
             self.is_recovering=True
