@@ -16,7 +16,7 @@ from .ram_helper import (
 
 class Ram():
     # ----------------------------- CONSTANTS -----------------------------
-    HISTORY_BUFFER = 10  # how many previous Huey or enemy position we are recording
+    HISTORY_BUFFER = 20  # how many previous Huey or enemy position we are recording
     DANGER_ZONE = 55
     MAX_SPEED = 1  # magnitude between 0 and 1
     MAX_TURN = 1  # between 0 and 1
@@ -30,7 +30,7 @@ class Ram():
     LEFT_TURN = -1
     RIGHT_SPEED = 1
     RIGHT_TURN = 1
-    BACK_UP_THRESHOLD = 10  # TODO: lower number of stagnant frames to trigger Huey back up?
+    BACK_UP_THRESHOLD = 20  # TODO: lower number of stagnant frames to trigger Huey back up?
     EDGE_THRESHOLD = 5
     RECOVERY_SPEED_VALUES = [BACK_UP_SPEED* 0.5, FORWARD_SPEED* 0.5, LEFT_SPEED* 0.5, RIGHT_SPEED* 0.5] 
     RECOVERY_TURN_VALUES = [BACK_UP_TURN, FORWARD_TURN, LEFT_TURN, RIGHT_TURN]
@@ -130,11 +130,6 @@ class Ram():
         #     # TODO: work out angle range
         #     if abs(prev_orientation - self.huey_orientation) < Ram.TOLERANCE * 0.5:
         #         counter_orientation += 1
-
-        print("🍀SPORADIH🍀🍀🍀")
-
-        if counter_pos >= Ram.BACK_UP_THRESHOLD:
-            print("🍀SPORADIH🍀🍀🍀")
 
         if counter_pos >= Ram.BACK_UP_THRESHOLD:
             self.is_recovering=True
@@ -307,7 +302,7 @@ class Ram():
                 self.huey_previous_orientations.append(self.huey_orientation)
             else:
                 self.huey_previous_positions.append(self.huey_previous_positions[-1])
-            print("Start recovery")
+            print("Start 🍀SPORADIH🍀🍀🍀")
             self.recovery_sequence() #SEQUENCE
             return self.huey_move(self.recover_speed, self.recover_turn)
         else:
