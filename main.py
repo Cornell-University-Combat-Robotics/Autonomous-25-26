@@ -102,6 +102,8 @@ def main():
         algorithm = None
         if IMU_ENABLED:
             imu_sensor = IMU_sensor()
+            cali_yaw = 0
+
         # TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
             ser, motor_group, weapon_motor_group = get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
@@ -128,6 +130,12 @@ def main():
             time_elapsed = time.perf_counter() - prev
             # 10. Warp image using the Homography Matrix
             if (IS_ORIGINAL_FPS or time_elapsed > 1.0 / frame_rate) and (not CAMERA_STREAM or stream.frameCount() > last_frame):
+                if IMU_ENABLED:
+                    try:
+                        cali_yaw = imu_sensor.get_yaw_uncali()
+                    except IMUReadError as ex:
+                        print(f"🟥 Error: {ex}")
+            
                 print("FPS: " + str(1/time_elapsed))
                 prev = time.perf_counter()
                 if CAMERA_STREAM:
@@ -159,14 +167,19 @@ def main():
                 detected_bots_with_data = corner_detection.corner_detection_main()
                 print("📐corner works")
                 is_flipped = 1
-                if IMU_ENABLED:
+                valid = imu_sensor.check_valid(1)
+                if IMU_ENABLED and valid:
                     try:
-                        print(imu_sensor.get_yaw_continuous())
-                        yaw = imu_sensor.get_yaw_continuous()
+                        if detected_bots_with_data.get("huey") is not None:
+                            if detected_bots_with_data.get("huey").get("orientation") is not None:
+                                print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
+                                imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
+                            yaw = imu_sensor.get_yaw_continuous()
+                            detected_bots_with_data["huey"]["orientation"] = yaw
                         is_flipped = imu_sensor.get_upside_down_continuous()
                         print(f"flipped = {is_flipped}")
                         print(f"yaw = {yaw}")
-                        draw_yaw_text(warped_frame,yaw,is_flipped)
+                        draw_yaw_text(warped_frame,yaw,is_flipped, valid)
                     except IMUReadError as ex:
                         print(f"🟥 Error: {ex}")
                         print(" 🟢 using cd orientation 🟢 ")

@@ -138,7 +138,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection):
 
 
 
-def draw_yaw_text(image, yaw_value,unflipped):
+def draw_yaw_text(image, yaw_value,unflipped, valid):
     """Draws the yaw value in degrees onto the OpenCV image window."""
     print(f"unflipped: {unflipped}")
     if yaw_value is None:
@@ -146,7 +146,7 @@ def draw_yaw_text(image, yaw_value,unflipped):
     
     cv2.putText(
         image,
-        f"Yaw: {yaw_value:.2f} deg, unflipped: {unflipped:.2f} deg",
+        f"Yaw: {yaw_value:.2f} deg, Unflipped: {unflipped:.2f} deg, Valid sensor: {valid}",
         (20, 40),                      # top-left
         cv2.FONT_HERSHEY_SIMPLEX,
         1.2,

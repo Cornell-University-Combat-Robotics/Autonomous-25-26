@@ -160,17 +160,14 @@ def main(): # TODO: Add timing back (kernprof)
                 detected_bots_with_data = corner_detection.corner_detection_main()
                 print("📐corner works")
                 is_flipped = 1
-                if IMU_ENABLED:
+                if IMU_ENABLED and imu_sensor.check_valid(0.1):
                     try:
                         if detected_bots_with_data.get("huey") is not None:
                             if detected_bots_with_data.get("huey").get("orientation") is not None:
                                 print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
                                 imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
-                        #print(imu_sensor.get_yaw_continuous())
                         yaw = imu_sensor.get_yaw_continuous()
                         is_flipped = imu_sensor.get_upside_down_continuous()
-                        #print(f"flipped = {is_flipped}")
-                        #print(f"yaw = {yaw}")
                         draw_yaw_text(warped_frame,yaw,is_flipped)
                     except IMUReadError as ex:
                         print(f"🟥 Error: {ex}")
