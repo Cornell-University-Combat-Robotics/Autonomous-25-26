@@ -14,13 +14,13 @@ from dithering.unsharp_mask_ahh import unsharp_mask
 Gets first frame of the video and returns it. If frame can't be read or video isn't being 
 processed will print the problem, and return captured_image as none. 
 """
-def key_frame(cap):
+def key_frame(stream, CAMERA_STREAM):
     captured_image = None
-    if cap.isOpened() == False:
-            print("Error opening video file" + "\n")
+    if stream == None:
+            print("Error opening camera stream" + "\n")
 
-    while cap.isOpened():
-        ret, frame = cap.read()
+    while (CAMERA_STREAM and stream.isOpened() and not stream.stopped) or stream.isOpened():
+        ret, frame = stream.read()
 
         if ret and frame is not None:
             cv2.imshow("Press 'q' to quit. Press '0' to capture the image", frame)
@@ -109,7 +109,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection):
     # 6. Do an initial run of ML and Corner. Initialize Algo
     first_run_ml = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
     corner_detection.set_bots(first_run_ml)
-    first_run_orientation = corner_detection.corner_detection_main()
+    first_run_orientation = corner_detection.corner_detection_main(first_run=True)
 
     if first_run_orientation and first_run_orientation["huey"] and first_run_orientation["enemy"]:
         # Ensure single enemy
