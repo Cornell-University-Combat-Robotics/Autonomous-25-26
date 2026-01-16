@@ -28,12 +28,12 @@ MATT_LAPTOP = False             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
 WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
-IS_TRANSMITTING = True         # True if connected to live Huey
+IS_TRANSMITTING = False         # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = False         # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
 UNSHARP_MASK = False             # True if unsharp mask is onre displayed
-IMU_ENABLED = True              # True if IMU is connected
+IMU_ENABLED = False              # True if IMU is connected
 
 if COMP_SETTINGS:
     SHOW_FRAME = False
@@ -44,8 +44,8 @@ folder = os.getcwd() + "/main_files"
 frame_rate = 50
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/lazy_huey.mp4"
-# camera_number = folder + "/test_videos/huey_duet_demo.mp4"
-camera_number = 0
+camera_number = folder + "/test_videos/huey_duet_demo.mp4"
+# camera_number = 0
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
@@ -121,6 +121,7 @@ def main(): # TODO: Add timing back (kernprof)
                 corner_detection.set_bots(detected_bots)
                 # 12. Run Object Detection's results through Corner Detection
                 detected_bots_with_data = corner_detection.corner_detection_main()
+                print(detected_bots_with_data)
                 print("📐corner works")
                 is_flipped = 1
                 if IMU_ENABLED:
