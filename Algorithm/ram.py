@@ -252,7 +252,10 @@ class Ram():
         return angle * (Ram.MAX_TURN / 180.0), 1-(np.sign(angle) * (angle) * (Ram.MAX_SPEED / 180.0))
 
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
-    def ram_ram(self, bots: dict[str, any] = None, can_recover: bool = True):
+    def ram_ram(self, bots: dict[str, any] = None, can_recover: bool = True, fps = 50):
+        self.HISTORY_BUFFER = 0.4*fps
+        self.BACK_UP_THRESHOLD = 0.3*fps
+        self.EDGE_THRESHOLD = 0.1*fps
         
         if cv2.waitKey(1) & 0xFF == ord("r"):  # Press Q on keyboard to exit
             self.huey_previous_positions = []
@@ -305,8 +308,11 @@ class Ram():
                 self.huey_position = np.array(bots['huey'].get('center'))
                 self.huey_previous_positions.append(self.huey_position)
 
-                self.huey_orientation = bots['huey'].get('orientation')
-                self.huey_previous_orientations.append(self.huey_orientation)
+                if (bots["huey"].get("orientation") is not None):
+                    self.huey_orientation = bots['huey'].get('orientation')
+                    self.huey_previous_orientations.append(self.huey_orientation)
+                else:
+                    self.huey_previous_orientations.append(self.huey_previous_orientations[-1])
             else:
                 self.huey_previous_positions.append(self.huey_previous_positions[-1])
             print("Start 🍀SPORADIH🍀🍀🍀")
@@ -318,7 +324,8 @@ class Ram():
         if bots and bots["huey"] and len(bots["huey"])>0:
             self.huey_girth = (math.dist(bots['huey'].get('bbox')[1], bots['huey'].get('bbox')[0]))/2
             self.huey_position = np.array(bots['huey'].get('center'))
-            self.huey_orientation = bots['huey'].get('orientation')
+            if (bots["huey"].get("orientation") is not None):
+                self.huey_orientation = bots['huey'].get('orientation')
 
             self.delta_t = time.time() - self.old_time
             self.old_time = time.time()

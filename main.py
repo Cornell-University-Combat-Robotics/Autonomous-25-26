@@ -43,9 +43,10 @@ if COMP_SETTINGS:
 folder = os.getcwd() + "/main_files"
 frame_rate = 50
 camera_number = folder + "/test_videos/green_huey_demo.mp4"
+fps = frame_rate
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-# camera_number = folder + "/test_videos/huey_bottom_in_n_out.mp4"
+camera_number = folder + "/test_videos/huey_bottom_in_n_out.mp4"
 # camera_number = 2
 
 if IS_TRANSMITTING:
@@ -106,7 +107,8 @@ def main(): # TODO: Add timing back (kernprof)
 
         while cap.isOpened():
             time_elapsed = time.perf_counter() - prev
-            print("FPS: " + str(1/time_elapsed))
+            fps = 1/time_elapsed
+            print("FPS: " + str(fps))
             # 10. Warp image using the Homography Matrix
             if IS_ORIGINAL_FPS or time_elapsed > 1.0 / frame_rate:
                 ret, frame = cap.read()
@@ -133,7 +135,7 @@ def main(): # TODO: Add timing back (kernprof)
                 corner_detection.set_bots(detected_bots)
                 # 12. Run Object Detection's results through Corner Detection
                 detected_bots_with_data = corner_detection.corner_detection_main()
-                move_dictionary = algorithm.ram_ram(detected_bots_with_data, CAN_RECOVER)
+                move_dictionary = algorithm.ram_ram(detected_bots_with_data, CAN_RECOVER, fps=fps)
                 
                 if DISPLAY_ANGLES:
                     display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing, against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward)
