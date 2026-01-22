@@ -27,7 +27,7 @@ MATT_LAPTOP = False             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
 WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
-IS_TRANSMITTING = False           # True if connected to live Huey
+IS_TRANSMITTING = True           # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = True         # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
@@ -46,8 +46,8 @@ camera_number = folder + "/test_videos/green_huey_demo.mp4"
 fps = frame_rate
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-camera_number = folder + "/test_videos/huey_bottom_in_n_out.mp4"
-# camera_number = 2
+# camera_number = folder + "/test_videos/huey_bottom_in_n_out.mp4"
+camera_number = 1
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1

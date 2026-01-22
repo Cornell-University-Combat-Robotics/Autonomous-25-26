@@ -34,7 +34,7 @@ class Ram():
     EDGE_THRESHOLD = 5
     RECOVERY_SPEED_VALUES = [BACK_UP_SPEED* 0.5, FORWARD_SPEED* 0.5, LEFT_SPEED* 0.5, RIGHT_SPEED* 0.5] 
     RECOVERY_TURN_VALUES = [BACK_UP_TURN, FORWARD_TURN, LEFT_TURN, RIGHT_TURN]
-    USE_PID = True
+    USE_PID = False
     is_recovering = False
     is_backing = False
     reverse = 0
