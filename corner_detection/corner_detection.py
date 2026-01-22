@@ -90,19 +90,6 @@ class RobotCornerDetection:
             image = self.detect_our_robot_main(bot_images, first_run)
             
             if image is not None:
-                centroid_points = find_centroids(image, self.selected_colors)
-
-                # For displaying centroids
-                # left_front, right_front = get_left_and_right_front_points(centroid_points)
-
-                if (len(centroid_points[0]) + len(centroid_points[1]) < 3):
-                    print("Less than 3 corners found")
-                    return {"huey": {}, "enemy": {}}
-
-                front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5
-                back_midpoint = (centroid_points[1][0] + centroid_points[1][1]) * 0.5
-                orientation = compute_angle_between_midpoints(back_midpoint, front_midpoint)
-
                 # Find the identified bot (our robot)
                 huey_bbox = None
                 for bot_data in self.bots["bots"]:
@@ -113,7 +100,7 @@ class RobotCornerDetection:
                 huey = {
                     "bbox": huey_bbox,
                     "center": np.mean(huey_bbox, axis=0), # center of the bot with respect to the entire arena
-                    "orientation": orientation,
+                    "orientation": None,
                 }
 
                 # Enemy bots are all except the identified bot
@@ -126,10 +113,21 @@ class RobotCornerDetection:
                                 "center": np.mean(bot_data["bbox"], axis=0),
                             }
                             break
+
+                centroid_points = find_centroids(image, self.selected_colors)
+
+                # For displaying centroids
+                # left_front, right_front = get_left_and_right_front_points(centroid_points)
+
+                if (len(centroid_points[0]) + len(centroid_points[1]) < 3):
+                    print("Less than 3 corners found")
+                    return {"huey": huey, "enemy": enemy_bots}
+
+                front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5
+                back_midpoint = (centroid_points[1][0] + centroid_points[1][1]) * 0.5
+                huey["orientation"] = compute_angle_between_midpoints(back_midpoint, front_midpoint)
                 
                 result = {"huey": huey, "enemy": enemy_bots}
-                # if self.display_final_image:
-                #     display_image(image, left_front, right_front)
 
                 return result
             else:
