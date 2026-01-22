@@ -105,7 +105,7 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
                 self.huey_color_percentage_threshold = (bot_color_percentages[-1] + bot_color_percentages[-2]) / 2
                 print("Threshold: " + str(self.huey_color_percentage_threshold))
             elif len(bot_color_percentages) == 1:
-                self.huey_color_percentage_threshold = bot_color_percentages[0] - 0.05
+                self.huey_color_percentage_threshold = max(bot_color_percentages[0] - 0.075, 0)
                 print("Threshold: " + str(self.huey_color_percentage_threshold))
         # elif len(bot_color_percentages) == 1 and max_color_percentage < self.huey_color_percentage_threshold:
         #     our_bot_image = None
