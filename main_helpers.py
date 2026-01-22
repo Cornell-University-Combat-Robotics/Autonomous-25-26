@@ -9,6 +9,7 @@ from transmission.motors import Motor
 from transmission.serial_conn import OurSerial
 from warp_main import get_homography_mat, warp
 from dithering.unsharp_mask_ahh import unsharp_mask
+from color_quant.quantization import quantize_robot_colors
 
 """
 Gets first frame of the video and returns it. If frame can't be read or video isn't being 
@@ -175,4 +176,24 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
 def unsharp(detected_bots, DISPLAY):
     for bot in detected_bots["bots"]:
         bot["img"] = unsharp_mask(bot["img"],DISPLAY=DISPLAY)
+    return detected_bots
+
+def initialize_quantization():
+    dummy = np.zeros((8, 8, 3), dtype=np.uint8)
+    _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2LAB)
+    _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2HSV)
+
+def quantize(detected_bots, selected_colors, show):
+    colors_hsv_1x = np.array(selected_colors).reshape(1, -1, 3)
+
+    # OpenCV expects uint8 or float32, not int32
+    if colors_hsv_1x.dtype != np.uint8:
+        colors_hsv_1x = np.clip(colors_hsv_1x, 0, 255).astype(np.uint8)
+
+    bgr_colors_1x = cv2.cvtColor(colors_hsv_1x, cv2.COLOR_HSV2BGR)
+    
+    bgr_colors = bgr_colors_1x.reshape(-1, 3)  # (N_colors, 3)
+    for bot in detected_bots["bots"]:
+        bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, thresh_lab=40,keep_background=False, show=show)
+
     return detected_bots

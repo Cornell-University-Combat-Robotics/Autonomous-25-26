@@ -19,7 +19,9 @@ from main_helpers import (
     make_new_homography,
     read_prev_colors,
     read_prev_homography,
-    unsharp
+    unsharp,
+    initialize_quantization,
+    quantize
 )
 from warp_main import warp
 
@@ -31,12 +33,13 @@ COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
 WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
-IS_ORIGINAL_FPS = False         # Process every captured frame
+IS_ORIGINAL_FPS = True         # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
 UNSHARP_MASK = False            # True if unsharp mask is onre displayed
+COLOR_QUANTIZATION = True       # True if color quantization is on
 CAN_RECOVER = False             # True if want recovery
 PROFILE_LINES = True            # True to display timing info for functions
-CAMERA_STREAM = True
+CAMERA_STREAM = False
 #TODO: don't recover on first frame
 
 if COMP_SETTINGS:
@@ -46,11 +49,11 @@ if COMP_SETTINGS:
 
 folder = os.getcwd() + "/main_files"
 frame_rate = 30
-# camera_number = folder + "/test_videos/kabedon_huey.mp4"
+camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_duet_demo.mp4"
-camera_number = 0
+# camera_number = 0
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
@@ -92,6 +95,10 @@ def main():
             warped_frame, homography_matrix = read_prev_homography(captured_image, folder + "/homography_matrix.txt")
             selected_colors = read_prev_colors(folder + "/selected_colors.txt")
 
+        # 4. Initialize color quantization cv2
+        if COLOR_QUANTIZATION:
+            initialize_quantization()
+        
         # 5. Defining all subsystem objects: ML, Corner, Algorithm, Transmission
         predictor = get_predictor(MATT_LAPTOP)
         corner_detection = RobotCornerDetection(selected_colors, False, False)
@@ -142,6 +149,10 @@ def main():
 
                 # 11. Run the Warped Image through Object Detection
                 detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
+
+                # 11.5 Quantize those mf colors
+                if COLOR_QUANTIZATION:
+                    detected_bots = quantize(detected_bots, selected_colors, show=False)
 
                 # Unsharp Masking
                 if UNSHARP_MASK:
