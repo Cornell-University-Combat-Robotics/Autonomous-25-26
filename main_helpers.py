@@ -194,6 +194,6 @@ def quantize(detected_bots, selected_colors, show):
     
     bgr_colors = bgr_colors_1x.reshape(-1, 3)  # (N_colors, 3)
     for bot in detected_bots["bots"]:
-        bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, thresh_lab=40,keep_background=False, show=show)
+        bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, thresh_lab=34,keep_background=False, show=show)
 
     return detected_bots
