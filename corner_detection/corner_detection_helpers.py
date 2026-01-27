@@ -72,12 +72,12 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
     try:
         if not images:
             raise ValueError("The input image list is empty.")
-        max_color_percentage = self.huey_color_percentage_threshold
+        max_color_percentage = -1
         our_bot_image = None 
 
         bot_color_percentages = []
 
-        for image in images:
+        for image in images: #this for loop handles whether the image is the huey bot
             total_pixels = np.shape(image)[0]*np.shape(image)[1]
 
             if image is None:
@@ -102,13 +102,20 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
         
         if first_run: #Set initial threshold
             if len(bot_color_percentages) > 1:
-                self.huey_color_percentage_threshold = (bot_color_percentages[-1] + bot_color_percentages[-2]) / 2
+                self.huey_color_percentage_threshold = max((bot_color_percentages[-1] + bot_color_percentages[-2]) / 2, 0)
                 print("Threshold: " + str(self.huey_color_percentage_threshold))
             elif len(bot_color_percentages) == 1:
                 self.huey_color_percentage_threshold = max(bot_color_percentages[0] - 0.075, 0)
                 print("Threshold: " + str(self.huey_color_percentage_threshold))
-        # elif len(bot_color_percentages) == 1 and max_color_percentage < self.huey_color_percentage_threshold:
-        #     our_bot_image = None
+        elif len(bot_color_percentages) == 1 and max_color_percentage < self.huey_color_percentage_threshold:
+            our_bot_image = None
+        # elif len(bot_color_percentages) == 2:
+        #     counter = 0
+        #     for bot in bot_color_percentages:
+        #         if bot < self.huey_color_percentage_threshold:
+        #             counter +=1
+        #     if counter == 2:
+
         
         #Writing information to be graphed
         if len(bot_color_percentages) == 2:
