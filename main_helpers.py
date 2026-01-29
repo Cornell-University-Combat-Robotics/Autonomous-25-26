@@ -8,7 +8,6 @@ from machine.predict import YoloModel
 from transmission.motors import Motor
 from transmission.serial_conn import OurSerial
 from warp_main import get_homography_mat, warp
-from dithering.unsharp_mask_ahh import unsharp_mask
 from color_quant.quantization import quantize_robot_colors
 
 """
@@ -178,11 +177,6 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
     else:
         cv2.imshow("Battle with Predictions", image)
     cv2.waitKey(1)
-
-def unsharp(detected_bots, DISPLAY):
-    for bot in detected_bots["bots"]:
-        bot["img"] = unsharp_mask(bot["img"],DISPLAY=DISPLAY)
-    return detected_bots
 
 def initialize_quantization():
     dummy = np.zeros((8, 8, 3), dtype=np.uint8)
