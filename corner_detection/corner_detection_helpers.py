@@ -19,7 +19,7 @@ def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     # Define the HSV range for the robot's color
-    lower_limit = np.array([max(0, bot_color_hsv[0] - 3), 125, 125])
+    lower_limit = np.array([max(0, bot_color_hsv[0] - 3), 100, 100])
     upper_limit = np.array([min(179, bot_color_hsv[0] + 3), 255, 255])
 
     # Create a mask for the robot's color in the image
@@ -85,6 +85,8 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
                 continue
             
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
+            print("OOGABOOGA", color_pixel_count)
+
             image_area = image.size/3
             color_percentage = color_pixel_count/image_area
 
@@ -118,7 +120,7 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
 
         
         #Writing information to be graphed
-        if len(bot_color_percentages) == 2:
+        if len(bot_color_percentages) >= 2:
             self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2],self.huey_color_percentage_threshold))
         if len(bot_color_percentages) == 1:
             if bot_color_percentages[0] > self.huey_color_percentage_threshold:

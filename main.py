@@ -48,8 +48,8 @@ if COMP_SETTINGS:
 folder = os.getcwd() + "/main_files"
 frame_rate = 30
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
-# camera_number = folder + "/test_videos/kabedon_huey.mp4"
-camera_number = folder + "/test_videos/huey_hell.mp4"
+camera_number = folder + "/test_videos/nhrl_arena.mp4"
+# camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/green_huey_demo.mp4"
 # camera_number = 0
 
@@ -152,7 +152,7 @@ def main():
 
                 # 11.5 Quantize those mf colors
                 if COLOR_QUANTIZATION:
-                    detected_bots = quantize(detected_bots, selected_colors, show=False)
+                    detected_bots = quantize(detected_bots, selected_colors, show=True)
 
                 #indonesia.set_bots(detected_bots)
                 corner_detection.set_bots(detected_bots)
