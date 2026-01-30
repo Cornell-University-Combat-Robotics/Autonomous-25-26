@@ -29,16 +29,15 @@ from warp_main import warp
 MATT_LAPTOP = False             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
-WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
-IS_ORIGINAL_FPS = True         # Process every captured frame
+IS_ORIGINAL_FPS = True          # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
 COLOR_QUANTIZATION = True       # True if color quantization is on
 CAN_RECOVER = False             # True if want recovery
-PROFILE_LINES = False            # True to display timing info for functions
-CAMERA_STREAM = False
-#TODO: don't recover on first frame
+PROFILE_LINES = False           # True to display timing info for functions
+CAMERA_STREAM = False           # True if live video
 
 if COMP_SETTINGS:
     SHOW_FRAME = False

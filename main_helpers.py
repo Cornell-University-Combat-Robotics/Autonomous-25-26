@@ -160,17 +160,12 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
         end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
         cv2.arrowedLine(image, (start_x, start_y), end_point, (255, 0, 0), 2)
         
+        # Huey's center points
         x_shift = detected_bots_with_data["huey"]['bbox'][0][0]
         y_shift = detected_bots_with_data["huey"]['bbox'][0][1]
-        print("😹😹😹😹😹😹")
-        print(x_shift, y_shift)
-        print("🥀🥀🥀🥀", centroids)
 
         for i in range(len(centroids)):
-            if i == 0:
-                color = (255, 0, 0)
-            else:
-                color = (0, 255, 0)
+            color = (255, 255, 0) if i == 0 else (0, 255, 255)
             for p in centroids[i]:
                 cv2.circle(image, (int(p[0] + x_shift), int(p[1] + y_shift)), 8, color, -1)
 

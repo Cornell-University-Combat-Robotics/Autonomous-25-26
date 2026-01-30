@@ -32,7 +32,6 @@ class RobotCornerDetection:
         self.color_percentage_rows = color_percentage_rows
         self.centroids = []
 
-
     def set_bots(self, bots: dict):
         self.bots = bots
     
