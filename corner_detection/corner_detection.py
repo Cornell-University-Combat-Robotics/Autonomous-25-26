@@ -30,6 +30,7 @@ class RobotCornerDetection:
         self.display_possible_hueys = display_possible_hueys
         self.huey_color_percentage_threshold = 0 
         self.color_percentage_rows = color_percentage_rows
+        self.centroids = []
 
 
     def set_bots(self, bots: dict):
@@ -115,6 +116,7 @@ class RobotCornerDetection:
                             break
 
                 centroid_points = find_centroids(image, self.selected_colors)
+                self.centroids = centroid_points
 
                 # For displaying centroids
                 # left_front, right_front = get_left_and_right_front_points(centroid_points)

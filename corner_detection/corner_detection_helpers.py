@@ -169,10 +169,6 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
                 cx = int(M["m10"] / M["m00"])
                 cy = int(M["m01"] / M["m00"])
                 centroids.append((cx, cy))
-                cv2.circle(image, (cx, cy), 8, (0, 0, 0), -1)
-                cv2.putText(image, side, (cx + 10, cy - 10), FONT, 0.5, (255, 255, 0), 2)
-                # cv2.imshow("Centroids", image)
-                # cv2.waitKey(0)
     return centroids
 
 def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
