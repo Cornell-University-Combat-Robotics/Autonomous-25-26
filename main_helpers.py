@@ -135,7 +135,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection):
     
     return algorithm
 
-def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1):
+def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, centroids=[]):
     if is_recovering:
         cv2.putText(image, "RECOVERING", (550, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
     if is_backing:
@@ -159,6 +159,20 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
 
         end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
         cv2.arrowedLine(image, (start_x, start_y), end_point, (255, 0, 0), 2)
+        
+        x_shift = detected_bots_with_data["huey"]['bbox'][0][0]
+        y_shift = detected_bots_with_data["huey"]['bbox'][0][1]
+        print("😹😹😹😹😹😹")
+        print(x_shift, y_shift)
+        print("🥀🥀🥀🥀", centroids)
+
+        for i in range(len(centroids)):
+            if i == 0:
+                color = (255, 0, 0)
+            else:
+                color = (0, 255, 0)
+            for p in centroids[i]:
+                cv2.circle(image, (int(p[0] + x_shift), int(p[1] + y_shift)), 8, color, -1)
 
         # RED line: Huey's Desired Orientation according to Algorithm
         if move_dictionary and (move_dictionary["turn"]):
