@@ -165,7 +165,7 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
         y_shift = int(detected_bots_with_data["huey"]['bbox'][0][1])
 
         for i in range(len(centroids)):
-            color = (255, 0, 0) if i == 0 else (0, 255, 0)
+            color = (255, 255, 0) if i == 0 else (0, 255, 255)
             for p in centroids[i]:
                 cv2.circle(image, (p[0] + x_shift, p[1] + y_shift), 8, color, -1)
 
