@@ -39,11 +39,9 @@ IS_ORIGINAL_FPS = True          # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
 COLOR_QUANTIZATION = True        # True if color quantization is on
 IMU_ENABLED = True              # True if IMU is connected
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
-IS_TRANSMITTING = True         # True if connected to live Huey
 CAN_RECOVER = False             # True if want recovery
 PROFILE_LINES = False           # True to display timing info for functions
-CAMERA_STREAM = True
+CAMERA_STREAM = False
 #TODO: don't recover on first frame
 
 if COMP_SETTINGS:
@@ -56,8 +54,8 @@ frame_rate = 30
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/lazy_huey.mp4"
-# camera_number = folder + "/test_videos/huey_duet_demo.mp4"
-camera_number = 0
+camera_number = folder + "/test_videos/green_huey_demo.mp4"
+# camera_number = 0
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
