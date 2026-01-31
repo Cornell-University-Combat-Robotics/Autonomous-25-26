@@ -77,7 +77,7 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
 
         bot_color_percentages = []
 
-        for image in images:
+        for image in images: #this for loop handles whether the image is the huey bot
             total_pixels = np.shape(image)[0]*np.shape(image)[1]
 
             if image is None:
@@ -102,13 +102,20 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
         
         if first_run: #Set initial threshold
             if len(bot_color_percentages) > 1:
-                self.huey_color_percentage_threshold = (bot_color_percentages[-1] + bot_color_percentages[-2]) / 2
+                self.huey_color_percentage_threshold = max((bot_color_percentages[-1] + bot_color_percentages[-2]) / 2, 0)
                 print("Threshold: " + str(self.huey_color_percentage_threshold))
             elif len(bot_color_percentages) == 1:
-                self.huey_color_percentage_threshold = bot_color_percentages[0] - 0.05
+                self.huey_color_percentage_threshold = max(bot_color_percentages[0] - 0.075, 0)
                 print("Threshold: " + str(self.huey_color_percentage_threshold))
         elif len(bot_color_percentages) == 1 and max_color_percentage < self.huey_color_percentage_threshold:
             our_bot_image = None
+        # elif len(bot_color_percentages) == 2:
+        #     counter = 0
+        #     for bot in bot_color_percentages:
+        #         if bot < self.huey_color_percentage_threshold:
+        #             counter +=1
+        #     if counter == 2:
+
         
         #Writing information to be graphed
         if len(bot_color_percentages) == 2:
@@ -162,10 +169,6 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
                 cx = int(M["m10"] / M["m00"])
                 cy = int(M["m01"] / M["m00"])
                 centroids.append((cx, cy))
-                cv2.circle(image, (cx, cy), 8, (0, 0, 0), -1)
-                cv2.putText(image, side, (cx + 10, cy - 10), FONT, 0.5, (255, 255, 0), 2)
-                # cv2.imshow("Centroids", image)
-                # cv2.waitKey(0)
     return centroids
 
 def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:

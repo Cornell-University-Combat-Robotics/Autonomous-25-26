@@ -8,7 +8,7 @@ from machine.predict import YoloModel
 from transmission.motors import Motor
 from transmission.serial_conn import OurSerial
 from warp_main import get_homography_mat, warp
-from dithering.unsharp_mask_ahh import unsharp_mask
+from color_quant.quantization import quantize_robot_colors
 
 """
 Gets first frame of the video and returns it. If frame can't be read or video isn't being 
@@ -155,9 +155,15 @@ def draw_yaw_text(image, yaw_value,unflipped, valid):
     )
 
 
-def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, imu = False, is_recovering=False):
+def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, imu = False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, centroids=[]):
     if is_recovering:
         cv2.putText(image, "RECOVERING", (550, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
+    if is_backing:
+        if moving_forward > 0:
+            cv2.putText(image, "FORWARD: " + against_wall, (450, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.67, (67, 150, 255), 2)
+        else:
+            cv2.putText(image, "BACKWARD: " + against_wall, (450, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.67, (150, 67, 255), 2)
+            
     # BLUE line: Huey's Current Orientation according to Corner Detection
 
     if detected_bots_with_data and detected_bots_with_data["huey"] and detected_bots_with_data["huey"]["orientation"] is not None:
@@ -173,6 +179,15 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
 
         end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
         cv2.arrowedLine(image, (start_x, start_y), end_point, (255, 0, 0), 2)
+        
+        # Huey's center points
+        x_shift = detected_bots_with_data["huey"]['bbox'][0][0]
+        y_shift = detected_bots_with_data["huey"]['bbox'][0][1]
+
+        for i in range(len(centroids)):
+            color = (255, 255, 0) if i == 0 else (0, 255, 255)
+            for p in centroids[i]:
+                cv2.circle(image, (int(p[0] + x_shift), int(p[1] + y_shift)), 8, color, -1)
 
         # RED line: Huey's Desired Orientation according to Algorithm
         if move_dictionary and (move_dictionary["turn"]):
@@ -192,7 +207,22 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
         cv2.imshow("Battle with Predictions", image)
     cv2.waitKey(1)
 
-def unsharp(detected_bots, DISPLAY):
+def initialize_quantization():
+    dummy = np.zeros((8, 8, 3), dtype=np.uint8)
+    _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2LAB)
+    _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2HSV)
+
+def quantize(detected_bots, selected_colors, show):
+    colors_hsv_1x = np.array(selected_colors).reshape(1, -1, 3)
+
+    # OpenCV expects uint8 or float32, not int32
+    if colors_hsv_1x.dtype != np.uint8:
+        colors_hsv_1x = np.clip(colors_hsv_1x, 0, 255).astype(np.uint8)
+
+    bgr_colors_1x = cv2.cvtColor(colors_hsv_1x, cv2.COLOR_HSV2BGR)
+    
+    bgr_colors = bgr_colors_1x.reshape(-1, 3)  # (N_colors, 3)
     for bot in detected_bots["bots"]:
-        bot["img"] = unsharp_mask(bot["img"],DISPLAY=DISPLAY)
+        bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, thresh_lab=34,keep_background=False, show=show)
+
     return detected_bots

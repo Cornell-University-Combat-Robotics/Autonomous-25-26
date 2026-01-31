@@ -19,7 +19,8 @@ from main_helpers import (
     make_new_homography,
     read_prev_colors,
     read_prev_homography,
-    unsharp
+    initialize_quantization,
+    quantize
 )
 from warp_main import warp
 from main_helpers import key_frame, read_prev_homography, make_new_homography, read_prev_colors, make_new_colors, get_predictor, get_motor_groups, first_run, display_angles, draw_yaw_text
@@ -31,10 +32,12 @@ from sensors.imu_class import IMUReadError
 MATT_LAPTOP = False             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
+WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
+IS_TRANSMITTING = False         # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
-IS_ORIGINAL_FPS = False         # Process every captured frame
+IS_ORIGINAL_FPS = True          # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
-UNSHARP_MASK = False             # True if unsharp mask is onre displayed
+COLOR_QUANTIZATION = True        # True if color quantization is on
 IMU_ENABLED = True              # True if IMU is connected
 WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
 IS_TRANSMITTING = True         # True if connected to live Huey
@@ -96,6 +99,10 @@ def main():
             warped_frame, homography_matrix = read_prev_homography(captured_image, folder + "/homography_matrix.txt")
             selected_colors = read_prev_colors(folder + "/selected_colors.txt")
 
+        # 4. Initialize color quantization cv2
+        if COLOR_QUANTIZATION:
+            initialize_quantization()
+        
         # 5. Defining all subsystem objects: ML, Corner, Algorithm, Transmission
         predictor = get_predictor(MATT_LAPTOP)
         corner_detection = RobotCornerDetection(selected_colors, False, False)
@@ -128,6 +135,8 @@ def main():
 
         while (CAMERA_STREAM and stream.isOpened() and not stream.stopped) or (not CAMERA_STREAM and cap.isOpened()):
             time_elapsed = time.perf_counter() - prev
+            fps = 1/time_elapsed
+            print("FPS: " + str(fps))
             # 10. Warp image using the Homography Matrix
             if (IS_ORIGINAL_FPS or time_elapsed > 1.0 / frame_rate) and (not CAMERA_STREAM or stream.frameCount() > last_frame):
                 if IMU_ENABLED:
@@ -161,9 +170,9 @@ def main():
                 # 11. Run the Warped Image through Object Detection
                 detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
 
-                # Unsharp Masking
-                if UNSHARP_MASK:
-                    detected_bots = unsharp(detected_bots, False) # set to true if you want to see the before after unsharp mask
+                # 11.5 Quantize those mf colors
+                if COLOR_QUANTIZATION:
+                    detected_bots = quantize(detected_bots, selected_colors, show=False)
 
                 #indonesia.set_bots(detected_bots)
                 corner_detection.set_bots(detected_bots)
@@ -198,11 +207,11 @@ def main():
                         message = template.format(type(ex).__name__, ex.args)
                         print(message)
                         raise(ex)
-                move_dictionary = algorithm.ram_ram(detected_bots_with_data)
-                # move_dictionary = algorithm.ram_ram(detected_bots_with_data, CAN_RECOVER)
+                # move_dictionary = algorithm.ram_ram(detected_bots_with_data)
+                move_dictionary = algorithm.ram_ram(detected_bots_with_data, CAN_RECOVER, fps=fps)
                 
                 if DISPLAY_ANGLES:
-                    display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering)
+                    display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing, against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, centroids=corner_detection.centroids)
 
                 # 14. Transmitting the motor values to Huey's if we're using a live video
                 if IS_TRANSMITTING:

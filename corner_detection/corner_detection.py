@@ -30,7 +30,7 @@ class RobotCornerDetection:
         self.display_possible_hueys = display_possible_hueys
         self.huey_color_percentage_threshold = 0 
         self.color_percentage_rows = color_percentage_rows
-
+        self.centroids = []
 
     def set_bots(self, bots: dict):
         self.bots = bots
@@ -115,13 +115,13 @@ class RobotCornerDetection:
                             break
 
                 centroid_points = find_centroids(image, self.selected_colors)
+                self.centroids = centroid_points
 
                 # For displaying centroids
-                left_front, right_front = get_left_and_right_front_points(centroid_points)
+                # left_front, right_front = get_left_and_right_front_points(centroid_points)
 
-                # Returns empty orientation if corners not found
-                if left_front is None or right_front is None:
-                    print("Could not determine left/right front points")
+                if (len(centroid_points[0]) + len(centroid_points[1]) < 3):
+                    print("Less than 3 corners found")
                     return {"huey": huey, "enemy": enemy_bots}
 
                 front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5
@@ -129,8 +129,6 @@ class RobotCornerDetection:
                 huey["orientation"] = compute_angle_between_midpoints(back_midpoint, front_midpoint)
                 
                 result = {"huey": huey, "enemy": enemy_bots}
-                if self.display_final_image:
-                    display_image(image, left_front, right_front)
 
                 return result
             else:
