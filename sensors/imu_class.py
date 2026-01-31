@@ -161,10 +161,10 @@ class IMU_sensor():
         self.yaw = (yaw / math.pi) * 180
         if self.yaw < 0:
             self.yaw += 360
-            print(f"UNCALIBRATED YAW: {self.yaw}")
+            # print(f"UNCALIBRATED YAW: {self.yaw}")
         with self.cali_lock:
             self.yaw = (self.yaw - self.cali_angle) % 360
-            print(f"CALIBRATED YAW: {self.yaw}")
+            # print(f"CALIBRATED YAW: {self.yaw}")
         return self.yaw
 
     def get_field_continuous(self, field, subfield):
@@ -182,7 +182,7 @@ class IMU_sensor():
         """
         with self.dict_lock:
             gravity_z = self.dict["accelerometer"]["gravity_z"]
-        return 1 if gravity_z >= 0 else -1
+        return -1 if gravity_z >= 0 else 1
 
 
     def is_upside_down(self):

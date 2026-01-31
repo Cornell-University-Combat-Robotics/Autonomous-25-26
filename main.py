@@ -36,10 +36,10 @@ IS_ORIGINAL_FPS = False         # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
 UNSHARP_MASK = False             # True if unsharp mask is onre displayed
 IMU_ENABLED = True              # True if IMU is connected
-WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
-IS_TRANSMITTING = False         # True if connected to live Huey
+WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
+IS_TRANSMITTING = True         # True if connected to live Huey
 CAN_RECOVER = False             # True if want recovery
-PROFILE_LINES = True            # True to display timing info for functions
+PROFILE_LINES = False           # True to display timing info for functions
 CAMERA_STREAM = True
 #TODO: don't recover on first frame
 
@@ -53,8 +53,8 @@ frame_rate = 30
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/lazy_huey.mp4"
-camera_number = folder + "/test_videos/huey_duet_demo.mp4"
-# camera_number = 0
+# camera_number = folder + "/test_videos/huey_duet_demo.mp4"
+camera_number = 0
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
@@ -134,7 +134,11 @@ def main():
                     try:
                         cali_yaw = imu_sensor.get_yaw_uncali()
                     except IMUReadError as ex:
-                        print(f"🟥 Error: {ex}")
+                        # print(f"🟥 Error: {ex}") xd rawr
+                        pass
+                    except KeyError as ex:
+                        # print(f"🟥 Error: {ex}")
+                        pass
             
                 print("FPS: " + str(1/time_elapsed))
                 prev = time.perf_counter()
