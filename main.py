@@ -48,9 +48,10 @@ if COMP_SETTINGS:
 folder = os.getcwd() + "/main_files"
 frame_rate = 30
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
-camera_number = folder + "/test_videos/nhrl_arena.mp4"
+# camera_number = folder + "/test_videos/nhrl_arena.mp4"
+camera_number = folder + "/test_videos/huey_blushy.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-# camera_number = folder + "/test_videos/green_huey_demo.mp4"
+# camera_number = folder + "/test_videos/crude_rot_huey.mp4"
 # camera_number = 0
 
 if IS_TRANSMITTING:
@@ -108,7 +109,7 @@ def main():
         cv2.destroyAllWindows()
 
         if WARP_AND_COLOR_PICKING:
-            algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection)
+            algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors)
         else:
             algorithm = Ram()
 
@@ -152,7 +153,7 @@ def main():
 
                 # 11.5 Quantize those mf colors
                 if COLOR_QUANTIZATION:
-                    detected_bots = quantize(detected_bots, selected_colors, show=True)
+                    detected_bots = quantize(detected_bots, selected_colors, show=False)
 
                 #indonesia.set_bots(detected_bots)
                 corner_detection.set_bots(detected_bots)
