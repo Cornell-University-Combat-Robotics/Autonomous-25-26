@@ -116,7 +116,7 @@ def main():
         cv2.destroyAllWindows()
 
         if WARP_AND_COLOR_PICKING:
-            algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection)
+            algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors)
         else:
             algorithm = Ram()
 

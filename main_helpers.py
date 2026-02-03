@@ -105,9 +105,10 @@ def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, w
         weapon_motor_group = Motor(ser=ser, channel=weapon_motor_channel)
     return ser, motor_group, weapon_motor_group
 
-def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection):
+def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors):
     # 6. Do an initial run of ML and Corner. Initialize Algo
     first_run_ml = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
+    first_run_ml = quantize(first_run_ml, selected_colors, show=False)
     corner_detection.set_bots(first_run_ml)
     first_run_orientation = corner_detection.corner_detection_main(first_run=True)
 
@@ -166,40 +167,44 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
             
     # BLUE line: Huey's Current Orientation according to Corner Detection
 
-    if detected_bots_with_data and detected_bots_with_data["huey"] and detected_bots_with_data["huey"]["orientation"] is not None:
-        orientation_degrees = detected_bots_with_data["huey"]["orientation"]
-
-        # Components of current front arrow
-        dx = np.cos(math.pi / 180 * orientation_degrees)
-        dy = -1 * np.sin(math.pi / 180 * orientation_degrees)
-
-        # Huey's center
+    if detected_bots_with_data and detected_bots_with_data["huey"]:
         start_x = int(detected_bots_with_data["huey"]["center"][0])
         start_y = int(detected_bots_with_data["huey"]["center"][1])
 
-        end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
-        cv2.arrowedLine(image, (start_x, start_y), end_point, (255, 0, 0), 2)
-        
-        # Huey's center points
-        x_shift = detected_bots_with_data["huey"]['bbox'][0][0]
-        y_shift = detected_bots_with_data["huey"]['bbox'][0][1]
+        cv2.putText(image, "HUEY", (start_x, start_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+    
+        if detected_bots_with_data["huey"]["orientation"] is not None:
+            orientation_degrees = detected_bots_with_data["huey"]["orientation"]
 
-        for i in range(len(centroids)):
-            color = (255, 255, 0) if i == 0 else (0, 255, 255)
-            for p in centroids[i]:
-                cv2.circle(image, (int(p[0] + x_shift), int(p[1] + y_shift)), 8, color, -1)
+            # Components of current front arrow
+            dx = np.cos(math.pi / 180 * orientation_degrees)
+            dy = -1 * np.sin(math.pi / 180 * orientation_degrees)
 
-        # RED line: Huey's Desired Orientation according to Algorithm
-        if move_dictionary and (move_dictionary["turn"]):
-            turn = move_dictionary["turn"] # angle in degrees / 180
-            new_orientation_degrees = orientation_degrees + (turn * 180)
-
-            # Components of predicted turn
-            dx = np.cos(math.pi * new_orientation_degrees / 180)
-            dy = -1 * np.sin(math.pi * new_orientation_degrees / 180)
+            # Huey's center
 
             end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
-            cv2.arrowedLine(image, (start_x, start_y), end_point, (0, 0, 255), 2)
+            cv2.arrowedLine(image, (start_x, start_y), end_point, (255, 0, 0), 2)
+
+            # Huey's corner points
+            x_shift = int(detected_bots_with_data["huey"]['bbox'][0][0])
+            y_shift = int(detected_bots_with_data["huey"]['bbox'][0][1])
+
+            for i in range(len(centroids)):
+                color = (255, 255, 0) if i == 0 else (0, 255, 255)
+                for p in centroids[i]:
+                    cv2.circle(image, (p[0] + x_shift, p[1] + y_shift), 8, color, -1)
+
+            # RED line: Huey's Desired Orientation according to Algorithm
+            if move_dictionary and (move_dictionary["turn"]):
+                turn = move_dictionary["turn"] # angle in degrees / 180
+                new_orientation_degrees = orientation_degrees + (turn * 180)
+
+                # Components of predicted turn
+                dx = np.cos(math.pi * new_orientation_degrees / 180)
+                dy = -1 * np.sin(math.pi * new_orientation_degrees / 180)
+
+                end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
+                cv2.arrowedLine(image, (start_x, start_y), end_point, (0, 0, 255), 2)
 
     if initial_run:
         cv2.imshow("Initial Run: Battle with Predictions. Press '0' to continue", image)
@@ -223,6 +228,6 @@ def quantize(detected_bots, selected_colors, show):
     
     bgr_colors = bgr_colors_1x.reshape(-1, 3)  # (N_colors, 3)
     for bot in detected_bots["bots"]:
-        bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, thresh_lab=34,keep_background=False, show=show)
+        bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, thresh_lab=25,keep_background=False, show=show)
 
     return detected_bots

@@ -19,11 +19,10 @@ def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     # Define the HSV range for the robot's color
-    lower_limit = np.array([max(0, bot_color_hsv[0] - 3), 125, 125])
-    upper_limit = np.array([min(179, bot_color_hsv[0] + 3), 255, 255])
+    bot_color = np.array([bot_color_hsv[0], bot_color_hsv[1], bot_color_hsv[2]])
 
     # Create a mask for the robot's color in the image
-    mask = cv2.inRange(hsv_image, lower_limit, upper_limit)
+    mask = cv2.inRange(hsv_image, bot_color, bot_color)
 
     # Count the number of non-zero pixels in the mask
     # cv2.imshow("Robot Mask", mask)
@@ -47,14 +46,13 @@ def get_contours_per_color(side: str, hsv_image: np.ndarray, selected_colors) ->
     # Define the HSV range around the selected color
     # We tried using 10 for the range; It was too large and picked up orange instead of red
     # For now, it is +-8
-    lower_limit = np.array([max(0, selected_color[0] - 10), 20, 20])
-    upper_limit = np.array([min(179, selected_color[0] + 10), 255, 255])
+    selected_color_hsv = np.array([selected_color[0], selected_color[1], selected_color[2]])
 
-    mask = cv2.inRange(hsv_image, lower_limit, upper_limit)
+    mask = cv2.inRange(hsv_image, selected_color_hsv, selected_color_hsv)
 
-    # cv2.imshow("Corners Mask", mask)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    cv2.imshow("Corners Mask", mask)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return contours
@@ -85,6 +83,8 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
                 continue
             
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
+            print("OOGABOOGA", color_pixel_count)
+
             image_area = image.size/3
             color_percentage = color_pixel_count/image_area
 
@@ -109,16 +109,10 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
                 print("Threshold: " + str(self.huey_color_percentage_threshold))
         elif len(bot_color_percentages) == 1 and max_color_percentage < self.huey_color_percentage_threshold:
             our_bot_image = None
-        # elif len(bot_color_percentages) == 2:
-        #     counter = 0
-        #     for bot in bot_color_percentages:
-        #         if bot < self.huey_color_percentage_threshold:
-        #             counter +=1
-        #     if counter == 2:
 
         
         #Writing information to be graphed
-        if len(bot_color_percentages) == 2:
+        if len(bot_color_percentages) >= 2:
             self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2],self.huey_color_percentage_threshold))
         if len(bot_color_percentages) == 1:
             if bot_color_percentages[0] > self.huey_color_percentage_threshold:
@@ -132,7 +126,7 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
             print("Huey is not found")
             
         # cv2.imshow("OUR BOT!", our_bot_image)
-        # cv2.waitKey(0)1
+        # cv2.waitKey(0)
         # cv2.destroyAllWindows()
         return our_bot_image
     
@@ -160,15 +154,15 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
         image_area = image.size/3
         contour_area = cv2.contourArea(contour)
         contour_percent = contour_area/image_area
-        if contour_percent > 0.005: # area > 20
-            # TODO: this value is subject to change based on dimensions of our video & resize_factor
-            # Compute moments for each contour
-            M = cv2.moments(contour)
-            if M["m00"] != 0 and len(centroids) < 2:
-                # Calculate the centroid (center of the dot)
-                cx = int(M["m10"] / M["m00"])
-                cy = int(M["m01"] / M["m00"])
-                centroids.append((cx, cy))
+        # if contour_area > 20: # area > 20
+        # TODO: this value is subject to change based on dimensions of our video & resize_factor
+        # Compute moments for each contour
+        M = cv2.moments(contour)
+        if M["m00"] != 0 and len(centroids) < 2:
+            # Calculate the centroid (center of the dot)
+            cx = int(M["m10"] / M["m00"])
+            cy = int(M["m01"] / M["m00"])
+            centroids.append((cx, cy))
     return centroids
 
 def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
