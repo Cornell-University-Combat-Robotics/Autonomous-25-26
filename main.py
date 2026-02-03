@@ -49,8 +49,8 @@ folder = os.getcwd() + "/main_files"
 frame_rate = 30
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/nhrl_arena.mp4"
-camera_number = folder + "/test_videos/huey_blushy.mp4"
-# camera_number = folder + "/test_videos/huey_hell.mp4"
+# camera_number = folder + "/test_videos/huey_blushy.mp4"
+camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/crude_rot_huey.mp4"
 # camera_number = 0
 
@@ -158,7 +158,10 @@ def main():
                 #indonesia.set_bots(detected_bots)
                 corner_detection.set_bots(detected_bots)
                 # 12. Run Object Detection's results through Corner Detection
-                detected_bots_with_data = corner_detection.corner_detection_main()
+                threshold_set = True
+                if corner_detection.huey_color_percentage_threshold > -1:
+                    threshold_set = False
+                detected_bots_with_data = corner_detection.corner_detection_main(threshold_set = threshold_set)
                 move_dictionary = algorithm.ram_ram(detected_bots_with_data, CAN_RECOVER, fps=fps)
                 
                 if DISPLAY_ANGLES:

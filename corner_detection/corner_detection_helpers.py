@@ -50,14 +50,14 @@ def get_contours_per_color(side: str, hsv_image: np.ndarray, selected_colors) ->
 
     mask = cv2.inRange(hsv_image, selected_color_hsv, selected_color_hsv)
 
-    cv2.imshow("Corners Mask", mask)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # cv2.imshow("Corners Mask", mask)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
 
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return contours
 
-def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False) -> tuple[np.ndarray | None, int] | None:
+def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=False) -> tuple[np.ndarray | None, int] | None:
     """
     Identifies which image contains our robot based on a predefined robot color.
 
@@ -100,14 +100,14 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
         bot_color_percentages.sort()
         #self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2]))
         
-        if first_run: #Set initial threshold
-            if len(bot_color_percentages) > 1:
+        if threshold_set: #Set initial threshold
+            if len(bot_color_percentages) > 1 and bot_color_percentages[-1] > 0:
                 self.huey_color_percentage_threshold = max((bot_color_percentages[-1] + bot_color_percentages[-2]) / 2, 0)
                 print("Threshold: " + str(self.huey_color_percentage_threshold))
             elif len(bot_color_percentages) == 1:
                 self.huey_color_percentage_threshold = max(bot_color_percentages[0] - 0.075, 0)
                 print("Threshold: " + str(self.huey_color_percentage_threshold))
-        elif len(bot_color_percentages) == 1 and max_color_percentage < self.huey_color_percentage_threshold:
+        if len(bot_color_percentages) == 1 and max_color_percentage < self.huey_color_percentage_threshold:
             our_bot_image = None
 
         
