@@ -181,6 +181,7 @@ def main():
                 is_flipped = 1
                 if IMU_ENABLED:
                     try:
+                        is_flipped = imu_sensor.get_upside_down_continuous()
                         if detected_bots_with_data.get("huey") is not None:
                             if detected_bots_with_data.get("huey").get("orientation") is not None:
                                 print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
@@ -190,10 +191,11 @@ def main():
                                 yaw = imu_sensor.get_yaw_continuous()
                                 detected_bots_with_data["huey"]["orientation"] = yaw
                                 print(f"yaw = {yaw}")
-                        is_flipped = imu_sensor.get_upside_down_continuous()
+                                draw_yaw_text(warped_frame,yaw,is_flipped)
+                        # is_flipped = imu_sensor.get_upside_down_continuous()
                         print(f"flipped = {is_flipped}")
         
-                        draw_yaw_text(warped_frame,yaw,is_flipped)
+                        # draw_yaw_text(warped_frame,yaw,is_flipped)
                     except IMUReadError as ex:
                         print(f"🟥 Error: {ex}")
                         print(" 🟢 using cd orientation 🟢 ")
