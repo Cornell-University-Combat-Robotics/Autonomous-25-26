@@ -185,6 +185,7 @@ def main():
                             if detected_bots_with_data.get("huey").get("orientation") is not None:
                                 print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
                                 imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
+                                yaw = 0
                             else:
                                 yaw = imu_sensor.get_yaw_continuous()
                                 detected_bots_with_data["huey"]["orientation"] = yaw
