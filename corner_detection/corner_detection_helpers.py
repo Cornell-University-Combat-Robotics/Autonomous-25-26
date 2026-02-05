@@ -50,9 +50,9 @@ def get_contours_per_color(side: str, hsv_image: np.ndarray, selected_colors) ->
 
     mask = cv2.inRange(hsv_image, selected_color_hsv, selected_color_hsv)
 
-    cv2.imshow("Corners Mask", mask)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # cv2.imshow("Corners Mask", mask)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
 
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return contours
@@ -83,7 +83,7 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, first_run=False)
                 continue
             
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
-            print("OOGABOOGA", color_pixel_count)
+            # print("OOGABOOGA", color_pixel_count)
 
             image_area = image.size/3
             color_percentage = color_pixel_count/image_area

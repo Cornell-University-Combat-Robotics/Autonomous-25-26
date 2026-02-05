@@ -33,12 +33,12 @@ MATT_LAPTOP = False             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
 WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
-IS_TRANSMITTING = True         # True if connected to live Huey
+IS_TRANSMITTING = False         # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = True          # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
 COLOR_QUANTIZATION = True        # True if color quantization is on
-IMU_ENABLED = True              # True if IMU is connected
+IMU_ENABLED = False              # True if IMU is connected
 CAN_RECOVER = False             # True if want recovery
 PROFILE_LINES = False           # True to display timing info for functions
 CAMERA_STREAM = False
@@ -51,11 +51,11 @@ if COMP_SETTINGS:
 
 folder = os.getcwd() + "/main_files"
 frame_rate = 30
-# camera_number = folder + "/test_videos/kabedon_huey.mp4"
+camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/lazy_huey.mp4"
 # camera_number = folder + "/test_videos/green_huey_demo.mp4"
-camera_number = 0
+# camera_number = 0
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
@@ -131,6 +131,8 @@ def main():
         prev = 0
         last_frame = 0
 
+        global_flipped = None
+
         while (CAMERA_STREAM and stream.isOpened() and not stream.stopped) or (not CAMERA_STREAM and cap.isOpened()):
             time_elapsed = time.perf_counter() - prev
             fps = 1/time_elapsed
@@ -159,9 +161,9 @@ def main():
                     print("Failed to capture image" + "\n")
                     break
 
-                if SHOW_FRAME:
-                    if cv2.waitKey(1) & 0xFF == ord("q"):  # Press Q on keyboard to exit
-                        break
+                # if SHOW_FRAME:
+                #     # if cv2.waitKey(1) & 0xFF == ord("q"):  # Press Q on keyboard to exit
+                #         # break
                 
                 warped_frame = warp(frame, homography_matrix)
 
@@ -176,9 +178,10 @@ def main():
                 corner_detection.set_bots(detected_bots)
                 # 12. Run Object Detection's results through Corner Detection
                 detected_bots_with_data = corner_detection.corner_detection_main()
-                print(detected_bots_with_data)
-                print("📐corner works")
+                # print(detected_bots_with_data)
+                # print("📐corner works")
                 is_flipped = 1
+
                 if IMU_ENABLED:
                     try:
                         if detected_bots_with_data.get("huey") is not None:
@@ -208,6 +211,21 @@ def main():
                         print(message)
                         raise(ex)
                 # move_dictionary = algorithm.ram_ram(detected_bots_with_data)
+
+                key = cv2.pollKey() & 0xFF
+                if key == ord("f"):   #F key to flip
+                    if global_flipped is None:
+                        global_flipped = True
+                    else:
+                        global_flipped = not global_flipped
+
+                if global_flipped == True:
+                    is_flipped = -1
+                elif global_flipped == False:
+                    is_flipped = 1
+                    
+                print("TEST FLIPPER: " + str(is_flipped))
+
                 move_dictionary = algorithm.ram_ram(detected_bots_with_data, CAN_RECOVER, fps=fps)
                 
                 if DISPLAY_ANGLES:
@@ -217,6 +235,7 @@ def main():
                 if IS_TRANSMITTING:
                     speed = move_dictionary["speed"]
                     turn = move_dictionary["turn"]
+
                     print(f"is flipped? {is_flipped}")
                     if turn * -1 > 0:
                         motor_group.move(speed * 0.8*is_flipped, turn * -1 * 0.55 + 0.2)

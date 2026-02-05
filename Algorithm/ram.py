@@ -154,11 +154,11 @@ class Ram():
             if prev_orientation == self.huey_orientation:
                 counter_orientation += 1
 
-        print(f"💅POPOS:💅 {self.huey_position}")
-        print(f"🛸ORORIE:🛸 {self.huey_orientation}")
-        print(f"🦒🦒🦒GIRTH {self.huey_girth}")
-        print(f"🇦🇮COUNTER POS {counter_pos}")
-        print(f"😹COUNTER EDGE {counter_orientation}")
+        # print(f"💅POPOS:💅 {self.huey_position}")
+        # print(f"🛸ORORIE:🛸 {self.huey_orientation}")
+        # print(f"🦒🦒🦒GIRTH {self.huey_girth}")
+        # print(f"🇦🇮COUNTER POS {counter_pos}")
+        # print(f"😹COUNTER EDGE {counter_orientation}")
 
         self.reverse = 1
 
@@ -257,11 +257,13 @@ class Ram():
         self.BACK_UP_THRESHOLD = 0.3*fps
         self.EDGE_THRESHOLD = 0.1*fps
         
-        if cv2.waitKey(1) & 0xFF == ord("r"):  # Press Q on keyboard to exit
-            self.huey_previous_positions = []
-            self.huey_previous_orientations = []
-            self.huey_previous_positions.append(self.huey_position)
-            self.huey_previous_orientations.append(self.huey_orientation)
+        # if cv2.waitKey(1) & 0xFF == ord("r"):
+        #     self.huey_previous_positions = []
+        #     self.huey_previous_orientations = []
+        #     self.huey_previous_positions.append(self.huey_position)
+        #     self.huey_previous_orientations.append(self.huey_orientation)
+
+        # if cv2.waitKey(1) & 0xFF == ord("f"):   #F key to flip
 
         if self.huey_pos_count % 5 == 0:
             self.huey_previous_positions.append(self.huey_position)

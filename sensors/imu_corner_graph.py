@@ -158,7 +158,7 @@ def main(): # TODO: Add timing back (kernprof)
                 corner_detection.set_bots(detected_bots)
                 # 12. Run Object Detection's results through Corner Detection
                 detected_bots_with_data = corner_detection.corner_detection_main()
-                print("📐corner works")
+                # print("📐corner works")
                 is_flipped = 1
                 if IMU_ENABLED and imu_sensor.check_valid(0.1):
                     try:
