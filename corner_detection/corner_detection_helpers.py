@@ -4,6 +4,7 @@ import numpy as np
 import csv
 import pandas as pd
 FONT = cv2.FONT_HERSHEY_SIMPLEX
+MIN_THRESHOLD = 0.035
 
 @staticmethod
 def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
@@ -83,10 +84,11 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
                 continue
             
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
-            print("OOGABOOGA", color_pixel_count)
+            # print("OOGABOOGA", color_pixel_count)
 
             image_area = image.size/3
             color_percentage = color_pixel_count/image_area
+            print(f"OOGABOOGA {color_pixel_count}, {image_area}, {color_percentage}")
 
             bot_color_percentages.append(color_percentage)
             #check if the next if statement is redundant since we are tracking the percentages with the list...
@@ -102,12 +104,14 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
         
         if threshold_set: #Set initial threshold
             if len(bot_color_percentages) > 1 and bot_color_percentages[-1] > 0:
-                self.huey_color_percentage_threshold = max((bot_color_percentages[-1] + bot_color_percentages[-2]) / 2, 0)
+                self.huey_color_percentage_threshold = max((bot_color_percentages[-1] + bot_color_percentages[-2]) / 2, MIN_THRESHOLD)
                 print("Threshold: " + str(self.huey_color_percentage_threshold))
             elif len(bot_color_percentages) == 1:
-                self.huey_color_percentage_threshold = max(bot_color_percentages[0] - 0.075, 0)
+                self.huey_color_percentage_threshold = max(bot_color_percentages[0] - 0.075, MIN_THRESHOLD)
                 print("Threshold: " + str(self.huey_color_percentage_threshold))
         if len(bot_color_percentages) == 1 and max_color_percentage < self.huey_color_percentage_threshold:
+            our_bot_image = None
+        elif len(bot_color_percentages) > 1 and max_color_percentage < min(MIN_THRESHOLD, self.huey_color_percentage_threshold):
             our_bot_image = None
 
         
