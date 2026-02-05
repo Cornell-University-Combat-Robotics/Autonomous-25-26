@@ -40,26 +40,47 @@ void setup()
   sei();
 }
 
+
 void loop()
 {
+
   if (Serial.available() > 0)
   {
-    // Read the input as a string
     String input = Serial.readStringUntil('\n');
+    input.trim();  // remove stray whitespace
 
-    // Parse the input string
-    int spaceIndex = input.indexOf(' ');
-    if (spaceIndex > 0)
+    int idx = 0;
+
+    while (idx < input.length())
     {
-      // Extract the percentages from the input string
-      // channel will be either 0 or 1
-      int channel = input.substring(0, spaceIndex).toInt();
-      // val is in the range of [-1, 1]
-      double val = input.substring(spaceIndex + 1).toDouble();
+      // Find end of channel token
+      int space1 = input.indexOf(' ', idx);
+      if (space1 == -1) break;
+
+      int channel = input.substring(idx, space1).toInt();
+
+      // Find end of value token
+      int space2 = input.indexOf(' ', space1 + 1);
+      double val;
+
+      if (space2 == -1)
+      {
+        // Last value in the string
+        val = input.substring(space1 + 1).toDouble();
+        idx = input.length();
+      }
+      else
+      {
+        val = input.substring(space1 + 1, space2).toDouble();
+        idx = space2 + 1;
+      }
+
 
       ppm[channel] = default_servo_value + (val * 500);
+
     }
   }
+
 }
 
 ISR(TIMER1_COMPA_vect)
