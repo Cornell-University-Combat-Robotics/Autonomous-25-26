@@ -50,9 +50,9 @@ def get_contours_per_color(side: str, hsv_image: np.ndarray, selected_colors) ->
 
     mask = cv2.inRange(hsv_image, selected_color_hsv, selected_color_hsv)
 
-    cv2.imshow("Corners Mask", mask)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # cv2.imshow("Corners Mask", mask)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
 
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return contours
