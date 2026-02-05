@@ -139,7 +139,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
 
 
 
-def draw_yaw_text(image, yaw_value,unflipped, valid):
+def draw_yaw_text(image, yaw_value,unflipped, valid=True):
     """Draws the yaw value in degrees onto the OpenCV image window."""
     print(f"unflipped: {unflipped}")
     if yaw_value is None:
