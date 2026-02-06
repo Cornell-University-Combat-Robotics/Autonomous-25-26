@@ -32,16 +32,16 @@ from sensors.imu_class import IMUReadError
 MATT_LAPTOP = False             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
-IS_TRANSMITTING = False         # True if connected to live Huey
+WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
+IS_TRANSMITTING = True         # True if connected to live Huey
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = True          # Process every captured frame
 DISPLAY_ANGLES = SHOW_FRAME     # Only show angles if frames a
 COLOR_QUANTIZATION = True        # True if color quantization is on
-IMU_ENABLED = False              # True if IMU is connected
+IMU_ENABLED = True              # True if IMU is connected
 CAN_RECOVER = False             # True if want recovery
 PROFILE_LINES = False           # True to display timing info for functions
-CAMERA_STREAM = False
+CAMERA_STREAM = True
 #TODO: don't recover on first frame
 
 if COMP_SETTINGS:
@@ -51,11 +51,11 @@ if COMP_SETTINGS:
 
 folder = os.getcwd() + "/main_files"
 frame_rate = 30
-camera_number = folder + "/test_videos/kabedon_huey.mp4"
+# camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/kabedon_huey.mp4"
 # camera_number = folder + "/test_videos/lazy_huey.mp4"
 # camera_number = folder + "/test_videos/green_huey_demo.mp4"
-# camera_number = 0
+camera_number = 0
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
@@ -148,6 +148,12 @@ def main():
                     except KeyError as ex:
                         # print(f"🟥 Error: {ex}")
                         pass
+                    except KeyboardInterrupt as e:
+                        raise(e)
+                    except Exception as e:
+                        print(f"error from imu: {e}")
+                        pass
+                    
             
                 print("FPS: " + str(1/time_elapsed))
                 prev = time.perf_counter()
@@ -185,9 +191,11 @@ def main():
                 if IMU_ENABLED:
                     try:
                         is_flipped = imu_sensor.get_upside_down_continuous()
-                        if detected_bots_with_data.get("huey") is not None:
+                        print("detected bots with data: ", detected_bots_with_data)
+                        
+                        if detected_bots_with_data.get("huey") is not None and detected_bots_with_data.get("huey") != {}:
                             if detected_bots_with_data.get("huey").get("orientation") is not None:
-                                print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
+                                #print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
                                 imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
                                 yaw = 0
                             else:
@@ -197,6 +205,7 @@ def main():
                                 draw_yaw_text(warped_frame,yaw,is_flipped)
                         # is_flipped = imu_sensor.get_upside_down_continuous()
                         print(f"flipped = {is_flipped}")
+                        print("detected bots with data: ", detected_bots_with_data)
         
                         # draw_yaw_text(warped_frame,yaw,is_flipped)
                     except IMUReadError as ex:
@@ -223,12 +232,14 @@ def main():
 
                 if global_flipped == True:
                     is_flipped = -1
-                elif global_flipped == False:
+                else:
                     is_flipped = 1
                     
                 print("TEST FLIPPER: " + str(is_flipped))
 
                 move_dictionary = algorithm.ram_ram(detected_bots_with_data, CAN_RECOVER, fps=fps)
+
+                print("WE MADE IT@")
                 
                 if DISPLAY_ANGLES:
                     display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing, against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, centroids=corner_detection.centroids)
