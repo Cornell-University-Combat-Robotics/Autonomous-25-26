@@ -231,8 +231,8 @@ class YoloModel(TemplateModel):
                 robots.append(dict)
 
         out = {"bots": robots, "housebot": housebots}
-        if show:
-            self.show_predictions(img, out)
+        # if show:
+        #     self.show_predictions(img, out)
 
         return out
 

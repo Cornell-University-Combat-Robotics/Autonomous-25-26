@@ -45,7 +45,8 @@ CAN_RECOVER = True             # True if want recovery
 # PROFILE_LINES = False            # True to display timing info for functions
 CAMERA_STREAM = False
 SHEET_RUNTIME = True
-SAVE_BBOXES = False
+SAVE_BBOXES = True
+BBOX_SAVE_FREQUENCY = 10
 #TODO: don't recover on first frame
 
 SRT = SHEET_RUNTIME
@@ -195,7 +196,7 @@ def main():
 
                 iteration = iteration + 1
 
-                if SAVE_BBOXES:
+                if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                     os.makedirs(f"{bb_output_dir}/frame_{iteration}", exist_ok=True)
                     frame_save_dir = os.path.join(bb_output_dir, f"frame_{iteration}")
 
@@ -239,15 +240,15 @@ def main():
                 warped_frame = warp(frame, homography_matrix)
                 rs.log("Warp", t)
 
-                if SAVE_BBOXES:
+                if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                     cv2.imwrite(f"{frame_save_dir}/warped_frame_{iteration}.png", warped_frame)
 
                 # 11. Run the Warped Image through Object Detection
                 t = time.perf_counter()
                 # detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
-                detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
+                detected_bots = predictor.predict(warped_frame, show=False, track=False)
                 
-                if SAVE_BBOXES:
+                if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                     for bot in range(len(detected_bots["bots"])):
                         if detected_bots["bots"][bot]["img"] is not None:
                             cv2.imwrite(f"{frame_save_dir}/detected_bot_{bot}.png", detected_bots["bots"][bot]["img"])
@@ -268,7 +269,7 @@ def main():
                     detected_bots = quantize(detected_bots, selected_colors, show=False, is_flipped=is_flipped)
                 rs.log("Color Quant", t)
 
-                if SAVE_BBOXES:
+                if  SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                     for bot in range(len(detected_bots["bots"])):
                         if detected_bots["bots"][bot]["img"] is not None:
                             cv2.imwrite(f"{frame_save_dir}/quantized_bot_{bot}.png", detected_bots["bots"][bot]["img"])
@@ -285,11 +286,14 @@ def main():
                 rs.log("Algorithm", t)
 
                 if DISPLAY_ANGLES:
+                    # Moved from inside predict code to keep bb images clean of annotations.
+                    warped_frame = predictor.show_predictions(warped_frame, detected_bots)
+
                     t = time.perf_counter()
                     final_image = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing, against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped = is_flipped, centroids=corner_detection.centroids)
                     rs.log("Display Angles", t)
 
-                    if SAVE_BBOXES:
+                    if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                         cv2.imwrite(f"{frame_save_dir}/final_image_{iteration}.png", final_image)
 
                 # 14. Transmitting the motor values to Huey's if we're using a live video
