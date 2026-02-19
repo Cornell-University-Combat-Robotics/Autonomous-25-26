@@ -194,6 +194,9 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
         cv2.imshow("Initial Run: Battle with Predictions. Press '0' to continue", image)
     else:
         cv2.imshow("Battle with Predictions", image)
+    
+    return image
+
     # cv2.waitKey(1)
 
 def initialize_quantization():

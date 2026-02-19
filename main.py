@@ -45,6 +45,7 @@ CAN_RECOVER = True             # True if want recovery
 # PROFILE_LINES = False            # True to display timing info for functions
 CAMERA_STREAM = False
 SHEET_RUNTIME = True
+SAVE_BBOXES = False
 #TODO: don't recover on first frame
 
 SRT = SHEET_RUNTIME
@@ -155,6 +156,15 @@ def main():
         else:
             algorithm = Ram()
 
+        if SAVE_BBOXES:
+            if not os.path.exists("bbox_output"):
+                os.makedirs("bbox_output")
+            # Make a new directory in bbox_output based on time.time
+            bb_output_dir = f"bbox_output/{int(time.time())}"
+            os.makedirs(bb_output_dir)
+        else:
+            bb_output_dir = None
+
         st = RuntimeSheet(SRT)
 
         # ----------------------------------------------------------------------
@@ -184,6 +194,10 @@ def main():
                 prev = time.perf_counter()
 
                 iteration = iteration + 1
+
+                if SAVE_BBOXES:
+                    os.makedirs(f"{bb_output_dir}/frame_{iteration}", exist_ok=True)
+                    frame_save_dir = os.path.join(bb_output_dir, f"frame_{iteration}")
 
                 if time.perf_counter() - fps_time > 1.0:
                     print(f"Frames in last 1 second: {iteration - fps_frame}")
@@ -225,10 +239,18 @@ def main():
                 warped_frame = warp(frame, homography_matrix)
                 rs.log("Warp", t)
 
+                if SAVE_BBOXES:
+                    cv2.imwrite(f"{frame_save_dir}/warped_frame_{iteration}.png", warped_frame)
+
                 # 11. Run the Warped Image through Object Detection
                 t = time.perf_counter()
                 # detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
                 detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
+                
+                if SAVE_BBOXES:
+                    for bot in range(len(detected_bots["bots"])):
+                        if detected_bots["bots"][bot]["img"] is not None:
+                            cv2.imwrite(f"{frame_save_dir}/detected_bot_{bot}.png", detected_bots["bots"][bot]["img"])
 
                 rs.log("Object Detection", t)
 
@@ -246,6 +268,11 @@ def main():
                     detected_bots = quantize(detected_bots, selected_colors, show=False, is_flipped=is_flipped)
                 rs.log("Color Quant", t)
 
+                if SAVE_BBOXES:
+                    for bot in range(len(detected_bots["bots"])):
+                        if detected_bots["bots"][bot]["img"] is not None:
+                            cv2.imwrite(f"{frame_save_dir}/quantized_bot_{bot}.png", detected_bots["bots"][bot]["img"])
+
                 #indonesia.set_bots(detected_bots)
                 corner_detection.set_bots(detected_bots)
                 # 12. Run Object Detection's results through Corner Detection
@@ -259,8 +286,11 @@ def main():
 
                 if DISPLAY_ANGLES:
                     t = time.perf_counter()
-                    display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing, against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped = is_flipped, centroids=corner_detection.centroids)
+                    final_image = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing, against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped = is_flipped, centroids=corner_detection.centroids)
                     rs.log("Display Angles", t)
+
+                    if SAVE_BBOXES:
+                        cv2.imwrite(f"{frame_save_dir}/final_image_{iteration}.png", final_image)
 
                 # 14. Transmitting the motor values to Huey's if we're using a live video
                 if IS_TRANSMITTING:
