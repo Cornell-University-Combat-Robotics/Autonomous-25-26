@@ -43,7 +43,7 @@ DISPLAY_ANGLES = True     # Only show angles if frames a
 COLOR_QUANTIZATION = True       # True if color quantization is on
 CAN_RECOVER = True             # True if want recovery
 # PROFILE_LINES = False            # True to display timing info for functions
-CAMERA_STREAM = True
+CAMERA_STREAM = False
 SHEET_RUNTIME = True
 #TODO: don't recover on first frame
 
@@ -62,8 +62,8 @@ frame_rate = 60
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/crude_rot_huey.mp4"
 # camera_number = folder + "/test_videos/two_huey_real_cage_800.mp4"
-# camera_number   = folder + "/test_videos/HueyVPrince.mp4"
-camera_number = 1
+camera_number   = folder + "/test_videos/huey_vs_prince.mp4"
+# camera_number = 1
 
 class RuntimeSheet:
     # Used for saving runtimes to a spreadsheet

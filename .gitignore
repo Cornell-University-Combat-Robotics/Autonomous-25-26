@@ -19,6 +19,7 @@ color_output.csv
 color_percentage_graph.png
 color_percentages_graphing.py
 venv/
+auto/
 auto26/
 matt_env/
 color_output.csv
