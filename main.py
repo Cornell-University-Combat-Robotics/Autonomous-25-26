@@ -240,13 +240,10 @@ def main():
                 warped_frame = warp(frame, homography_matrix)
                 rs.log("Warp", t)
 
-                if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
-                    cv2.imwrite(f"{frame_save_dir}/warped_frame_{iteration}.png", warped_frame)
-
                 # 11. Run the Warped Image through Object Detection
                 t = time.perf_counter()
                 # detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
-                detected_bots = predictor.predict(warped_frame, show=False, track=False)
+                detected_bots = predictor.predict(warped_frame, track=False)
                 
                 if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                     for bot in range(len(detected_bots["bots"])):
