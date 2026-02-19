@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy as np
+import torch
 
 ARENA_WIDTH = 700
 
@@ -22,27 +23,33 @@ As a change from the original get_homography_mat, does NOT resize the input imag
 """
 folder = os.getcwd() + "/main_files"
 
+import numpy as np
+import cv2
+import os
+
 def get_homography_mat(frame):
     corners = []
-    padding = 50
+    outer_padding = 50
+    clickable_padding = 150
+    total_padding = clickable_padding + outer_padding
 
-    # Add black border around the frame
-    padded_frame = cv2.copyMakeBorder(frame, padding, padding, padding, padding, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+    # Add black border around the frame.
+    padded_frame = cv2.copyMakeBorder(frame, total_padding, total_padding, total_padding, total_padding, cv2.BORDER_CONSTANT, value=(0, 0, 0))
 
     def click_event(event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN:
-            if x < padding or y < padding or x >= padded_frame.shape[1] - padding or y >= padded_frame.shape[0] - padding:
+            if x < outer_padding or y < outer_padding or x >= padded_frame.shape[1] - outer_padding or y >= padded_frame.shape[0] - outer_padding:
                 print(f"Clicked outside valid area: ({x}, {y})")
                 return
 
-            corners.append([x - padding, y - padding])  # Save coords relative to original frame
-            print(f"Point added: {x - padding}, {y - padding}")
+            corners.append([x - outer_padding, y - outer_padding])  # Save coords relative to original frame
+            print(f"Point added: {x - outer_padding}, {y - outer_padding}")
             draw_corners()
 
     def draw_corners():
         frame_copy = padded_frame.copy()
         for point in corners:
-            draw_point = (point[0] + padding, point[1] + padding)
+            draw_point = (point[0] + outer_padding, point[1] + outer_padding)
             cv2.circle(frame_copy, draw_point, 5, (0, 255, 0), -1)
             cv2.putText(frame_copy, str(point), draw_point, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
 
@@ -92,11 +99,24 @@ Returns:
 As a change from the original warp, does NOT resize the input image.
 """
 def warp(frame, h_mat):
-    return cv2.warpPerspective(frame, h_mat, (ARENA_WIDTH, ARENA_WIDTH))
+    clickable_padding = 150 
+    padded_frame = cv2.copyMakeBorder(frame, clickable_padding, clickable_padding, clickable_padding, clickable_padding, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+    
+    if torch.cuda.is_available():
+        gpu_frame = cv2.UMat(padded_frame)
+        return cv2.warpPerspective(gpu_frame, h_mat, (ARENA_WIDTH, ARENA_WIDTH)).get()
+    else:
+        frame = padded_frame
+        return cv2.warpPerspective(frame, h_mat, (ARENA_WIDTH, ARENA_WIDTH))
+
 
 if __name__ == "__main__":
     frame = cv2.imread('./vid_and_img_processing/sample_cage_ss.png')
     h_mat = get_homography_mat(frame)
+    warped_frame = warp(frame, h_mat)
+    cv2.imshow("Warped cage", warped_frame)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
     warped_frame = warp(frame, h_mat)
     cv2.imshow("Warped cage", warped_frame)
     cv2.waitKey(0)

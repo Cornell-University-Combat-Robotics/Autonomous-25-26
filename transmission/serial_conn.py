@@ -103,9 +103,9 @@ class OurSerial():
         speed2 : float, optional
             Value for second channel (-1.0 to 1.0)
         """
-        data = f"{channel1} {speed1}"
+        data = f"{channel1} {speed1:.2f}"
         if channel2 is not None and speed2 is not None:
-            data += f" {channel2} {speed2}"
+            data += f" {channel2} {speed2:.2f}"
         data += "\n"
         self.ser.write(data.encode())
 

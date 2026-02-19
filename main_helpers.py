@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import math
+import time
 
 from algorithm.ram import Ram
 from corner_detection.color_picker import ColorPicker
@@ -31,6 +32,7 @@ def key_frame(stream, CAMERA_STREAM):
             elif key == ord("0"):  # Press '0' to capture the image and exit
                 captured_image = frame.copy()
                 return captured_image
+            time.sleep(0.01)
         else:
             print("Failed to read frame" + "\n")
             return captured_image
@@ -90,7 +92,7 @@ def make_new_colors(output_file_path, warped_frame):
 
 def get_predictor(MATT_LAPTOP):
     if MATT_LAPTOP:
-        predictor = YoloModel("250v12best", "TensorRT", device="cuda")
+        predictor = YoloModel("26sBest80", "TensorRT", device="cuda")
     else:
         predictor = YoloModel("100epoch11", "PT", device="mps")
     return predictor
@@ -108,7 +110,7 @@ def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, w
 def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors):
     # 6. Do an initial run of ML and Corner. Initialize Algo
     first_run_ml = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
-    first_run_ml = quantize(first_run_ml, selected_colors, show=False)
+    first_run_ml = quantize(first_run_ml, selected_colors, show=False, is_flipped=False)
     corner_detection.set_bots(first_run_ml)
     first_run_orientation = corner_detection.corner_detection_main(threshold_set=True)
 
@@ -136,9 +138,11 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
     
     return algorithm
 
-def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, centroids=[]):
+def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped = False,  centroids=[]):
     if is_recovering:
         cv2.putText(image, "RECOVERING", (550, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
+    if is_flipped == -1:
+        cv2.putText(image, "FLIPPED", (550, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 255, 0), 2)
     if is_backing:
         if moving_forward > 0:
             cv2.putText(image, "FORWARD: " + against_wall, (450, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.67, (67, 150, 255), 2)
@@ -190,14 +194,18 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
         cv2.imshow("Initial Run: Battle with Predictions. Press '0' to continue", image)
     else:
         cv2.imshow("Battle with Predictions", image)
-    cv2.waitKey(1)
+    # cv2.waitKey(1)
 
 def initialize_quantization():
     dummy = np.zeros((8, 8, 3), dtype=np.uint8)
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2LAB)
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2HSV)
 
-def quantize(detected_bots, selected_colors, show):
+def quantize(detected_bots, selected_colors, show, is_flipped=False):
+    if(is_flipped == 1):
+        threshold = 18
+    else:
+        threshold = 22
     colors_hsv_1x = np.array(selected_colors).reshape(1, -1, 3)
 
     # OpenCV expects uint8 or float32, not int32
@@ -208,6 +216,6 @@ def quantize(detected_bots, selected_colors, show):
     
     bgr_colors = bgr_colors_1x.reshape(-1, 3)  # (N_colors, 3)
     for bot in detected_bots["bots"]:
-        bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, thresh_lab=25,keep_background=False, show=show)
+        bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, thresh_lab=threshold,keep_background=False, show=show)
 
     return detected_bots

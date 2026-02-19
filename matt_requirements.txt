@@ -15,8 +15,17 @@ matplotlib==3.10.6               # plotting
 pandas==2.3.2                    # import pandas
 line_profiler==5.0.0             # from line_profiler import profile
 python-dotenv==1.1.1             # from dotenv import load_dotenv
-torch>=2.9.0+cu130               # import torch
-tensorrt==10.9.0.34
+--index-url https://pypi.org/simple
+--extra-index-url https://download.pytorch.org/whl/cu130
+--extra-index-url https://pypi.nvidia.com
+
+# PyTorch builds for CUDA 13.1
+torch==2.10.0+cu130
+
+# TensorRT builds for CUDA 13.1
+tensorrt==10.15.1.29
+tensorrt-cu13>=10.15.1
+
 ultralytics==8.3.194             # import ultralytics (YOLO)
 pyserial==3.5                    # import serial
 onnxruntime==1.22.1              # import onnxruntime

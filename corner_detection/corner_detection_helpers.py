@@ -88,7 +88,7 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
 
             image_area = image.size/3
             color_percentage = color_pixel_count/image_area
-            print(f"OOGABOOGA {color_pixel_count}, {image_area}, {color_percentage}")
+            # print(f"OOGABOOGA {color_pixel_count}, {image_area}, {color_percentage}")
 
             bot_color_percentages.append(color_percentage)
             #check if the next if statement is redundant since we are tracking the percentages with the list...
@@ -150,24 +150,74 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
     Returns:
         list: Centroids of the detected contours.
     """
+
+    # 1. Get image dimensions and center point
+    img_h, img_w = hsv_image.shape[:2]
+    center_x, center_y = img_w // 2, img_h // 2
+
+    # 2. Get contours from your helper function
     contours = get_contours_per_color(side, hsv_image, selected_colors)
-    contours = sorted(contours, key=cv2.contourArea, reverse=True)
+    
+    # 3. Define the sorting key (Distance is primary, Area is secondary)
+    def sorting_criteria(c):
+        M = cv2.moments(c)
+        if M["m00"] == 0:
+            # Handle lines/points: assume the first point is the location
+            # and push them to the end of the priority list
+            return (float('inf'), 0)
+        
+        # Calculate centroid
+        cx = int(M["m10"] / M["m00"])
+        cy = int(M["m01"] / M["m00"])
+        
+        # Euclidean distance squared from center
+        dist_sq = (cx - center_x)**2 + (cy - center_y)**2
+        area = cv2.contourArea(c)
+        
+        # Sort by distance (ascending) then area (descending)
+        return (dist_sq, -area)
+
+    # 4. Sort the entire list
+    sorted_contours = sorted(contours, key=sorting_criteria)
+
+    # 5. Extract top 2 centroids
     centroids = []
-    for contour in contours:
-        # Filter out small contours based on area
-        image_area = image.size/3
-        contour_area = cv2.contourArea(contour)
-        contour_percent = contour_area/image_area
-        # if contour_area > 20: # area > 20
-        # TODO: this value is subject to change based on dimensions of our video & resize_factor
-        # Compute moments for each contour
+    for contour in sorted_contours:
+        if len(centroids) >= 2:
+            break
+            
         M = cv2.moments(contour)
-        if M["m00"] != 0 and len(centroids) < 2:
-            # Calculate the centroid (center of the dot)
+        if M["m00"] != 0:
             cx = int(M["m10"] / M["m00"])
             cy = int(M["m01"] / M["m00"])
             centroids.append((cx, cy))
+        # else:
+        #     # Fallback for 0-area contours if you still want their location
+        #     # (e.g., using the first point in the contour array)
+        #     if len(contour) > 0:
+        #         cx, cy = contour[0][0]
+        #         centroids.append((int(cx), int(cy)))
+            
     return centroids
+    # contours = get_contours_per_color(side, hsv_image, selected_colors)
+    # contours = sorted(contours, key=cv2.contourArea, reverse=True)
+    # contours = sorted(contours, key=cv2.)
+    # centroids = []
+    # for contour in contours:
+    #     # Filter out small contours based on area
+    #     image_area = image.size/3
+    #     contour_area = cv2.contourArea(contour)
+    #     contour_percent = contour_area/image_area
+    #     # if contour_area > 20: # area > 20
+    #     # TODO: this value is subject to change based on dimensions of our video & resize_factor
+    #     # Compute moments for each contour
+    #     M = cv2.moments(contour)
+    #     if M["m00"] != 0 and len(centroids) < 2:
+    #         # Calculate the centroid (center of the dot)
+    #         cx = int(M["m10"] / M["m00"])
+    #         cy = int(M["m01"] / M["m00"])
+    #         centroids.append((cx, cy))
+    # return centroids
 
 def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     """

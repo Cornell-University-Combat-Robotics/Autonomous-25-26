@@ -4,7 +4,9 @@ import time
 
 class CameraStream:
     def __init__(self, src):
-        self.cap = cv2.VideoCapture(src)
+        self.cap = cv2.VideoCapture(src, cv2.CAP_DSHOW)
+        self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
         
         # Performance tuning for Elgato MK2
         # MJPG is often faster for high-res 60fps

@@ -33,14 +33,11 @@ class CameraStream:
 stream = CameraStream(src=1).start()
 time.sleep(1.0) # Allow camera to warm up
 
-for i in range(100):
-    t0 = time.perf_counter()
+for i in range(100000):
     
     frame = stream.read() # This is now non-blocking
+    cv2.imshow("Frame", frame)
+    key = cv2.pollKey()
     
-    duration = (time.perf_counter() - t0) * 1000
-    print(f"Read time: {duration:.4f}ms")
-    
-    time.sleep(0.0166) # Your 40 FPS logic
 
 stream.stop()

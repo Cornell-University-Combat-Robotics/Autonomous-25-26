@@ -27,6 +27,7 @@ import time
     palette_bgr : np.ndarray
         The robot colors used (same as robot_colors_bgr, cast to uint8).
     """
+
 def quantize_robot_colors(
     img_bgr,
     robot_colors_bgr,
@@ -50,16 +51,36 @@ def quantize_robot_colors(
     thresh2 = thresh_lab * thresh_lab
     flat = flat_lab  # (N, 3)
 
-    # Start with first color
-    min_dist2 = np.sum((flat - robot_lab[0]) ** 2, axis=1)
+    # Define weights for L, a, and b
+    # Setting L_weight to 0.0 ignores brightness entirely.
+    # Setting it to 0.2 makes it matter, but much less than color.
+    L_weight = 0.05
+    weights = np.array([L_weight, 1.0, 1.0], dtype=np.float32)
+
+    # Start with first color (weighted)
+    diff0 = (flat - robot_lab[0]) * weights
+    min_dist2 = np.sum(diff0 ** 2, axis=1)
     min_idx = np.zeros_like(min_dist2, dtype=np.int32)
 
-    # Compare with remaining robot colors
+    # Compare with remaining robot colors (weighted)
     for i in range(1, robot_lab.shape[0]):
-        d = np.sum((flat - robot_lab[i]) ** 2, axis=1)
+        diff = (flat - robot_lab[i]) * weights
+        d = np.sum(diff ** 2, axis=1)
+        
         mask = d < min_dist2
         min_dist2[mask] = d[mask]
         min_idx[mask] = i
+
+    # # Start with first color
+    # min_dist2 = np.sum((flat - robot_lab[0]) ** 2, axis=1)
+    # min_idx = np.zeros_like(min_dist2, dtype=np.int32)
+
+    # # Compare with remaining robot colors
+    # for i in range(1, robot_lab.shape[0]):
+    #     d = np.sum((flat - robot_lab[i]) ** 2, axis=1)
+    #     mask = d < min_dist2
+    #     min_dist2[mask] = d[mask]
+    #     min_idx[mask] = i
 
     # Pixels close enough to some robot color
     mask_robot = min_dist2 < thresh2  # shape (N,)

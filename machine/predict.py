@@ -184,6 +184,9 @@ class YoloModel(TemplateModel):
                 model_extension = ".pt"
                 self.model = YOLO("./machine/models/" +
                                   model_name + model_extension)
+                
+            case "untrained":
+                self.model = YOLO("./machine/models/yolo26s.engine")
             # case "OpenVIVO":
             #     # Optimal for Intel CPUs, needs a lil work
             #     model_extension = ".xml"
@@ -197,7 +200,7 @@ class YoloModel(TemplateModel):
             #     self.model = cmodel
         self.device = device
         # compiled_model = core.compile_model(model=model, device_name=device.value)
-
+        
     def predict(self, img, show=False, track=False):
         # This prints timing info
         if self.device != None:
@@ -252,9 +255,9 @@ class YoloModel(TemplateModel):
                 cv2.rectangle(img, (int(x_min), int(y_min)),
                               (int(x_max), int(y_max)), color, 2)
 
-                # Add label text
-                cv2.putText(img, label, (int(x_min), int(
-                    y_min - 10)), FONT, 0.5, color, 2)
+                # # Add label text
+                # cv2.putText(img, label, (int(x_min), int(
+                #     y_min - 10)), FONT, 0.5, color, 2)
 
         # cv2.imshow("YoloModel Predictions", img)
         # cv2.waitKey(0)

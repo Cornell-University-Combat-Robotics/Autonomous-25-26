@@ -2,6 +2,7 @@ import math
 import random
 import time
 import cv2
+from line_profiler import profile
 
 import numpy as np
 
@@ -30,11 +31,11 @@ class Ram():
     LEFT_TURN = -1
     RIGHT_SPEED = 1
     RIGHT_TURN = 1
-    BACK_UP_THRESHOLD = 15  # > Double EDGE_THRESHOLD
+    BACK_UP_THRESHOLD = 10  # > Double EDGE_THRESHOLD
     EDGE_THRESHOLD = 5
-    RECOVERY_SPEED_VALUES = [BACK_UP_SPEED* 0.5, FORWARD_SPEED* 0.5, LEFT_SPEED* 0.5, RIGHT_SPEED* 0.5] 
+    RECOVERY_SPEED_VALUES = [BACK_UP_SPEED* 0.8, FORWARD_SPEED* 0.8, LEFT_SPEED* 0.8, RIGHT_SPEED* 0.8] 
     RECOVERY_TURN_VALUES = [BACK_UP_TURN, FORWARD_TURN, LEFT_TURN, RIGHT_TURN]
-    USE_PID = False
+    USE_PID = True
     is_recovering = False
     is_backing = False
     reverse = 0
@@ -132,7 +133,7 @@ class Ram():
         #     if abs(prev_orientation - self.huey_orientation) < Ram.TOLERANCE * 0.5:
         #         counter_orientation += 1
 
-        if counter_pos >= Ram.BACK_UP_THRESHOLD:
+        if counter_pos >= self.BACK_UP_THRESHOLD:
             self.is_recovering=True
             return True
         self.is_recovering=False
@@ -154,27 +155,27 @@ class Ram():
             if prev_orientation == self.huey_orientation:
                 counter_orientation += 1
 
-        print(f"💅POPOS:💅 {self.huey_position}")
-        print(f"🛸ORORIE:🛸 {self.huey_orientation}")
-        print(f"🦒🦒🦒GIRTH {self.huey_girth}")
-        print(f"🇦🇮COUNTER POS {counter_pos}")
-        print(f"😹COUNTER EDGE {counter_orientation}")
+        # print(f"💅POPOS:💅 {self.huey_position}")
+        # print(f"🛸ORORIE:🛸 {self.huey_orientation}")
+        # print(f"🦒🦒🦒GIRTH {self.huey_girth}")
+        # print(f"🇦🇮COUNTER POS {counter_pos}")
+        # print(f"😹COUNTER EDGE {counter_orientation}")
 
         self.reverse = 1
 
-        if Ram.BACK_UP_THRESHOLD > counter_pos and counter_pos >= Ram.EDGE_THRESHOLD*2 and Ram.BACK_UP_THRESHOLD > counter_orientation and counter_orientation >= Ram.EDGE_THRESHOLD*2:
+        if self.BACK_UP_THRESHOLD > counter_pos and counter_pos >= self.EDGE_THRESHOLD*2 and self.BACK_UP_THRESHOLD > counter_orientation and counter_orientation >= self.EDGE_THRESHOLD*2:
             self.reverse = -1
 
-        if Ram.BACK_UP_THRESHOLD > counter_pos and counter_pos >= Ram.EDGE_THRESHOLD and Ram.BACK_UP_THRESHOLD > counter_orientation and counter_orientation >= Ram.EDGE_THRESHOLD:
+        if self.BACK_UP_THRESHOLD > counter_pos and counter_pos >= self.EDGE_THRESHOLD and self.BACK_UP_THRESHOLD > counter_orientation and counter_orientation >= self.EDGE_THRESHOLD:
             # Huey against left wall
             if (self.huey_position[0] < self.huey_girth):
                 self.against_wall = "LEFT"
                 if (0 <= self.huey_orientation < 45 or 315 < self.huey_orientation <= 359):
-                    print("👿 AGAINST A LEFT WALL, FORWARD 👿")
+                    # print("👿 AGAINST A LEFT WALL, FORWARD 👿")
                     self.moving_forward = 1 * self.reverse
                     return 1 * self.reverse
                 else:
-                    print("👼 AGAINST A LEFT WALL, BACK 👼")
+                    # print("👼 AGAINST A LEFT WALL, BACK 👼")
                     self.moving_forward = -1 * self.reverse
                     return -1 * self.reverse
 
@@ -182,11 +183,11 @@ class Ram():
             elif self.huey_position[0] > 700 - self.huey_girth:
                 self.against_wall = "RIGHT"
                 if 135 < self.huey_orientation <= 225:
-                    print("🦋 AGAINST A RIGHT WALL, FORWARD 🦋")
+                    # print("🦋 AGAINST A RIGHT WALL, FORWARD 🦋")
                     self.moving_forward = 1 * self.reverse
                     return 1 * self.reverse
                 else:
-                    print("🐛 AGAINST A RIGHT WALL, BACK 🐛")
+                    # print("🐛 AGAINST A RIGHT WALL, BACK 🐛")
                     self.moving_forward = -1 * self.reverse
                     return -1 * self.reverse
 
@@ -194,11 +195,11 @@ class Ram():
             elif self.huey_position[1] < self.huey_girth:
                 self.against_wall = "TOP"
                 if 225 < self.huey_orientation <= 315:
-                    print("🌝 AGAINST A TOP WALL, FORWARD 🌝")
+                    # print("🌝 AGAINST A TOP WALL, FORWARD 🌝")
                     self.moving_forward = 1 * self.reverse
                     return 1 * self.reverse
                 else:
-                    print("🌚 AGAINST A TOP WALL, BACK 🌚")
+                    # print("🌚 AGAINST A TOP WALL, BACK 🌚")
                     self.moving_forward = -1 * self.reverse
                     return -1 * self.reverse
 
@@ -206,17 +207,18 @@ class Ram():
             elif self.huey_position[1] > 700 - self.huey_girth:
                 self.against_wall = "BOTTOM"
                 if 45 < self.huey_orientation <= 135:
-                    print("🦐 AGAINST A BOTTOM WALL, FORWARD 🦐")
+                    # print("🦐 AGAINST A BOTTOM WALL, FORWARD 🦐")
                     self.moving_forward = 1 * self.reverse
                     return 1 * self.reverse
                 else:
-                    print("🍤 AGAINST A BOTTOM WALL, BACK 🍤")
+                    # print("🍤 AGAINST A BOTTOM WALL, BACK 🍤")
                     self.moving_forward = -1 * self.reverse
                     return -1 * self.reverse
             
             self.moving_forward = 0
-            print("NO BACKY FORY💀💀💀")
+            # print("NO BACKY FORY💀💀💀")
             return 0
+        return 0
 
     ''' 
     Returns the predicted desired orientation angle of the bot given all parameters, NOTE: the positive direction is counterclockwise
@@ -252,12 +254,16 @@ class Ram():
         return angle * (Ram.MAX_TURN / 180.0), 1-(np.sign(angle) * (angle) * (Ram.MAX_SPEED / 180.0))
 
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
-    def ram_ram(self, bots: dict[str, any] = None, can_recover: bool = True, fps = 50):
-        self.HISTORY_BUFFER = 0.4*fps
-        self.BACK_UP_THRESHOLD = 0.3*fps
-        self.EDGE_THRESHOLD = 0.1*fps
+    def ram_ram(self, bots: dict[str, any] = None, can_recover: bool = True, fps = 50, key=None):
+        if self.is_recovering or self.is_backing:
+            self.HISTORY_BUFFER = fps/2
+        else:
+            self.HISTORY_BUFFER = fps
+        self.BACK_UP_THRESHOLD = 0.75*self.HISTORY_BUFFER
+        self.EDGE_THRESHOLD = 0.25*self.HISTORY_BUFFER
         
-        if cv2.waitKey(1) & 0xFF == ord("r"):  # Press Q on keyboard to exit
+        if key == ord("r"):  # Press Q on keyboard to exit
+            print("Recovery key r pressed.")
             self.huey_previous_positions = []
             self.huey_previous_orientations = []
             self.huey_previous_positions.append(self.huey_position)
@@ -272,17 +278,17 @@ class Ram():
         self.huey_orient_count += 1
 
         # Save Huey's last 10 positions
-        if len(self.huey_previous_positions) > Ram.HISTORY_BUFFER:
-            self.huey_previous_positions.pop(0)
+        if len(self.huey_previous_positions) > self.HISTORY_BUFFER:
+            self.huey_previous_positions = self.huey_previous_positions[int(len(self.huey_previous_positions)-self.HISTORY_BUFFER):]
 
-        if len(self.huey_previous_orientations) > Ram.HISTORY_BUFFER:
-            self.huey_previous_orientations.pop(0)
+        if len(self.huey_previous_orientations) > self.HISTORY_BUFFER:
+            self.huey_previous_orientations = self.huey_previous_orientations[int(len(self.huey_previous_orientations)-self.HISTORY_BUFFER):]
         
         # If the array for enemy_previous_positions is full, then pop the first one
         self.enemy_previous_positions.append(self.enemy_position)
 
-        if len(self.enemy_previous_positions) > Ram.HISTORY_BUFFER:
-            self.enemy_previous_positions.pop(0)
+        if len(self.enemy_previous_positions) > self.HISTORY_BUFFER:
+            self.enemy_previous_positions = self.enemy_previous_positions[int(len(self.enemy_previous_positions)-self.HISTORY_BUFFER):]
         
         if time.time() < self.recovering_until:
             print("Recovering...")
@@ -315,7 +321,7 @@ class Ram():
                     self.huey_previous_orientations.append(self.huey_previous_orientations[-1])
             else:
                 self.huey_previous_positions.append(self.huey_previous_positions[-1])
-            print("Start 🍀SPORADIH🍀🍀🍀")
+            # print("Start 🍀SPORADIH🍀🍀🍀")
             self.recovery_sequence() #SEQUENCE
             return self.huey_move(self.recover_speed, self.recover_turn)
         else:
@@ -327,8 +333,8 @@ class Ram():
             if (bots["huey"].get("orientation") is not None):
                 self.huey_orientation = bots['huey'].get('orientation')
 
-            self.delta_t = time.time() - self.old_time
-            self.old_time = time.time()
+            self.delta_t = time.perf_counter() - self.old_time
+            self.old_time = time.perf_counter()
         else:
             self.huey_previous_positions.append(self.huey_previous_positions[-1])
             self.huey_previous_orientations.append(self.huey_previous_orientations[-1])
@@ -347,7 +353,7 @@ class Ram():
                 else:
                     derivative = 0
                 
-                pid_output = (turn * 1) + (derivative * 0.03 * -1)
+                pid_output = (turn * 0.8) + (derivative * 0.04 * -1)
                 turn = clamp(pid_output, -1, 1)
 
             return self.huey_move(speed, turn)
