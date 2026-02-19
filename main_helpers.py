@@ -209,6 +209,7 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False):
         threshold = 18
     else:
         threshold = 22
+
     colors_hsv_1x = np.array(selected_colors).reshape(1, -1, 3)
 
     # OpenCV expects uint8 or float32, not int32
