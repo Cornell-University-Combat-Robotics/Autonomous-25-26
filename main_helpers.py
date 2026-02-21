@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import math
 import time
+import torch
 
 from algorithm.ram import Ram
 from corner_detection.color_picker import ColorPicker
@@ -90,8 +91,8 @@ def make_new_colors(output_file_path, warped_frame):
             file.write(f"{color[0]}, {color[1]}, {color[2]}\n")
     return selected_colors
 
-def get_predictor(MATT_LAPTOP):
-    if MATT_LAPTOP:
+def get_predictor():
+    if torch.cuda.is_available():
         predictor = YoloModel("26sBest80", "TensorRT", device="cuda")
     else:
         predictor = YoloModel("100epoch11", "PT", device="mps")
