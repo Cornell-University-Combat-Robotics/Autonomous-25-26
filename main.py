@@ -28,24 +28,21 @@ from warp_main import warp
 
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
-MATT_LAPTOP = torch.cuda.is_available()             # True if running on Matt's laptop
-JANK_CONTROLLER = False         # True if using backup controller
-WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
+# MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
+USE_SMALLER_MODEL = True        # Whether to use 26sBest80 (new slightly larger model) or 250v12best (old nano model)
+JANK_CONTROLLER = False         # Deprecated, True if using backup controller
+WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
-WEAPON_ON = False                # True if weapon motor should be on
+WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
-IS_ORIGINAL_FPS = True         # Process every captured frame
-
-DISPLAY_ANGLES = True     # Only show angles if frames a
+IS_ORIGINAL_FPS = True          # Process every captured frame
+DISPLAY_ANGLES = True           # Only show angles if SHOW_FRAME is True
 COLOR_QUANTIZATION = True       # True if color quantization is on
-CAN_RECOVER = True             # True if want recovery
-CAMERA_STREAM = False
-SHEET_RUNTIME = True
-SAVE_BBOXES = False
-BBOX_SAVE_FREQUENCY = 10
-#TODO: don't recover on first frame
-
-SRT = SHEET_RUNTIME
+CAN_RECOVER = True              # True if want recovery
+CAMERA_STREAM = False           # True if using live camera stream, False if using pre-recorded video
+SHEET_RUNTIME = True            # True if want to save runtimes to a spreadsheet and generate a graph
+SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
+BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
 
 folder = os.getcwd() + "/main_files"
 frame_rate = 10
@@ -62,19 +59,6 @@ if IS_TRANSMITTING:
     speed_motor_channel = 1
     turn_motor_channel = 3
     weapon_motor_channel = 4
-
-# if PROFILE_LINES:
-#     profiler = LineProfiler()
-
-#     def profile(func):
-#         def inner(*args, **kwargs):
-#             profiler.add_function(func)
-#             profiler.enable_by_count()
-#             return func(*args, **kwargs)
-#         return inner
-# else:
-#     def profile(func):
-#         return func
     
 rs = RuntimeSheet(use=SHEET_RUNTIME)
 # ------------------------------ BEFORE THE MATCH ------------------------------
@@ -106,7 +90,7 @@ def main():
         # 5. Defining all subsystem objects: ML, Corner, Algorithm, Transmission
 
         # To choose models, go to get_predictor() in main_helpers.py
-        predictor = get_predictor()
+        predictor = get_predictor(USE_SMALLER_MODEL)
         corner_detection = RobotCornerDetection(selected_colors, False, False)
         algorithm = None
         # TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
@@ -131,7 +115,7 @@ def main():
         else:
             bb_output_dir = None
 
-        st = RuntimeSheet(SRT)
+        st = RuntimeSheet(SHEET_RUNTIME)
 
         # ----------------------------------------------------------------------
         # 8. Match begins
@@ -141,6 +125,7 @@ def main():
         else:
             if cap.isOpened() == False:
                 print("Error opening video file" + "\n")
+
         prev = ptime()
         last_frame = 0
         fps_time = ptime()
@@ -227,22 +212,19 @@ def main():
                 else:
                     is_flipped = 1
 
-                # 11.5 Quantize those mf colors
+                # 11.5 Quantize Colors
                 t = ptime()
                 if COLOR_QUANTIZATION:
-                    # if iteration % 120 == 0:
-                    #     detected_bots = quantize(detected_bots, selected_colors, show=True, is_flipped=is_flipped)
-                    # else:
                     detected_bots = quantize(detected_bots, selected_colors, show=False, is_flipped=is_flipped)
                 rs.log("Color Quant", ptime() - t)
 
-                if  SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
+                if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                     for bot in range(len(detected_bots["bots"])):
                         if detected_bots["bots"][bot]["img"] is not None:
                             cv2.imwrite(f"{frame_save_dir}/quantized_bot_{bot}.png", detected_bots["bots"][bot]["img"])
 
-                #indonesia.set_bots(detected_bots)
                 corner_detection.set_bots(detected_bots)
+
                 # 12. Run Object Detection's results through Corner Detection
                 t = ptime()
                 detected_bots_with_data = corner_detection.corner_detection_main()
@@ -279,20 +261,10 @@ def main():
                 rs.dump()
 
             elif DISPLAY_ANGLES:
-                # t = ptime()
                 display_angles(None, None, warped_frame)
-                # rs.log("Elif Display Angles", t)
-                # rs.dump()
-                # time.sleep(0.0005)
-                # continue
 
             if SHOW_FRAME and not DISPLAY_ANGLES:
-                # t = ptime()
                 cv2.imshow("Bounding boxes (no angles)", warped_frame)
-                # rs.log("Show No Angles", t)
-                # rs.dump()
-
-            
 
         if CAMERA_STREAM:
             stream.stop()
@@ -334,9 +306,6 @@ def main():
         elif cap != None:
             cap.release()
             cv2.destroyAllWindows()
-
-        # if PROFILE_LINES:
-        #     profiler.print_stats(output_unit=1e-03)
 
         rs.save("runtimesheet")
 

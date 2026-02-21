@@ -91,16 +91,18 @@ def make_new_colors(output_file_path, warped_frame):
             file.write(f"{color[0]}, {color[1]}, {color[2]}\n")
     return selected_colors
 
-def get_predictor():
+def get_predictor(USE_SMALLER_MODEL):
+    model_name = "250v12best" if USE_SMALLER_MODEL else "26sBest80"
+
     if torch.cuda.is_available():
-        print("Using 26sBest80 (new small model) on CUDA for object detection.")
-        predictor = YoloModel("26sBest80", "TensorRT", device="cuda")
+        print(f"Using {model_name} on CUDA for object detection.")
+        predictor = YoloModel(model_name, "TensorRT", device="cuda")
     elif torch.backends.mps.is_available():
-        print("Using 26sBest80 (new small model) on MPS for object detection.")
-        predictor = YoloModel("26sBest80", "PT", device="mps")
+        print(f"Using {model_name} on MPS for object detection.")
+        predictor = YoloModel(model_name, "PT", device="mps")
     else:
-        print("Using 26sBest80 (new small model) with ONNX on CPU for object detection.")
-        predictor = YoloModel("26sBest80", "ONNX", device="cpu")
+        print(f"Using {model_name} with ONNX on CPU for object detection.")
+        predictor = YoloModel(model_name, "ONNX", device="cpu")
     return predictor
 
 def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel):
