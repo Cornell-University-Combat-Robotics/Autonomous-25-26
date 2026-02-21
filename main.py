@@ -40,7 +40,7 @@ DISPLAY_ANGLES = True           # Only show angles if SHOW_FRAME is True
 COLOR_QUANTIZATION = True       # True if color quantization is on
 CAN_RECOVER = True              # True if want recovery
 CAMERA_STREAM = False           # True if using live camera stream, False if using pre-recorded video
-SHEET_RUNTIME = True            # True if want to save runtimes to a spreadsheet and generate a graph
+SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (use Excel Viewer extension)
 SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
 BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
 
