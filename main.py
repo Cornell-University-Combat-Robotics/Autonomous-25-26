@@ -7,6 +7,7 @@ import cv2
 import torch
 
 from camera_stream import CameraStream
+from runtimesheet import RuntimeSheet
 import matplotlib.pyplot as plt
 from algorithm.ram import Ram
 from corner_detection.corner_detection import RobotCornerDetection
@@ -30,7 +31,7 @@ from warp_main import warp
 MATT_LAPTOP = torch.cuda.is_available()             # True if running on Matt's laptop
 JANK_CONTROLLER = False         # True if using backup controller
 COMP_SETTINGS = False           # Competition mode (no visuals, optimized speed)
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
 WEAPON_ON = False                # True if weapon motor should be on
 
@@ -45,7 +46,7 @@ CAN_RECOVER = True             # True if want recovery
 # PROFILE_LINES = False            # True to display timing info for functions
 CAMERA_STREAM = False
 SHEET_RUNTIME = True
-SAVE_BBOXES = True
+SAVE_BBOXES = False
 BBOX_SAVE_FREQUENCY = 10
 #TODO: don't recover on first frame
 
@@ -57,7 +58,7 @@ if COMP_SETTINGS:
     MATT_LAPTOP = True   # Force TensorRT optimization on Matt's laptop
 
 folder = os.getcwd() + "/main_files"
-frame_rate = 60
+frame_rate = 10
 # camera_number = folder + "/test_videos/trimmed_huey_redshift.mp4"
 # camera_number = folder + "/test_videos/nhrl_arena.mp4"
 # camera_number = folder + "/test_videos/huey_blushy.mp4"
@@ -66,34 +67,6 @@ frame_rate = 60
 # camera_number = folder + "/test_videos/two_huey_real_cage_800.mp4"
 camera_number   = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = 1
-
-class RuntimeSheet:
-    # Used for saving runtimes to a spreadsheet
-    def __init__(self, use):
-        self.init_time = time.perf_counter()
-        self.sheet = []
-        self.row = {"Start Time":time.perf_counter()}
-        self.use = use
-
-    def log(self, name, start_time):
-        if self.use:
-            self.row[name] = time.perf_counter()-start_time
-    
-    def start_iter(self):
-        if self.use:
-            self.row = {"Start Time":time.perf_counter()}
-
-    def dump(self):
-        if self.use:
-            self.row["End Time"] = time.perf_counter()
-            self.row["Elapsed Time"] = self.row["End Time"] - self.row["Start Time"]
-            self.sheet.append(self.row)
-
-    def save(self, output_name):
-        if self.use:
-            df = pd.DataFrame(self.sheet)
-            df.to_csv(output_name)
-
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
@@ -182,6 +155,7 @@ def main():
         fps_frame = 0
         iteration = 0
         global_flipped = None
+        start_time = time.perf_counter()
 
         while (CAMERA_STREAM and stream.isOpened() and not stream.stopped) or (not CAMERA_STREAM and cap.isOpened()):
             time_elapsed = time.perf_counter() - prev
@@ -202,9 +176,14 @@ def main():
 
                 if time.perf_counter() - fps_time > 1.0:
                     print(f"Frames in last 1 second: {iteration - fps_frame}")
-                    print(f"FPS over last 1 second: {(iteration - fps_frame)/1.0}")
                     fps_frame = iteration
                     fps_time = time.perf_counter()
+
+                if iteration > 11:
+                    fps10 = 1.0 / ((prev - rs.get_row(-10)["Start Time"]) / 10.0)
+                else:
+                    fps10 = 1.0 / ((prev - start_time) / iteration)
+                rs.log("FPS10", fps10)
 
                 t = time.perf_counter()
                 if CAMERA_STREAM:
@@ -212,7 +191,7 @@ def main():
                     # print("Frame number: " + str(stream.frameCount()))
                     last_frame = stream.frameCount()
                 else: ret, frame = cap.read()
-                rs.log("Frame Read", t)
+                rs.log("Frame Read", time.perf_counter() - t)
 
                 
                 if not ret:
@@ -234,11 +213,11 @@ def main():
                 else:
                     key = None
 
-                rs.log("Waitkey 1", t)
+                rs.log("Waitkey 1", time.perf_counter() - t)
                 
                 t = time.perf_counter()
                 warped_frame = warp(frame, homography_matrix)
-                rs.log("Warp", t)
+                rs.log("Warp", time.perf_counter() - t)
 
                 # 11. Run the Warped Image through Object Detection
                 t = time.perf_counter()
@@ -250,7 +229,7 @@ def main():
                         if detected_bots["bots"][bot]["img"] is not None:
                             cv2.imwrite(f"{frame_save_dir}/detected_bot_{bot}.png", detected_bots["bots"][bot]["img"])
 
-                rs.log("Object Detection", t)
+                rs.log("Object Detection", time.perf_counter() - t)
 
                 if global_flipped == True:
                     is_flipped = -1
@@ -264,7 +243,7 @@ def main():
                     #     detected_bots = quantize(detected_bots, selected_colors, show=True, is_flipped=is_flipped)
                     # else:
                     detected_bots = quantize(detected_bots, selected_colors, show=False, is_flipped=is_flipped)
-                rs.log("Color Quant", t)
+                rs.log("Color Quant", time.perf_counter() - t)
 
                 if  SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                     for bot in range(len(detected_bots["bots"])):
@@ -276,11 +255,11 @@ def main():
                 # 12. Run Object Detection's results through Corner Detection
                 t = time.perf_counter()
                 detected_bots_with_data = corner_detection.corner_detection_main()
-                rs.log("CD Main", t)
+                rs.log("CD Main", time.perf_counter() - t)
 
                 t = time.perf_counter()
                 move_dictionary = algorithm.ram_ram(detected_bots_with_data, CAN_RECOVER, fps=frame_rate, key=key)
-                rs.log("Algorithm", t)
+                rs.log("Algorithm", time.perf_counter() - t)
 
                 if DISPLAY_ANGLES:
                     # Moved from inside predict code to keep bb images clean of annotations.
@@ -288,7 +267,7 @@ def main():
 
                     t = time.perf_counter()
                     final_image = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing, against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped = is_flipped, centroids=corner_detection.centroids)
-                    rs.log("Display Angles", t)
+                    rs.log("Display Angles", time.perf_counter() - t)
 
                     if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                         cv2.imwrite(f"{frame_save_dir}/final_image_{iteration}.png", final_image)
@@ -304,7 +283,7 @@ def main():
                         motor_group.move(speed*is_flipped, turn * -1)
                     else:
                         motor_group.move(speed*is_flipped, turn * -1)
-                    rs.log("Transmission", t)
+                    rs.log("Transmission", time.perf_counter() - t)
                 
                 rs.dump()
 
@@ -368,7 +347,7 @@ def main():
         # if PROFILE_LINES:
         #     profiler.print_stats(output_unit=1e-03)
 
-        rs.save("runtimesheet.csv")
+        rs.save("runtimesheet")
 
 if __name__ == "__main__":
     main()
