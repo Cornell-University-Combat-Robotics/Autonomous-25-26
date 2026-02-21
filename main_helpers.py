@@ -138,7 +138,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
     
     return algorithm
 
-def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped = False,  centroids=[]):
+def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orientation=315, enemy_future_position=np.array([0,0]),initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped = False,  centroids=[]):
     if is_recovering:
         cv2.putText(image, "RECOVERING", (550, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
     if is_flipped == -1:
@@ -189,6 +189,24 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
 
                 end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
                 cv2.arrowedLine(image, (start_x, start_y), end_point, (0, 0, 255), 2)
+        print("----- enemy orientation_degrees: " + str(enemy_orientation))
+
+        if detected_bots_with_data["enemy"]:
+            # Components of enemy front arrow
+            dx = np.cos(math.pi / 180 * enemy_orientation)
+            dy = -1 * np.sin(math.pi / 180 * enemy_orientation)
+
+            # Enemy's center
+            start_x_enemy = int(detected_bots_with_data["enemy"]["center"][0])
+            start_y_enemy = int(detected_bots_with_data["enemy"]["center"][1]) #TODO: not negative...
+
+            # Enemy's future position
+            start_x_enemy_fut = int(enemy_future_position[0])
+            start_y_enemy_fut = int(enemy_future_position[1])
+
+            end_point_enemy = (int(start_x_enemy + 300 * dx), int(start_y_enemy + 300 * dy))
+            cv2.arrowedLine(image, (start_x_enemy, start_y_enemy), end_point_enemy, (67, 255, 0), 2)
+            cv2.circle(image, (start_x_enemy_fut, start_y_enemy_fut), 5, (67, 255, 0), 2 )
 
     if initial_run:
         cv2.imshow("Initial Run: Battle with Predictions. Press '0' to continue", image)

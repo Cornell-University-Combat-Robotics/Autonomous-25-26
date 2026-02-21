@@ -280,6 +280,9 @@ def main():
 
                 t = time.perf_counter()
                 move_dictionary = algorithm.ram_ram(detected_bots_with_data, CAN_RECOVER, fps=frame_rate, key=key)
+                enemy_orientation = algorithm.enemy_orientation
+                enemy_future_position = algorithm.enemy_future_position
+                print (f"🛸ENEMY FUTPOS:🛸 {enemy_future_position}")
                 rs.log("Algorithm", t)
 
                 if DISPLAY_ANGLES:
@@ -287,7 +290,7 @@ def main():
                     warped_frame = predictor.show_predictions(warped_frame, detected_bots)
 
                     t = time.perf_counter()
-                    final_image = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing, against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped = is_flipped, centroids=corner_detection.centroids)
+                    final_image = display_angles(detected_bots_with_data, move_dictionary, warped_frame, enemy_orientation, enemy_future_position, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing, against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped = is_flipped, centroids=corner_detection.centroids)
                     rs.log("Display Angles", t)
 
                     if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
