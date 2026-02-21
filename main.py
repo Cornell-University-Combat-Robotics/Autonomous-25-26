@@ -104,6 +104,8 @@ def main():
             initialize_quantization()
         
         # 5. Defining all subsystem objects: ML, Corner, Algorithm, Transmission
+
+        # To choose models, go to get_predictor() in main_helpers.py
         predictor = get_predictor()
         corner_detection = RobotCornerDetection(selected_colors, False, False)
         algorithm = None
