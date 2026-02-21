@@ -92,7 +92,7 @@ def make_new_colors(output_file_path, warped_frame):
     return selected_colors
 
 def get_predictor(USE_SMALLER_MODEL):
-    model_name = "250v12best" if USE_SMALLER_MODEL else "26sBest80"
+    model_name = "26nBest" if USE_SMALLER_MODEL else "26sBest80"
 
     if torch.cuda.is_available():
         print(f"Using {model_name} on CUDA for object detection.")

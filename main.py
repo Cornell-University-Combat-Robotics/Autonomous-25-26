@@ -29,7 +29,7 @@ from warp_main import warp
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
-USE_SMALLER_MODEL = True        # Whether to use 26sBest80 (new slightly larger model) or 250v12best (old nano model)
+USE_SMALLER_MODEL = True        # Whether to use 26sBest80 (slower, better) or 26nBest (faster, worse)
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
 WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
