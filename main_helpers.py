@@ -92,21 +92,45 @@ def make_new_colors(output_file_path, warped_frame):
             file.write(f"{color[0]}, {color[1]}, {color[2]}\n")
     return selected_colors
 
-def get_predictor(USE_SMALLER_MODEL):
-    model_name = "26nMulti" if USE_SMALLER_MODEL else "26sBest80"
+import platform
 
+def is_coreml_available():
+    # 1. Platform Check: CoreML inference only runs on macOS
+    if platform.system() != "Darwin":
+        return False
+    
+    # 2. Library & Hardware Check
+    try:
+        import coremltools as ct
+        # get_all_compute_devices() returns a list of hardware the framework can see
+        # This will fail or return an empty/CPU-only list if the OS/Framework is broken
+        devices = ct.models.MLComputeDevice.get_all_compute_devices()
+        return len(devices) > 0
+    except (ImportError, AttributeError, Exception):
+        # Fails if coremltools isn't installed or if 
+        # run on an OS version where the API doesn't exist
+        return False
+
+def get_predictor(MODEL_NAME, OD_IMG_SIZE):
     if torch.cuda.is_available():
-        print(f"Using {model_name} on CUDA for object detection.")
-        predictor = YoloModel(model_name, "TensorRT", 640, device="cuda")
+        print(f"Using {MODEL_NAME} on CUDA for object detection.")
+        predictor = YoloModel(MODEL_NAME, "TensorRT", OD_IMG_SIZE, device="cuda")
+
+    elif is_coreml_available():
+        print(f"Using {MODEL_NAME} with CoreML for object detection.")
+        predictor = YoloModel(MODEL_NAME, "CoreML", OD_IMG_SIZE)
+
     elif torch.backends.mps.is_available():
-        print(f"Using {model_name} on MPS for object detection.")
-        predictor = YoloModel(model_name, "PT", 640, device="mps")
+        print(f"Using {MODEL_NAME} on MPS for object detection.")
+        predictor = YoloModel(MODEL_NAME, "PT", OD_IMG_SIZE, device="mps")
+
     elif ov.Core().get_available_devices() and "CPU" in ov.Core().get_available_devices():
-        print(f"Using {model_name} with OpenVINO on CPU for object detection.")
-        predictor = YoloModel(model_name, "OpenVINO", 416)
+        print(f"Using {MODEL_NAME} with OpenVINO on CPU for object detection.")
+        predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE)
+
     else:
-        print(f"Using {model_name} with ONNX on CPU for object detection.")
-        predictor = YoloModel(model_name, "ONNX", 416, device="cpu")
+        print(f"Using {MODEL_NAME} with ONNX on CPU for object detection.")
+        predictor = YoloModel(MODEL_NAME, "ONNX", OD_IMG_SIZE, device="cpu")
     return predictor
 
 def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel):
@@ -121,7 +145,7 @@ def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, w
 
 def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors):
     # 6. Do an initial run of ML and Corner. Initialize Algo
-    first_run_ml = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
+    first_run_ml = predictor.predict(warped_frame, show=SHOW_FRAME)
     first_run_ml = quantize(first_run_ml, selected_colors, show=False, is_flipped=False)
     corner_detection.set_bots(first_run_ml)
     first_run_orientation = corner_detection.corner_detection_main(threshold_set=True)

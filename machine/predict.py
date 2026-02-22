@@ -172,48 +172,29 @@ class YoloModel(TemplateModel):
             case "TensorRT":
                 # Works best on NVIDIA GPUs, engine file must be compiled on the PC that it is running on.
                 model_extension = ".engine"
-                self.model = YOLO("./machine/models/" +
-                                  model_name + model_extension)
-                self.img_size = image_size
+                self.model = YOLO(f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
             case "ONNX":
                 # Optimal for CPU performance
                 model_extension = ".onnx"
-                self.model = YOLO("./machine/models/" +
-                                  model_name + model_extension)
-                self.img_size = image_size
+                self.model = YOLO(f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
             case "PT":
                 # Default kinda
                 model_extension = ".pt"
-                self.model = YOLO("./machine/models/" +
-                                  model_name + model_extension)
-                self.img_size = image_size
+                self.model = YOLO(f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
             case "OpenVINO":
                 # Optimal for Intel CPUs, needs a lil work
-                self.model = YOLO("./machine/models/" + model_name + "_openvino_model/")
-                self.img_size = image_size
+                self.model = YOLO(f"./machine/models/{model_name}/{image_size}/{model_name}_openvino_model/")
                 
-            case "untrained":
-                self.model = YOLO("./machine/models/yolo26s.engine")
-            # case "OpenVIVO":
-            #     # Optimal for Intel CPUs, needs a lil work
-            #     model_extension = ".xml"
-            #     weights_extension = ".bin"
-            #     core = ov.Core()
-            #     classification_model_xml = ("./machine/models/" + model_name + model_extension)
-            #     weights = "./machine/models/" + model_name + weights_extension
-
-            #     model = core.read_model(model=classification_model_xml, weights=weights)
-            #     cmodel = core.compile_model(model=model)
-            #     self.model = cmodel
         self.device = device
+        self.img_size = image_size
         # compiled_model = core.compile_model(model=model, device_name=device.value)
         
-    def predict(self, img, show=False, track=True):
+    def predict(self, img, show=False):
         # This prints timing info
         if self.device != None:
-            results = self.model(img, device=self.device, verbose=False, task='detect', mode='track' if track else 'predict', imgsz=self.img_size)
+            results = self.model(img, device=self.device, verbose=False, task='detect', imgsz=self.img_size)
         else:
-            results = self.model(img, verbose=False, task='detect', mode='track' if track else 'predict')
+            results = self.model(img, verbose=False, task='detect', imgsz=self.img_size)
         # If multiple img passed, results has more than one element
         result = results[0]
 

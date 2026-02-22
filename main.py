@@ -29,7 +29,6 @@ from warp_main import warp
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
-USE_SMALLER_MODEL = True        # Whether to use 26sBest80 (slower, better) or 26nBest (faster, worse)
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
 WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
@@ -43,6 +42,15 @@ CAMERA_STREAM = False           # True if using live camera stream, False if usi
 SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (use Excel Viewer extension)
 SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
 BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
+
+# MODEL_NAME = "SmallComp"        # Used for comp, best accuracy if you have the compute for it.
+MODEL_NAME = "NanoSizeVariant"  # Use with lower image size for faster performance, not much worse accuracy.
+
+# Image size for object detection model, lower number -> faster, slightly worse accuracy.
+OD_IMG_SIZE = 640               # 640 default, 416 fast, must be multiple of 32. Don't go below 320. 
+
+# If model gives a bug, ask Aaron which model/image size to use for your system.
+# TODO: Documentation for available models
 
 folder = os.getcwd() + "/main_files"
 frame_rate = 10
@@ -89,8 +97,9 @@ def main():
         
         # 5. Defining all subsystem objects: ML, Corner, Algorithm, Transmission
 
-        # To choose models, go to get_predictor() in main_helpers.py
-        predictor = get_predictor(USE_SMALLER_MODEL)
+        # Get predictor, if anything goes wrong here, call Aaron 717-984-3250 #TODO: Document better
+        predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
+
         corner_detection = RobotCornerDetection(selected_colors, False, False)
         algorithm = None
         # TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
@@ -198,7 +207,7 @@ def main():
                 # 11. Run the Warped Image through Object Detection
                 t = ptime()
                 # detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
-                detected_bots = predictor.predict(warped_frame, track=False)
+                detected_bots = predictor.predict(warped_frame)
                 
                 if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                     for bot in range(len(detected_bots["bots"])):
