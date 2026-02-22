@@ -1,0 +1,1 @@
+This yolo26n model was trained on Feb. 22 by Aaron Harnish. Other nano model options are fine tuned from this one. It has decent accuracy, and runs ~2x faster than SmallComp. If you want it to run any faster, switch to NanoSizeVariant.

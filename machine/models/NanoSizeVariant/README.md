@@ -1,0 +1,3 @@
+This is a fine tuned yolo26n version of NanoDefault, fine tuned with multi_scale = 0.5 to allow for image size changes (hopefully). This model should be better and handling changes in the size of bounding boxes, and scaling the img_size factor for faster performance REQUIRES that you use this model (i think, it's safest bet for accuracy). Use this model if you want to run faster on a laptop that isn't Matt's or want to play around with image sizes.
+
+WIP, this model could probably be fine tuned better.
