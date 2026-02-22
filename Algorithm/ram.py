@@ -50,19 +50,18 @@ class Ram():
             # initialize the position and orientation of huey
             self.huey_position = np.array(huey_position if huey_position is not None else (self.ARENA_WIDTH / 2, self.ARENA_WIDTH / 2), dtype=float)
             self.huey_old_position = np.array(huey_old_position if huey_old_position is not None else self.huey_position.copy(), dtype=float)
-            # TODO: Fix orientation init
-            self.huey_orientation = float(huey_orientation if huey_orientation is not None else 0.0)
+            self.huey_orientation = float(huey_orientation if huey_orientation is not None else 0.0) # TODO: Fix orientation init
+            self.huey_girth = 67
+            
             # initialize the current enemy position
             self.enemy_position = np.array(enemy_position if enemy_position is not None else (0.0, 0.0), dtype=float)
-            self.huey_girth = 67
-            # initialize the enemy position array
             self.enemy_previous_positions = []
             self.enemy_previous_positions.append(self.enemy_position)
             self.enemy_future_position = self.enemy_position
 
             # initialize the current enemy orientation
             self.enemy_orientation = float(enemy_orientation if enemy_orientation is not None else 0.0)
-            self.enemy_old_orientation = 0
+            self.enemy_old_orientation = 0.0
             
         else:
             self.huey_position = init_values(bots, self.ARENA_WIDTH, is_pos=True, is_huey=True)
@@ -70,8 +69,8 @@ class Ram():
             self.huey_orientation = init_values(bots, self.ARENA_WIDTH, is_pos=False, is_huey=True)
             self.enemy_position = init_values(bots, self.ARENA_WIDTH, is_pos=True, is_huey=False)
             self.enemy_future_position = self.enemy_position
-            self.enemy_orientation = 0
-            self.enemy_old_orientation = 0
+            self.enemy_orientation = 0.0
+            self.enemy_old_orientation = 0.0
             if bots["huey"] and len(bots["huey"]) > 0:
                 self.huey_girth = (math.dist(bots['huey'].get('bbox')[1], bots['huey'].get('bbox')[0]))/2
             else:
@@ -97,10 +96,10 @@ class Ram():
         self.enemy_previous_positions.append(self.enemy_position)
         self.enemy_future_position = self.enemy_position
 
-        # initialize the enemy orientation array
-        self.enemy_orient_count = 1
-        self.enemy_previous_orientations = []
-        self.enemy_previous_orientations.append(self.enemy_orientation)
+        # # initialize the enemy orientation array
+        # self.enemy_orient_count = 1
+        # self.enemy_previous_orientations = []
+        # self.enemy_previous_orientations.append(self.enemy_orientation)
 
         # old time
         self.old_time = time.time()
@@ -269,41 +268,78 @@ class Ram():
         angle *= sign
         return angle * (Ram.MAX_TURN / 180.0), 1-(np.sign(angle) * (angle) * (Ram.MAX_SPEED / 180.0))
 
+    def orientation_and_front_intersection_t(self, dx: float, dy_img: float, bbox, eps: float = 1e-6):
+        """
+        Given motion components in IMAGE coords (dx, dy_img) and an axis-aligned bbox (two corners),
+        compute:
+        - orientation: heading angle in degrees, normalized to [0, 360)
+        - forward_img: unit forward vector in IMAGE coords (x right, y down)
+        - t: scalar such that (center + t * forward_img) hits the bbox boundary
+
+        bbox format assumed: bbox[0]=(x1,y1), bbox[1]=(x2,y2) (corners, any order)
+        """
+        # orientation in math coords (y up), then normalize
+        dy_math = -dy_img
+        orientation = (np.degrees(np.arctan2(dy_math, dx)) + 360.0) % 360.0
+
+        # forward unit vector in IMAGE coords
+        theta = np.radians(orientation)
+        forward_img = np.array([np.cos(theta), -np.sin(theta)], dtype=float)
+
+        # bbox half extents
+        (x1, y1), (x2, y2) = bbox[0], bbox[1]
+        half_w = 0.5 * abs(x2 - x1)
+        half_h = 0.5 * abs(y2 - y1)
+
+        # distance to first rectangle boundary along forward direction
+        ux, uy = float(forward_img[0]), float(forward_img[1])
+        tx = half_w / max(abs(ux), eps)
+        ty = half_h / max(abs(uy), eps)
+        t = min(tx, ty)
+
+        return orientation, forward_img, t
     """
     
     """
     def get_enemy_orientation(self, bots):
-        if bots is not None and bots["enemy"] is not None and bots["enemy"].get("bbox") is not None:
-            self.enemy_old_orientation = self.enemy_orientation
-            prev_pos = self.enemy_previous_positions[-1]
-            cur_pos = self.enemy_position
-            print(f"🎄🎄prev: {prev_pos}, 🎄🎄curr: {cur_pos}")
-            #self.enemy_future_position = self.enemy_position
-            
-            if not (np.array_equal(np.array([-1.0,-1.0]), cur_pos)) and not (np.array_equal(np.array([-1.0,-1.0]), prev_pos)) and abs(prev_pos[0] - cur_pos[0]) > 5 and abs(prev_pos[1] - cur_pos[1]) > 5:
-                print("ENEMY ORIENTATION STUFF!")
+        last_good = self.enemy_old_orientation
+        if not (bots and bots.get("enemy") and bots["enemy"].get("bbox") is not None):
+            return last_good
+        
+        if len(self.enemy_previous_positions) == 0:
+            return last_good
+        
+        prev_pos = self.enemy_previous_positions[-1]
+        cur_pos = self.enemy_position
+        print(f"🎄🎄prev: {prev_pos}, 🎄🎄curr: {cur_pos}")
 
-                dx = cur_pos[0] - prev_pos[0]
-                dy = -1 * (cur_pos[1] - prev_pos[1])
+        if np.array_equal(cur_pos, np.array([-1.0, -1.0])) or np.array_equal(prev_pos, np.array([-1.0, -1.0])):
+            return last_good
+        
+        delta_img = cur_pos - prev_pos
+        dist = np.linalg.norm(delta_img)
 
-                enemy_width = (math.dist(bots['enemy'].get('bbox')[1], bots['enemy'].get('bbox')[0]))/2
+        if dist <= 5:
+            return last_good
+        
+        dx = float(delta_img[0])
+        dy_img = float(delta_img[1])
 
-                self.enemy_future_position = self.enemy_position + enemy_width * np.array([-1*dx, dy])/np.linalg.norm(np.array([dx, dy]))
+        orientation, forward_img, t = self.orientation_and_front_intersection_t(
+            dx, dy_img, bots["enemy"]["bbox"]
+        )
 
-                print(f"🇦🇮enemy width:🇦🇮 {enemy_width}")
-                print(f"🇳🇱enemy possy🇳🇱: {self.enemy_position}")
-                print(f"🏓ENEM FUT POS:🏓 {self.enemy_future_position}")
+        self.enemy_future_position = cur_pos + t * forward_img
+        self.enemy_old_orientation = orientation      
+        if True:
 
-                print(f"dx💩 {dx}💩")
-                print(f"dy💩 {dy}💩")
-
-                print(f"ARCY💩 {np.arctan2(dy,dx)}💩")
-
-                orientation = np.degrees(np.arctan2(dy,dx))
-                
-                print(f"❤️traj: {orientation}❤️")
-                return orientation
-        return self.enemy_old_orientation
+            print(f"🇳🇱enemy possy🇳🇱: {self.enemy_position}")
+            print(f"🏓ENEM FUT POS:🏓 {self.enemy_future_position}")
+            print(f"dx💩 {dx}💩")
+            print(f"dy💩 {dy_img}💩")
+            print(f"❤️traj: {orientation}❤️")
+        
+        return orientation
 
 
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
@@ -337,10 +373,15 @@ class Ram():
         if len(self.huey_previous_orientations) > self.HISTORY_BUFFER:
             self.huey_previous_orientations = self.huey_previous_orientations[int(len(self.huey_previous_orientations)-self.HISTORY_BUFFER):]
         
+        if bots and bots['enemy']:
+            self.enemy_position = np.array(bots['enemy']['center'])
+        
         self.enemy_orientation = self.get_enemy_orientation(bots)
         
         # If the array for enemy_previous_positions is full, then pop the first one
         self.enemy_previous_positions.append(self.enemy_position)
+        if len(self.enemy_previous_positions) > self.HISTORY_BUFFER:
+            self.enemy_previous_positions = self.enemy_previous_positions[-int(self.HISTORY_BUFFER):]
 
         if len(self.enemy_previous_positions) > self.HISTORY_BUFFER:
             self.enemy_previous_positions = self.enemy_previous_positions[int(len(self.enemy_previous_positions)-self.HISTORY_BUFFER):]
@@ -397,7 +438,7 @@ class Ram():
             return self.huey_move(self.huey_old_speed, self.huey_old_turn)
 
         if bots["enemy"]:
-            self.enemy_position = np.array(bots['enemy']['center']) # probably issue here? 
+            # self.enemy_position = np.array(bots['enemy']['center']) # probably issue here? 
             turn, speed = self.predict_desired_turn_and_speed()
             self.huey_old_turn, self.huey_old_speed = turn, speed
         
@@ -414,7 +455,6 @@ class Ram():
             return self.huey_move(speed, turn)
         else:
             print("enemy bot not detected, previous position appended")
-            self.enemy_previous_positions.append(self.enemy_previous_positions[-1])
             self.enemy_position = self.enemy_previous_positions[-1]
             turn, speed = self.predict_desired_turn_and_speed()
             self.huey_old_turn, self.huey_old_speed = turn, speed

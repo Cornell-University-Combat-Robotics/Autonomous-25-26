@@ -30,14 +30,14 @@ from warp_main import warp
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
-WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = True  # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
 WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = True          # Process every captured frame
 DISPLAY_ANGLES = True           # Only show angles if SHOW_FRAME is True
 COLOR_QUANTIZATION = True       # True if color quantization is on
-CAN_RECOVER = True              # True if want recovery
+CAN_RECOVER = False              # True if want recovery
 CAMERA_STREAM = False           # True if using live camera stream, False if using pre-recorded video
 SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
@@ -54,13 +54,13 @@ OD_IMG_SIZE = 416               # 640 default, 416 fast, must be multiple of 32.
 
 folder = os.getcwd() + "/main_files"
 frame_rate = 30
-# camera_number = folder + "/test_videos/trimmed_huey_redshift.mp4"
+camera_number = folder + "/test_videos/trimmed_huey_redshift.mp4"
 # camera_number = folder + "/test_videos/nhrl_arena.mp4"
 # camera_number = folder + "/test_videos/huey_blushy.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/crude_rot_huey.mp4"
 # camera_number = folder + "/test_videos/two_huey_real_cage_800.mp4"
-camera_number   = folder + "/test_videos/huey_vs_prince.mp4"
+# camera_number   = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = 1
 
 if IS_TRANSMITTING:
@@ -244,7 +244,7 @@ def main():
                 enemy_orientation = algorithm.enemy_orientation
                 enemy_future_position = algorithm.enemy_future_position
                 print (f"🛸ENEMY FUTPOS:🛸 {enemy_future_position}")
-                rs.log("Algorithm", t)
+                rs.log("Algorithm", ptime() - t)
 
                 if DISPLAY_ANGLES:
                     # Moved from inside predict code to keep bb images clean of annotations.
