@@ -53,7 +53,7 @@ OD_IMG_SIZE = 416               # 640 default, 416 fast, must be multiple of 32.
 # TODO: Documentation for available models
 
 folder = os.getcwd() + "/main_files"
-frame_rate = 30
+frame_rate = 60
 # camera_number = folder + "/test_videos/trimmed_huey_redshift.mp4"
 # camera_number = folder + "/test_videos/nhrl_arena.mp4"
 # camera_number = folder + "/test_videos/huey_blushy.mp4"

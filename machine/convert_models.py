@@ -13,4 +13,4 @@ print(model.export(format="onnx", simplify=True, imgsz=320))  # creates 'yolo11n
 # Load the exported TensorRT model
 # tensorrt_model = YOLO("100epoch11.engine")
 
-# Terminal prompt: yolo export model=./machine/models/26n320_2.pt format=onnx simplify=True imgsz=320
+# Terminal prompt: yolo export model=./machine/models/SmallComp/416/SmallComp.pt format=engine simplify=True imgsz=416 half=True
