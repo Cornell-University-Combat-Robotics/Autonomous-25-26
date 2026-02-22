@@ -3,6 +3,7 @@ import numpy as np
 import math
 import time
 import torch
+import openvino as ov
 
 from algorithm.ram import Ram
 from corner_detection.color_picker import ColorPicker
@@ -92,17 +93,20 @@ def make_new_colors(output_file_path, warped_frame):
     return selected_colors
 
 def get_predictor(USE_SMALLER_MODEL):
-    model_name = "26nBest" if USE_SMALLER_MODEL else "26sBest80"
+    model_name = "26nMulti" if USE_SMALLER_MODEL else "26sBest80"
 
     if torch.cuda.is_available():
         print(f"Using {model_name} on CUDA for object detection.")
-        predictor = YoloModel(model_name, "TensorRT", device="cuda")
+        predictor = YoloModel(model_name, "TensorRT", 640, device="cuda")
     elif torch.backends.mps.is_available():
         print(f"Using {model_name} on MPS for object detection.")
-        predictor = YoloModel(model_name, "PT", device="mps")
+        predictor = YoloModel(model_name, "PT", 640, device="mps")
+    elif ov.Core().get_available_devices() and "CPU" in ov.Core().get_available_devices():
+        print(f"Using {model_name} with OpenVINO on CPU for object detection.")
+        predictor = YoloModel(model_name, "OpenVINO", 416)
     else:
         print(f"Using {model_name} with ONNX on CPU for object detection.")
-        predictor = YoloModel(model_name, "ONNX", device="cpu")
+        predictor = YoloModel(model_name, "ONNX", 416, device="cpu")
     return predictor
 
 def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel):

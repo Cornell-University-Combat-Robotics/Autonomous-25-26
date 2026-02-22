@@ -167,23 +167,30 @@ class RoboflowModel(TemplateModel):
 class YoloModel(TemplateModel):
     # General template for using YOLO to load model files and use them.
 
-    def __init__(self, model_name, model_type, device=None):
+    def __init__(self, model_name, model_type, image_size, device=None):
         match model_type:
             case "TensorRT":
                 # Works best on NVIDIA GPUs, engine file must be compiled on the PC that it is running on.
                 model_extension = ".engine"
                 self.model = YOLO("./machine/models/" +
                                   model_name + model_extension)
+                self.img_size = image_size
             case "ONNX":
                 # Optimal for CPU performance
                 model_extension = ".onnx"
                 self.model = YOLO("./machine/models/" +
                                   model_name + model_extension)
+                self.img_size = image_size
             case "PT":
                 # Default kinda
                 model_extension = ".pt"
                 self.model = YOLO("./machine/models/" +
                                   model_name + model_extension)
+                self.img_size = image_size
+            case "OpenVINO":
+                # Optimal for Intel CPUs, needs a lil work
+                self.model = YOLO("./machine/models/" + model_name + "_openvino_model/")
+                self.img_size = image_size
                 
             case "untrained":
                 self.model = YOLO("./machine/models/yolo26s.engine")
@@ -204,7 +211,7 @@ class YoloModel(TemplateModel):
     def predict(self, img, show=False, track=True):
         # This prints timing info
         if self.device != None:
-            results = self.model(img, device=self.device, verbose=False, task='detect', mode='track' if track else 'predict')
+            results = self.model(img, device=self.device, verbose=False, task='detect', mode='track' if track else 'predict', imgsz=self.img_size)
         else:
             results = self.model(img, verbose=False, task='detect', mode='track' if track else 'predict')
         # If multiple img passed, results has more than one element
