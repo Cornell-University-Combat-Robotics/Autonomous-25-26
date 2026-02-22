@@ -2,8 +2,9 @@ import os
 import cv2
 import numpy as np
 import torch
+import kornia
 
-ARENA_WIDTH = 700
+ARENA_WIDTH = 704
 
 """
 Duplicated from vid_and_img_processing/vid_to_warped_frames.py
@@ -108,6 +109,19 @@ def warp(frame, h_mat):
     else:
         frame = padded_frame
         return cv2.warpPerspective(frame, h_mat, (ARENA_WIDTH, ARENA_WIDTH))
+
+def warp_gpu(frame, h_tensor, target_size=704):
+    # 1. CPU -> GPU (Upload and format to Batch, Channel, Height, Width)
+    # We keep it as BGR for your later steps
+    img_tensor = torch.from_numpy(frame).permute(2, 0, 1).float().cuda().unsqueeze(0)
+    
+    # 2. GPU Warp (700x700)
+    # This happens entirely in CUDA memory
+    warped_700_bgr = kornia.geometry.transform.warp_perspective(
+        img_tensor, h_tensor, dsize=(target_size, target_size)
+    )
+    
+    return warped_700_bgr
 
 
 if __name__ == "__main__":

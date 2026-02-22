@@ -9,7 +9,7 @@ LEFT_SPEED = 1
 LEFT_TURN = -1
 RIGHT_SPEED = 1
 RIGHT_TURN = 1
-ARENA_WIDTH = 700
+ARENA_WIDTH = 704
 
 '''
 inverting the y position

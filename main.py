@@ -25,6 +25,7 @@ from main_helpers import (
     quantize
 )
 from warp_main import warp
+from warp_main import warp_gpu
 
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
@@ -86,10 +87,15 @@ def main():
         if WARP_AND_COLOR_PICKING:
             warped_frame, homography_matrix = make_new_homography(captured_image)
             selected_colors = make_new_colors(folder + "/selected_colors.txt", warped_frame)
+
         # 3. Or use the previously saved Homography Matrix and colors from the txt file
         else:
             warped_frame, homography_matrix = read_prev_homography(captured_image, folder + "/homography_matrix.txt")
             selected_colors = read_prev_colors(folder + "/selected_colors.txt")
+        
+        homography_tensor = None
+        if torch.cuda.is_available():
+            homography_tensor = torch.from_numpy(homography_matrix).float().cuda().unsqueeze(0)
 
         # 4. Initialize color quantization cv2
         if COLOR_QUANTIZATION:
@@ -201,13 +207,24 @@ def main():
                 rs.log("Pollkey", ptime() - t)
                 
                 t = ptime()
-                warped_frame = warp(frame, homography_matrix)
+                # CPU -> GPU
+                # warped_frame = warp(frame, homography_matrix)
+                warped_tensor_704 = warp_gpu(frame, homography_tensor, target_size=704)
                 rs.log("Warp", ptime() - t)
 
                 # 11. Run the Warped Image through Object Detection
                 t = ptime()
-                # detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
-                detected_bots = predictor.predict(warped_frame)
+                input_416_bgr = torch.nn.functional.interpolate(
+                    warped_tensor_704, size=(OD_IMG_SIZE, OD_IMG_SIZE), mode='bilinear', align_corners=False
+                )
+
+                input_416_rgb = input_416_bgr[:, [2, 1, 0], :, :] / 255.0
+
+                # GPU -> GPU
+                # detected_bots = predictor.predict(warped_frame)
+                detected_bots = predictor.predict(input_416_rgb)
+
+                warped_frame = warped_tensor_704.squeeze(0).permute(1, 2, 0).byte().cpu().numpy()
                 
                 if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                     for bot in range(len(detected_bots["bots"])):

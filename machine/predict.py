@@ -4,6 +4,7 @@ import cv2
 # import openvino as ov
 from dotenv import load_dotenv
 from ultralytics import YOLO
+import torch
 
 # from template_model import TemplateModel # to run in machine
 from machine.template_model import TemplateModel  # to run in main
@@ -197,12 +198,27 @@ class YoloModel(TemplateModel):
         
     def predict(self, img, show=False):
         # This prints timing info
+
+        input_416_bgr = torch.nn.functional.interpolate(
+            img, size=(self.img_size, self.img_size), mode='bilinear', align_corners=False
+        )
+
+        input_416_rgb = input_416_bgr[:, [2, 1, 0], :, :] / 255.0
+
         if self.device != None:
-            results = self.model(img, device=self.device, verbose=False, task='detect', imgsz=self.img_size)
+            results = self.model(input_416_rgb, device=self.device, verbose=False, task='detect', imgsz=self.img_size)
         else:
-            results = self.model(img, verbose=False, task='detect', imgsz=self.img_size)
+            results = self.model(input_416_rgb, verbose=False, task='detect', imgsz=self.img_size)
         # If multiple img passed, results has more than one element
         result = results[0]
+
+        scale_factor = 704 / self.img_size
+        if len(result.boxes) > 0:
+            # We multiply the xyxy coordinates directly on the GPU
+            result.boxes.data[:, :4] *= scale_factor
+        
+        # Update metadata so subsequent drawing functions use 704 context
+        result.orig_shape = (704, 704)
 
         robots = []
         housebots = []
@@ -216,8 +232,8 @@ class YoloModel(TemplateModel):
             # cv2.waitKey(0)
             # cv2.destroyAllWindows
 
-            dict = {"bbox": [[max(0, x1), max(0, y1)], [min(700, x2), min(
-                700, y2)]], "center": [cx, cy], "img": cropped_img}
+            dict = {"bbox": [[max(0, x1), max(0, y1)], [min(704, x2), min(
+                704, y2)]], "center": [cx, cy], "img": cropped_img}
 
             if box.cls == 0:
                 housebots.append(dict)

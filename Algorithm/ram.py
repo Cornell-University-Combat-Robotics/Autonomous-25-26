@@ -21,7 +21,7 @@ class Ram():
     DANGER_ZONE = 55 # TODO: for smarter algo
     MAX_SPEED = 1  # magnitude between 0 and 1
     MAX_TURN = 1  # between 0 and 1
-    ARENA_WIDTH = 700  # in pixels
+    ARENA_WIDTH = 704  # in pixels
     TOLERANCE = 10  # how close Huey's prev pos are permitted to be
     BACK_UP_SPEED = -1
     BACK_UP_TURN = 0
@@ -180,7 +180,7 @@ class Ram():
                     return -1 * self.reverse
 
             # Huey against right wall
-            elif self.huey_position[0] > 700 - self.huey_girth:
+            elif self.huey_position[0] > 704 - self.huey_girth:
                 self.against_wall = "RIGHT"
                 if 135 < self.huey_orientation <= 225:
                     # print("🦋 AGAINST A RIGHT WALL, FORWARD 🦋")
@@ -204,7 +204,7 @@ class Ram():
                     return -1 * self.reverse
 
             # Huey against bottom wall
-            elif self.huey_position[1] > 700 - self.huey_girth:
+            elif self.huey_position[1] > 704 - self.huey_girth:
                 self.against_wall = "BOTTOM"
                 if 45 < self.huey_orientation <= 135:
                     # print("🦐 AGAINST A BOTTOM WALL, FORWARD 🦐")
