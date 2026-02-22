@@ -30,7 +30,7 @@ from warp_main import warp
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
-WARP_AND_COLOR_PICKING = True  # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
 WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames

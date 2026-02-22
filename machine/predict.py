@@ -184,6 +184,12 @@ class YoloModel(TemplateModel):
             case "OpenVINO":
                 # Optimal for Intel CPUs, needs a lil work
                 self.model = YOLO(f"./machine/models/{model_name}/{image_size}/{model_name}_openvino_model/")
+            case "CoreML":
+                # Optimal for M-series Macs
+                model_extension = ".mlpackage"
+                self.model = YOLO(f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
+            case _:
+                raise ValueError(f"Invalid model type: {model_type}. Must be one of 'TensorRT', 'ONNX', 'PT', 'OpenVINO', or 'CoreML'.")
                 
         self.device = device
         self.img_size = image_size

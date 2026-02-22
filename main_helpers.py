@@ -96,8 +96,8 @@ import platform
 
 def is_coreml_available():
     # 1. Platform Check: CoreML inference only runs on macOS
-    if platform.system() != "Darwin":
-        return False
+    # if platform.system() != "Darwin":
+    #     return False
     
     # 2. Library & Hardware Check
     try:
@@ -116,7 +116,7 @@ def get_predictor(MODEL_NAME, OD_IMG_SIZE):
         print(f"Using {MODEL_NAME} on CUDA for object detection.")
         predictor = YoloModel(MODEL_NAME, "TensorRT", OD_IMG_SIZE, device="cuda")
 
-    elif is_coreml_available():
+    elif is_coreml_available() or torch.backends.mps.is_available():
         print(f"Using {MODEL_NAME} with CoreML for object detection.")
         predictor = YoloModel(MODEL_NAME, "CoreML", OD_IMG_SIZE)
 
