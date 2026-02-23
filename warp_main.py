@@ -74,6 +74,17 @@ def get_homography_mat(frame):
     matrix, _ = cv2.findHomography(np.array(corners), np.array(dest_pts))
     cv2.destroyAllWindows()
 
+    # 1. Create a translation matrix to account for the "missing" padding
+    # This shifts the coordinate system of the homography
+    T = np.array([[1, 0, clickable_padding],
+                  [0, 1, clickable_padding],
+                  [0, 0, 1]], dtype=np.float32)
+    
+    # 2. Combine them: New_H = H * T
+    # This effectively tells the warp to look "outside" the 0,0 bounds
+    matrix = matrix @ T
+
+
     output_file = folder + "/homography_matrix.txt"
     with open(output_file, "w") as file:
         for row in matrix:
@@ -98,16 +109,39 @@ Returns:
 
 As a change from the original warp, does NOT resize the input image.
 """
-def warp(frame, h_mat):
-    clickable_padding = 150 
-    padded_frame = cv2.copyMakeBorder(frame, clickable_padding, clickable_padding, clickable_padding, clickable_padding, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+# def warp(frame, h_mat):
+#     clickable_padding = 150 
+#     padded_frame = cv2.copyMakeBorder(frame, clickable_padding, clickable_padding, clickable_padding, clickable_padding, cv2.BORDER_CONSTANT, value=(0, 0, 0))
     
+#     if torch.cuda.is_available():
+#         gpu_frame = cv2.UMat(padded_frame)
+#         return cv2.warpPerspective(gpu_frame, h_mat, (ARENA_WIDTH, ARENA_WIDTH)).get()
+#     else:
+#         frame = padded_frame
+#         return cv2.warpPerspective(frame, h_mat, (ARENA_WIDTH, ARENA_WIDTH))
+
+def warp(frame, h_mat):
+
     if torch.cuda.is_available():
-        gpu_frame = cv2.UMat(padded_frame)
-        return cv2.warpPerspective(gpu_frame, h_mat, (ARENA_WIDTH, ARENA_WIDTH)).get()
+        gpu_frame = cv2.UMat(frame)
+        return cv2.warpPerspective(
+            gpu_frame, 
+            h_mat, 
+            (ARENA_WIDTH, ARENA_WIDTH),
+            flags=cv2.INTER_NEAREST,        # Keeps your clusters sharp, try INTER_CUBIC
+            borderMode=cv2.BORDER_CONSTANT,   # Fills the "off-camera" corners with black
+            borderValue=(0, 0, 0)
+        ).get()
+    # 3. Perform the warp in one shot
     else:
-        frame = padded_frame
-        return cv2.warpPerspective(frame, h_mat, (ARENA_WIDTH, ARENA_WIDTH))
+        return cv2.warpPerspective(
+            frame, 
+            h_mat, 
+            (ARENA_WIDTH, ARENA_WIDTH),
+            flags=cv2.INTER_NEAREST,        # Keeps your clusters sharp, try INTER_CUBIC
+            borderMode=cv2.BORDER_CONSTANT,   # Fills the "off-camera" corners with black
+            borderValue=(0, 0, 0)
+        )
 
 
 if __name__ == "__main__":

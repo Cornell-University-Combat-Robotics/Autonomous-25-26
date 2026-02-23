@@ -30,7 +30,7 @@ from warp_main import warp
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
-WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = True  # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
 WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
@@ -40,8 +40,8 @@ COLOR_QUANTIZATION = True       # True if color quantization is on
 CAN_RECOVER = True              # True if want recovery
 CAMERA_STREAM = False           # True if using live camera stream, False if using pre-recorded video
 SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
-SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
-BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
+SAVE_BBOXES = True             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
+BBOX_SAVE_FREQUENCY = 2        # How often to save bounding box images (every n iterations)
 
 # MODEL_NAME = "SmallComp"        # Used for comp, best accuracy if you have the compute for it.
 MODEL_NAME = "NanoSizeVariant"  # Use with lower image size for faster performance, not much worse accuracy.
