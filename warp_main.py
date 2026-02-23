@@ -143,6 +143,38 @@ def warp(frame, h_mat):
             borderValue=(0, 0, 0)
         )
 
+def get_warp_maps(h_mat, dst_size=(ARENA_WIDTH, ARENA_WIDTH)):
+    # Calculate the inverse homography
+    h_inv = np.linalg.inv(h_mat)
+    
+    # Create a grid of coordinates for the destination image
+    w, h = dst_size
+    grid_x, grid_y = np.meshgrid(np.arange(w), np.arange(h))
+    
+    # Flatten and add the '1' for homogeneous coordinates
+    coords = np.stack([grid_x.ravel(), grid_y.ravel(), np.ones_like(grid_x.ravel())])
+    
+    # Map back to the source image coordinates
+    src_coords = h_inv @ coords
+    src_coords /= src_coords[2] # Normalize (Perspective division)
+    
+    # Reshape back to the image grid
+    map_x = src_coords[0].reshape(h, w).astype(np.float32)
+    map_y = src_coords[1].reshape(h, w).astype(np.float32)
+    
+    return map_x, map_y
+
+def warp_map(frame, map_x, map_y):
+    # This is significantly faster than warpPerspective for repeated transforms
+    return cv2.remap(
+        frame, 
+        map_x, 
+        map_y, 
+        interpolation=cv2.INTER_NEAREST, # Keeps clusters sharp
+        borderMode=cv2.BORDER_CONSTANT, 
+        borderValue=(0, 0, 0)
+    )
+
 
 if __name__ == "__main__":
     frame = cv2.imread('./vid_and_img_processing/sample_cage_ss.png')

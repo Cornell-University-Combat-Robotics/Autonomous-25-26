@@ -25,6 +25,8 @@ from main_helpers import (
     quantize
 )
 from warp_main import warp
+from warp_main import get_warp_maps
+from warp_main import warp_map
 
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
@@ -40,8 +42,8 @@ COLOR_QUANTIZATION = True       # True if color quantization is on
 CAN_RECOVER = True              # True if want recovery
 CAMERA_STREAM = False           # True if using live camera stream, False if using pre-recorded video
 SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
-SAVE_BBOXES = True             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
-BBOX_SAVE_FREQUENCY = 2        # How often to save bounding box images (every n iterations)
+SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
+BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
 
 # MODEL_NAME = "SmallComp"        # Used for comp, best accuracy if you have the compute for it.
 MODEL_NAME = "NanoSizeVariant"  # Use with lower image size for faster performance, not much worse accuracy.
@@ -90,6 +92,8 @@ def main():
         else:
             warped_frame, homography_matrix = read_prev_homography(captured_image, folder + "/homography_matrix.txt")
             selected_colors = read_prev_colors(folder + "/selected_colors.txt")
+
+        map_x, map_y = get_warp_maps(homography_matrix)
 
         # 4. Initialize color quantization cv2
         if COLOR_QUANTIZATION:
@@ -199,9 +203,22 @@ def main():
                 else:
                     key = None
                 rs.log("Pollkey", ptime() - t)
+
+
+                # # 1. GLOBAL PRE-PROCESS (Do this once per frame)
+                # # This ensures consistent lighting across the whole 1080p image
+                # lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+                # l, a, b = cv2.split(lab)
+                # clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+                # l = clahe.apply(l)
+                # frame = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
                 
+                # t = ptime()
+                # warped_frame = warp(frame, homography_matrix)
+                # rs.log("Warp", ptime() - t)
+
                 t = ptime()
-                warped_frame = warp(frame, homography_matrix)
+                warped_frame = warp_map(frame, map_x, map_y)
                 rs.log("Warp", ptime() - t)
 
                 # 11. Run the Warped Image through Object Detection
