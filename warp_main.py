@@ -122,6 +122,8 @@ As a change from the original warp, does NOT resize the input image.
 
 def warp(frame, h_mat):
 
+    # DEPRECATED: Use warp_map with precomputed maps instead for better performance if doing multiple warps with the same homography
+
     if torch.cuda.is_available():
         gpu_frame = cv2.UMat(frame)
         return cv2.warpPerspective(
