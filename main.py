@@ -223,15 +223,15 @@ def main():
 
                 # 11. Run the Warped Image through Object Detection
                 t = ptime()
-                # detected_bots = predictor.predict(warped_frame, show=SHOW_FRAME, track=True)
                 detected_bots = predictor.predict(warped_frame)
+                rs.log("Object Detection", ptime() - t)
                 
                 if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                     for bot in range(len(detected_bots["bots"])):
                         if detected_bots["bots"][bot]["img"] is not None:
                             cv2.imwrite(f"{frame_save_dir}/detected_bot_{bot}.png", detected_bots["bots"][bot]["img"])
 
-                rs.log("Object Detection", ptime() - t)
+
 
                 if global_flipped == True:
                     is_flipped = -1

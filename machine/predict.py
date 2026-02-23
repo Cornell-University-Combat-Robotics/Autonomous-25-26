@@ -194,41 +194,49 @@ class YoloModel(TemplateModel):
         self.device = device
         self.img_size = image_size
         # compiled_model = core.compile_model(model=model, device_name=device.value)
-        
+    
     def predict(self, img, show=False):
-        # This prints timing info
+        # Inference call
         if self.device != None:
-            results = self.model(img, device=self.device, verbose=False, task='detect', imgsz=self.img_size)
+            results = self.model(img, device=self.device, verbose=True, task='detect', imgsz=self.img_size, max_det=3, iou=0.8)
         else:
-            results = self.model(img, verbose=False, task='detect', imgsz=self.img_size)
-        # If multiple img passed, results has more than one element
+            results = self.model(img, verbose=True, task='detect', imgsz=self.img_size, max_det=3, iou=0.8)
         result = results[0]
+
+        # 1. BATCH EXTRACT EVERYTHING TO CPU ONCE
+        # This is the secret sauce. .cpu().numpy() is faster than calling .tolist() inside a loop.
+        boxes_xyxy = result.boxes.xyxy.cpu().numpy()
+        boxes_xywh = result.boxes.xywh.cpu().numpy()
+        boxes_cls = result.boxes.cls.cpu().numpy()
 
         robots = []
         housebots = []
 
-        for box in result.boxes:
-            x1, y1, x2, y2 = box.xyxy[0].tolist()
-            cx, cy, width, height = box.xywh[0].tolist()
-            cropped_img = img[int(y1): int(y2), int(x1): int(x2)]
+        # 2. Iterate over the NumPy arrays (much faster)
+        for i in range(len(boxes_xyxy)):
+            x1, y1, x2, y2 = boxes_xyxy[i]
+            cx, cy, _, _ = boxes_xywh[i]
+            cls = boxes_cls[i]
 
-            # cv2.imshow('image', cropped_img)
-            # cv2.waitKey(0)
-            # cv2.destroyAllWindows
+            # 3. Clip coordinates safely
+            x1_c, y1_c = max(0, x1), max(0, y1)
+            x2_c, y2_c = min(700, x2), min(700, y2)
 
-            dict = {"bbox": [[max(0, x1), max(0, y1)], [min(700, x2), min(
-                700, y2)]], "center": [cx, cy], "img": cropped_img}
+            # 4. Slicing the image is fast, but make sure it's uint8
+            cropped_img = img[int(y1_c): int(y2_c), int(x1_c): int(x2_c)]
 
-            if box.cls == 0:
-                housebots.append(dict)
+            data = {
+                "bbox": [[x1_c, y1_c], [x2_c, y2_c]], 
+                "center": [cx, cy], 
+                "img": cropped_img
+            }
+
+            if cls == 0:
+                housebots.append(data)
             else:
-                robots.append(dict)
+                robots.append(data)
 
-        out = {"bots": robots, "housebot": housebots}
-        # if show:
-        #     self.show_predictions(img, out)
-
-        return out
+        return {"bots": robots, "housebot": housebots}
 
     def show_predictions(self, img, bots_dict):
         for label, bots in bots_dict.items():
