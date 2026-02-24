@@ -97,7 +97,7 @@ def main():
             selected_colors = read_prev_colors(folder + "/selected_colors.txt")
 
         # Shift corner color hues closer to bot color to account for motion blur
-        shift_factor = 0.11
+        shift_factor = 0.05
         # Cast to float to avoid uint8 overflow/underflow if selected_colors are numpy arrays
         hue_robot = float(selected_colors[0][0])
         hue_front = float(selected_colors[1][0])

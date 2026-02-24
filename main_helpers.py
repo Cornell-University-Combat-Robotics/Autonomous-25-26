@@ -249,8 +249,8 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False):
     # else:
     #     threshold = 22
 
-    threshold = 17
-    weights = (1.0, 0.1, 0.12)
+    threshold = 18
+    weights = (1.0, 0.15, 0.15)
     print(selected_colors)
 
     colors_hsv_1x = np.array(selected_colors).reshape(1, -1, 3)
