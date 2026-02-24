@@ -31,7 +31,7 @@ def click_event(event, x, y, flags, params):
             print(f"Color selected at ({x}, {y}): BGR={bgr_color}, HSV={hsv_color}. Total points: {len(selected_hsv_colors)}")
             
             # Draw a circle on the frame to give feedback
-            cv2.circle(current_frame, (x, y), 5, (0, 255, 0), 2)
+            # cv2.circle(current_frame, (x, y), 5, (0, 255, 0), 2)
             cv2.imshow(window_name, current_frame)
 
 def main():

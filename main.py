@@ -97,9 +97,13 @@ def main():
             selected_colors = read_prev_colors(folder + "/selected_colors.txt")
 
         # Shift corner color hues closer to bot color to account for motion blur
-        shift_factor = 0.15
-        selected_colors[1][0] = int(selected_colors[1][0] + (selected_colors[0][0] - selected_colors[1][0]) * shift_factor)
-        selected_colors[2][0] = int(selected_colors[2][0] + (selected_colors[0][0] - selected_colors[2][0]) * shift_factor)
+        shift_factor = 0.11
+        # Cast to float to avoid uint8 overflow/underflow if selected_colors are numpy arrays
+        hue_robot = float(selected_colors[0][0])
+        hue_front = float(selected_colors[1][0])
+        hue_back = float(selected_colors[2][0])
+        selected_colors[1][0] = int(hue_front + (hue_robot - hue_front) * shift_factor)
+        selected_colors[2][0] = int(hue_back + (hue_robot - hue_back) * shift_factor)
 
         # Build warp maps from homography matrix for faster warping in the main loop
         map_x, map_y = get_warp_maps(homography_matrix)
@@ -275,6 +279,8 @@ def main():
                                                 crop = warped_frame[y1:y2, x1:x2]
                                                 hsv_crop = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
                                                 h, s, v = cv2.split(hsv_crop)
+                                                cv2.imshow("Saturation Only Huey", s)
+                                                cv2.imshow("Value Only Huey", v)
                                                 s.fill(255)
                                                 v.fill(255)
                                                 hue_only = cv2.cvtColor(cv2.merge([h, s, v]), cv2.COLOR_HSV2BGR)
@@ -334,6 +340,8 @@ def main():
                 try:
                     cv2.destroyWindow("Quantized Huey")
                     cv2.destroyWindow("Hue Only Huey")
+                    cv2.destroyWindow("Saturation Only Huey")
+                    cv2.destroyWindow("Value Only Huey")
                 except:
                     pass
 
