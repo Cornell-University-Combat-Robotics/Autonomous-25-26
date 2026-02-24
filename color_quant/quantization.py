@@ -103,6 +103,64 @@ def quantize_robot_colors(
         cv2.destroyAllWindows()
     return out_img
 
+def quantize_robot_colors_hsv(
+    img_bgr,
+    robot_colors_bgr,
+    keep_background=False,
+    thresh_hsv=25.0,
+    weights=(1.0, 0.2, 0.4)):
+
+    # Convert image to HSV
+    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    flat_hsv = img_hsv.reshape(-1, 3).astype(np.float32)
+
+    # Convert robot colors to HSV
+    robot_bgr_1x = robot_colors_bgr.reshape(1, -1, 3).astype(np.uint8)
+    robot_hsv_1x = cv2.cvtColor(robot_bgr_1x, cv2.COLOR_BGR2HSV)
+    robot_hsv = robot_hsv_1x.reshape(-1, 3).astype(np.float32)
+
+    # Distance to robot colors in HSV space
+    # Note: Hue is circular (0-180 in OpenCV)
+    thresh2 = thresh_hsv * thresh_hsv
+    
+    # Start with first color
+    dh = np.abs(flat_hsv[:, 0] - robot_hsv[0, 0])
+    dh = np.minimum(dh, 180.0 - dh)
+    ds = flat_hsv[:, 1] - robot_hsv[0, 1]
+    dv = flat_hsv[:, 2] - robot_hsv[0, 2]
+    
+    min_dist2 = (dh * weights[0])**2 + (ds * weights[1])**2 + (dv * weights[2])**2
+    min_idx = np.zeros_like(min_dist2, dtype=np.int32)
+
+    # Compare with remaining robot colors
+    for i in range(1, robot_hsv.shape[0]):
+        dh = np.abs(flat_hsv[:, 0] - robot_hsv[i, 0])
+        dh = np.minimum(dh, 180.0 - dh)
+        ds = flat_hsv[:, 1] - robot_hsv[i, 1]
+        dv = flat_hsv[:, 2] - robot_hsv[i, 2]
+        
+        d = (dh * weights[0])**2 + (ds * weights[1])**2 + (dv * weights[2])**2
+        mask = d < min_dist2
+        min_dist2[mask] = d[mask]
+        min_idx[mask] = i
+
+    mask_robot = min_dist2 < thresh2
+
+    # Build output image
+    if keep_background:
+        # Start from original image
+        out_img = img_bgr.copy()
+    else:
+        # Everything black by default
+        out_img = np.zeros_like(img_bgr)
+
+    flat_out = out_img.reshape(-1, 3)
+
+    # Snap robot pixels to their nearest robot color (in BGR)
+    robot_colors_bgr = robot_colors_bgr.astype(np.uint8)
+    flat_out[mask_robot] = robot_colors_bgr[min_idx[mask_robot]]
+    return out_img
+
 
 
 if __name__ == "__main__":

@@ -11,13 +11,13 @@ from machine.predict import YoloModel
 from transmission.motors import Motor
 from transmission.serial_conn import OurSerial
 from warp_main import get_homography_mat, warp
-from color_quant.quantization import quantize_robot_colors
+from color_quant.quantization import quantize_robot_colors, quantize_robot_colors_hsv
 
 """
 Gets first frame of the video and returns it. If frame can't be read or video isn't being 
 processed will print the problem, and return captured_image as none. 
 """
-def key_frame(stream, CAMERA_STREAM):
+def key_frame(stream, CAMERA_STREAM, selection_scale=1.0):
     captured_image = None
     if stream == None:
             print("Error opening camera stream" + "\n")
@@ -26,7 +26,10 @@ def key_frame(stream, CAMERA_STREAM):
         ret, frame = stream.read()
 
         if ret and frame is not None:
-            cv2.imshow("Press 'q' to quit. Press '0' to capture the image", frame)
+            h, w = frame.shape[:2]
+            display_frame = cv2.resize(frame, (int(w * selection_scale), int(h * selection_scale)))
+            
+            cv2.imshow("Press 'q' to quit. Press '0' to capture the image", display_frame)
             key = cv2.waitKey(1) & 0xFF  # Check for key press
 
             if key == ord("q"):  # Press 'q' to quit without capturing
@@ -60,12 +63,12 @@ def read_prev_homography(captured_image, file_path):
     warped_frame = warp(captured_image, homography_matrix)
     return warped_frame, homography_matrix
 
-def make_new_homography(captured_image):
+def make_new_homography(captured_image, selection_scale=1.0):
     if captured_image is None:
         print("No image captured. Press '0' to capture image.")
         return
     
-    homography_matrix = get_homography_mat(captured_image)
+    homography_matrix = get_homography_mat(captured_image, display_scale=selection_scale)
     warped_frame = warp(captured_image, homography_matrix)
 
     return warped_frame, homography_matrix
@@ -241,10 +244,12 @@ def initialize_quantization():
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2HSV)
 
 def quantize(detected_bots, selected_colors, show, is_flipped=False):
-    if(is_flipped == 1):
-        threshold = 18
-    else:
-        threshold = 22
+    # if(is_flipped == 1):
+    #     threshold = 18
+    # else:
+    #     threshold = 22
+
+    threshold = 25
 
     colors_hsv_1x = np.array(selected_colors).reshape(1, -1, 3)
 
@@ -256,7 +261,8 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False):
     
     bgr_colors = bgr_colors_1x.reshape(-1, 3)  # (N_colors, 3)
     for bot in detected_bots["bots"]:
-        bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, thresh_lab=threshold,keep_background=False, show=show)
+        # bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, thresh_lab=threshold,keep_background=False, show=show)
+        bot["img"] = quantize_robot_colors_hsv(bot["img"], bgr_colors, thresh_hsv=threshold,keep_background=False)
 
     return detected_bots
 
@@ -330,3 +336,31 @@ def draw_hud(image, fps10=None, move_dictionary=None, iteration=None, playback_s
         cv2.putText(image, speed_mult_text, (x_offset, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
     
     return image
+
+
+def get_next_unique_frame(cap, last_hash=None, threshold=0.5):
+    """
+    Grabs frames until one is sufficiently different from last_hash.
+    threshold: How much change is needed (0.0 to 100.0). 
+    """
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            return False, None, None
+
+        # 1. Downsample and Grayscale (The 'Lightweight' part)
+        # We shrink 4K to 32x32 to make comparison near-instant
+        small_gray = cv2.resize(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), (32, 32))
+
+        if last_hash is None:
+            return True, frame, small_gray
+
+        # 2. Calculate Difference (MSE)
+        # We check if the average pixel difference is above a tiny threshold
+        diff = cv2.absdiff(small_gray, last_hash)
+        score = np.mean(diff)
+
+        if score > threshold:
+            return True, frame, small_gray
+        
+        # If we reach here, it was a duplicate; the loop continues to the next frame

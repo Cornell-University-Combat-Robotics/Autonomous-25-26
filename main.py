@@ -24,7 +24,8 @@ from main_helpers import (
     read_prev_colors,
     read_prev_homography,
     initialize_quantization,
-    quantize
+    quantize,
+    get_next_unique_frame
 )
 from warp_main import warp
 from warp_main import get_warp_maps
@@ -34,7 +35,8 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
-WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = True  # Re-do warp & color selection
+SELECTION_SCALE = 0.25           # Scale factor for selection windows (0.5 = half size)
 IS_TRANSMITTING = False         # True if connected to live Huey
 WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
@@ -46,7 +48,7 @@ SHOW_QUANTIZED_HUEY = True      # Display the quantized bounding box of Huey in 
 COLOR_QUANTIZATION = True       # True if color quantization is on
 CAN_RECOVER = True              # True if want recovery
 CAMERA_STREAM = False           # True if using live camera stream, False if using pre-recorded video
-SHEET_RUNTIME = False            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
+SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
 BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
 
@@ -61,7 +63,9 @@ OD_IMG_SIZE = 416               # 640 default, 416 fast, must be multiple of 32.
 
 folder = os.getcwd() + "/main_files"
 
-camera_number   = folder + "/test_videos/huey_vs_prince.mp4"
+# camera_number   = folder + "/test_videos/huey_vs_prince.mp4"
+camera_number   = folder + "/test_videos/prince_v_huey_1080_30.mp4" # Get from drive, 30 FPS
+# camera_number   = folder + "/test_videos/prince_v_huey_ultraHD_30.mp4" # Get from drive, 30 FPS
 # camera_number = 1
 
 if IS_TRANSMITTING:
@@ -78,14 +82,14 @@ def main():
         # 2. Capture initial frame by pressing '0'
         if CAMERA_STREAM:
             stream = CameraStream(camera_number).start()
-            captured_image = key_frame(stream, CAMERA_STREAM)
+            captured_image = key_frame(stream, CAMERA_STREAM, SELECTION_SCALE)
         else:
             cap = cv2.VideoCapture(camera_number)
-            captured_image = key_frame(cap, CAMERA_STREAM)
+            captured_image = key_frame(cap, CAMERA_STREAM, SELECTION_SCALE)
 
         # 3. Use the initial frame to get a new Homography Matrix and new colors
         if WARP_AND_COLOR_PICKING:
-            warped_frame, homography_matrix = make_new_homography(captured_image)
+            warped_frame, homography_matrix = make_new_homography(captured_image, SELECTION_SCALE)
             selected_colors = make_new_colors(folder + "/selected_colors.txt", warped_frame)
         # 3. Or use the previously saved Homography Matrix and colors from the txt file
         else:
@@ -186,7 +190,8 @@ def main():
                     if CAMERA_STREAM:
                         ret, frame = stream.read()
                         last_frame = stream.frameCount()
-                    else: ret, frame = cap.read()
+                    else: 
+                        ret, frame = cap.read()
 
                     if not ret:
                         print("Failed to capture image" + "\n")
@@ -250,6 +255,29 @@ def main():
                                     if bot.get("bbox") is not None and np.array_equal(bot["bbox"], huey_bbox):
                                         if bot.get("img") is not None:
                                             cv2.imshow("Quantized Huey", bot["img"])
+                                        
+                                        # Display Hue-only version (Hue isolated, S=255, V=255)
+                                        try:
+                                            pt1, pt2 = huey_bbox
+                                            x1, y1 = int(pt1[0]), int(pt1[1])
+                                            x2, y2 = int(pt2[0]), int(pt2[1])
+                                            
+                                            # Clamp to frame bounds
+                                            h_f, w_f = warped_frame.shape[:2]
+                                            x1, x2 = max(0, x1), min(w_f, x2)
+                                            y1, y2 = max(0, y1), min(h_f, y2)
+                                            
+                                            if x2 > x1 and y2 > y1:
+                                                crop = warped_frame[y1:y2, x1:x2]
+                                                hsv_crop = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+                                                h, s, v = cv2.split(hsv_crop)
+                                                s.fill(255)
+                                                v.fill(255)
+                                                hue_only = cv2.cvtColor(cv2.merge([h, s, v]), cv2.COLOR_HSV2BGR)
+                                                cv2.imshow("Hue Only Huey", hue_only)
+                                        except Exception as e:
+                                            pass
+                                            
                                         break
                         except Exception as e:
                             pass
@@ -301,6 +329,7 @@ def main():
             if SHOW_QUANTIZED_HUEY:
                 try:
                     cv2.destroyWindow("Quantized Huey")
+                    cv2.destroyWindow("Hue Only Huey")
                 except:
                     pass
 
