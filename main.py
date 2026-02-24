@@ -46,7 +46,7 @@ SHOW_QUANTIZED_HUEY = True      # Display the quantized bounding box of Huey in 
 COLOR_QUANTIZATION = True       # True if color quantization is on
 CAN_RECOVER = True              # True if want recovery
 CAMERA_STREAM = False           # True if using live camera stream, False if using pre-recorded video
-SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
+SHEET_RUNTIME = False            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
 BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
 
@@ -172,11 +172,14 @@ def main():
                     frame_save_dir = os.path.join(bb_output_dir, f"frame_{iteration}")
 
                 # Logs average of last 10 FPS
-                if iteration > 11:
-                    fps10 = 1.0 / ((prev - rs.get_row(-10)["Start Time"]) / 10.0)
+                if SHEET_RUNTIME:
+                    if iteration > 11:
+                        fps10 = 1.0 / ((prev - rs.get_row(-10)["Start Time"]) / 10.0)
+                    else:
+                        fps10 = 1.0 / ((prev - start_time) / iteration)
+                    rs.log("FPS10", fps10)
                 else:
-                    fps10 = 1.0 / ((prev - start_time) / iteration)
-                rs.log("FPS10", fps10)
+                    fps10 = None
 
                 # Grabs frame from camera thread if using camera stream, otherwise reads from video
                 with rs.log_timing("Frame Read"):
