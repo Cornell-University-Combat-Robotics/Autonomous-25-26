@@ -236,7 +236,8 @@ def main():
 
                 # 12. Run Object Detection's results through Corner Detection
                 t = ptime()
-                detected_bots_with_data = corner_detection.corner_detection_main()
+                previous_orientations = algorithm.previous_orientations()
+                detected_bots_with_data = corner_detection.corner_detection_main(previous_orientations)
                 rs.log("CD Main", ptime() - t)
 
                 t = ptime()

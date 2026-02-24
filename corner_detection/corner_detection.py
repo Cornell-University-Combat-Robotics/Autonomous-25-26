@@ -1,7 +1,7 @@
 import os
 import cv2
 import numpy as np
-from .corner_detection_helpers import find_our_bot, find_centroids, compute_angle_between_midpoints, get_left_and_right_front_points, display_image
+from .corner_detection_helpers import find_our_bot, find_centroids, compute_angle_between_midpoints, two_corners
 
 class RobotCornerDetection:
     """
@@ -78,7 +78,7 @@ class RobotCornerDetection:
             print(f"Unexpected error in detect_our_robot_main: {e}")
             return None
 
-    def corner_detection_main(self, threshold_set=False) -> dict | None:
+    def corner_detection_main(self, previous_orientations: list, threshold_set=False) -> dict | None:
         """
         Main function for detecting corners and orientation of the robot.
 
@@ -117,11 +117,13 @@ class RobotCornerDetection:
                 centroid_points = find_centroids(image, self.selected_colors)
                 self.centroids = centroid_points
 
-                # For displaying centroids
-                # left_front, right_front = get_left_and_right_front_points(centroid_points)
+                if (len(centroid_points[0]) + len(centroid_points[1]) == 2):
+                    previous_orientation = previous_orientations[0]
+                    huey["orientation"] = two_corners(centroid_points, previous_orientation)
+                    return {"huey": huey, "enemy": enemy_bots}
 
-                if (len(centroid_points[0]) + len(centroid_points[1]) < 3):
-                    print("Less than 3 corners found")
+                elif (len(centroid_points[0]) + len(centroid_points[1]) < 2):
+                    print("Less than 2 corners found")
                     return {"huey": huey, "enemy": enemy_bots}
 
                 front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5

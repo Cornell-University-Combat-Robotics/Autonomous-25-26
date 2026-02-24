@@ -113,7 +113,6 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
             our_bot_image = None
         elif len(bot_color_percentages) > 1 and max_color_percentage < min(MIN_THRESHOLD, self.huey_color_percentage_threshold):
             our_bot_image = None
-
         
         #Writing information to be graphed
         if len(bot_color_percentages) >= 2:
@@ -191,33 +190,8 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
             cx = int(M["m10"] / M["m00"])
             cy = int(M["m01"] / M["m00"])
             centroids.append((cx, cy))
-        # else:
-        #     # Fallback for 0-area contours if you still want their location
-        #     # (e.g., using the first point in the contour array)
-        #     if len(contour) > 0:
-        #         cx, cy = contour[0][0]
-        #         centroids.append((int(cx), int(cy)))
             
     return centroids
-    # contours = get_contours_per_color(side, hsv_image, selected_colors)
-    # contours = sorted(contours, key=cv2.contourArea, reverse=True)
-    # contours = sorted(contours, key=cv2.)
-    # centroids = []
-    # for contour in contours:
-    #     # Filter out small contours based on area
-    #     image_area = image.size/3
-    #     contour_area = cv2.contourArea(contour)
-    #     contour_percent = contour_area/image_area
-    #     # if contour_area > 20: # area > 20
-    #     # TODO: this value is subject to change based on dimensions of our video & resize_factor
-    #     # Compute moments for each contour
-    #     M = cv2.moments(contour)
-    #     if M["m00"] != 0 and len(centroids) < 2:
-    #         # Calculate the centroid (center of the dot)
-    #         cx = int(M["m10"] / M["m00"])
-    #         cy = int(M["m01"] / M["m00"])
-    #         centroids.append((cx, cy))
-    # return centroids
 
 def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     """
@@ -250,6 +224,42 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     back_array = np.array(centroid_back[:2])    # Take first 2 points if more exist
     
     return np.array([front_array, back_array])
+
+def two_corners(centroid_points: np.ndarray, previous_orientation: float) -> float:
+    """
+    Handles orientation calculation when only 2 points are detected.
+    """
+    front_points = centroid_points[0]
+    back_points = centroid_points[1]
+
+    # CASE 1: Only 2 Front Corners detected OR Only 2 Back Corners detected
+    if len(front_points) == 2 or len(back_points) == 2:
+        # Correctly pick the points based on which list has 2
+        points = front_points if len(front_points) == 2 else back_points
+        
+        point1, point2 = points[0], points[1]
+        dx = point2[0] - point1[0]
+        dy = -(point2[1] - point1[1]) # Flip Y for image coordinates
+        
+        line_angle = math.degrees(math.atan2(dy, dx))
+
+        angle1 = (line_angle + 90) % 360 # Perpendicular possibilities
+        angle2 = (line_angle - 90) % 360
+        
+        return pick_closest_angle(angle1, angle2, previous_orientation)
+
+    # CASE 2: 1 Front and 1 Back Corner detected.
+    elif len(front_points) == 1 and len(back_points) == 1:
+        raise ValueError("Cannot reliably calculate orientation with 1 front and 1 back point using perpendicular logic.")
+
+    raise ValueError(f"Invalid point configuration: Front={len(front_points)}, Back={len(back_points)}")
+
+def pick_closest_angle(angle1: float, angle2: float, target: float) -> float:
+    """Helper to find which candidate is closer to the previous orientation."""
+    def get_diff(a, b):
+        return abs((a - b + 180) % 360 - 180)
+    
+    return angle1 if get_diff(angle1, target) < get_diff(angle2, target) else angle2
 
 def distance(point1: tuple, point2: tuple) -> float:
     """
@@ -380,73 +390,6 @@ def compute_angle_between_midpoints(p1: tuple, p2: tuple) -> float:
     dy = -(y2 - y1)
     angle_rad = np.arctan2(dy, dx)
     return math.degrees(angle_rad) % 360
-
-def get_left_and_right_front_points(points: list) -> list:
-    """
-    Determines the left and right front points of the robot.
-
-    Args:
-        points (list): A list containing red and blue points.
-
-    Returns:
-        list: The left and right front points of the robot.
-    """
-    try:
-        red_points = points[0]
-        blue_points = points[1]
-
-        # TODO: check that this runs with any three points, change error
-        # Ensure there are exactly two red points and at least one blue point
-        if (len(red_points) + len(blue_points) < 3):
-            raise ValueError("Expected exactly 2 red points and at least 1 blue point.") # TODO
-
-        all_points = red_points + blue_points
-        center = np.mean(all_points, axis=0)
-
-        vector1 = np.array(red_points[0]) - center
-        vector2 = np.array(red_points[1]) - center
-
-        # We do this because in code, positive y is downward and we want to make it upward
-        vector1[1] = -vector1[1]
-        vector2[1] = -vector2[1]
-
-        theta1 = math.atan2(vector1[1], vector1[0])
-        theta2 = math.atan2(vector2[1], vector2[0])
-
-        theta1_deg = (
-            math.degrees(theta1)
-            if math.degrees(theta1) >= 0
-            else math.degrees(theta1) + 360
-        )
-        theta2_deg = (
-            math.degrees(theta2)
-            if math.degrees(theta2) >= 0
-            else math.degrees(theta2) + 360
-        )
-
-        # Determine which red point is the top right front corner
-        if theta2_deg - theta1_deg > 235:
-            right_front = red_points[1]
-            left_front = red_points[0]
-        elif theta1_deg - theta2_deg > 235:
-            right_front = red_points[0]
-            left_front = red_points[1]
-        elif abs(theta2_deg - theta1_deg) > 180:
-            right_front = red_points[0]
-            left_front = red_points[1]
-        elif theta2_deg > theta1_deg:
-            # The point with the smaller angle is the top right front corner
-            right_front = red_points[0]
-            left_front = red_points[1]
-        else:
-            # The point with the larger angle is the top right front corner
-            right_front = red_points[1]
-            left_front = red_points[0]
-        return [left_front, right_front]
-
-    except Exception as e:
-        print(f"Unexpected error in get_left_and_right_front_points: {e}")
-        return [None, None]
 
 def display_image(image: np.ndarray, left_front: list, right_front: list):
     left_x, left_y = int(left_front[0]), int(left_front[1])
