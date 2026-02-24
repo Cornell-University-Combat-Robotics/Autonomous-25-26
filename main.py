@@ -41,7 +41,7 @@ SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = True          # Process every captured frame, False -> cap at FRAME_RATE
 FRAME_RATE = 60                 # FPS used for algo stuff, update to expected FPS on your system.
 DISPLAY_ANGLES = True           # Only show angles if SHOW_FRAME is True
-SHOW_HUD = False                # Show heads-up display with FPS, speed, turn, frame number
+SHOW_HUD = True                # Show heads-up display with FPS, speed, turn, frame number
 SHOW_QUANTIZED_HUEY = True      # Display the quantized bounding box of Huey in separate window
 COLOR_QUANTIZATION = True       # True if color quantization is on
 CAN_RECOVER = True              # True if want recovery
@@ -147,8 +147,19 @@ def main():
 
         while (CAMERA_STREAM and stream.isOpened() and not stream.stopped) or (not CAMERA_STREAM and cap.isOpened()):
             time_elapsed = ptime() - prev
-
-            # 10. Warp image using the Homography Matrix
+            
+            # If paused, wait for key press to advance frame
+            if is_paused:
+                print("[PAUSED] Press any key to advance one frame, or 'p' to resume")
+                while True:
+                    key_press = cv2.waitKey(0)
+                    if key_press == ord("p"):  # 'p' resumes playback
+                        is_paused = False
+                        print("Playback resumed")
+                        break
+                    else:  # Any other key advances one frame
+                        break
+            
             rs.start_iter()
             if (IS_ORIGINAL_FPS or time_elapsed > 1.0 / FRAME_RATE) and (not CAMERA_STREAM or stream.frameCount() > last_frame):
                 prev = ptime()
@@ -243,17 +254,6 @@ def main():
                 with rs.log_timing("Algorithm"):
                     move_dictionary = algorithm.ram_ram(detected_bots_with_data, CAN_RECOVER, fps=FRAME_RATE, key=key)
                 
-                # If paused, wait for key press to advance frame
-                if is_paused:
-                    print("[PAUSED] Press any key to advance one frame, or 'p' to resume")
-                    while True:
-                        key_press = cv2.waitKey(0)
-                        if key_press == ord("p"):  # 'p' resumes playback
-                            is_paused = False
-                            print("Playback resumed")
-                            break
-                        else:  # Any other key advances one frame
-                            break
                 with rs.log_timing("Display"):
                     if DISPLAY_ANGLES:
                         # Moved from inside predict code to keep bb images clean of annotations.
