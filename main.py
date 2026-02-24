@@ -34,7 +34,7 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
-WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = True  # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
 WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
@@ -46,7 +46,7 @@ SHOW_QUANTIZED_HUEY = True      # Display the quantized bounding box of Huey in 
 COLOR_QUANTIZATION = True       # True if color quantization is on
 CAN_RECOVER = True              # True if want recovery
 CAMERA_STREAM = False           # True if using live camera stream, False if using pre-recorded video
-SHEET_RUNTIME = False            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
+SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
 BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
 
