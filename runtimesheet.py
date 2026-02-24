@@ -1,6 +1,7 @@
 import time
 import pandas as pd
 import matplotlib.pyplot as plt
+from contextlib import contextmanager
 
 
 class RuntimeSheet:
@@ -11,9 +12,28 @@ class RuntimeSheet:
         self.row = {"Start Time":time.perf_counter()}
         self.use = use
 
-    def log(self, name, time):
+    def log(self, name, value):
         if self.use:
-            self.row[name] = time
+            self.row[name] = value
+    
+    @contextmanager
+    def log_timing(self, name):
+        """
+        Context manager for timing code blocks.
+        
+        Usage:
+            with rs.log_timing("Operation Name"):
+                # code to time
+        """
+        if self.use:
+            start_time = time.perf_counter()
+            try:
+                yield
+            finally:
+                elapsed = time.perf_counter() - start_time
+                self.log(name, elapsed)
+        else:
+            yield
     
     def start_iter(self):
         if self.use:

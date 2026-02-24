@@ -3,6 +3,7 @@ import time
 
 import pandas as pd
 import cv2
+import numpy as np
 import torch
 from time import perf_counter as ptime
 
@@ -13,6 +14,7 @@ from algorithm.ram import Ram
 from corner_detection.corner_detection import RobotCornerDetection
 from main_helpers import (
     display_angles,
+    draw_hud,
     first_run,
     get_motor_groups,
     get_predictor,
@@ -32,12 +34,15 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
-WARP_AND_COLOR_PICKING = True  # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
 WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
-IS_ORIGINAL_FPS = True          # Process every captured frame
+IS_ORIGINAL_FPS = True          # Process every captured frame, False -> cap at FRAME_RATE
+FRAME_RATE = 60                 # FPS used for algo stuff, update to expected FPS on your system.
 DISPLAY_ANGLES = True           # Only show angles if SHOW_FRAME is True
+SHOW_HUD = False                # Show heads-up display with FPS, speed, turn, frame number
+SHOW_QUANTIZED_HUEY = True      # Display the quantized bounding box of Huey in separate window
 COLOR_QUANTIZATION = True       # True if color quantization is on
 CAN_RECOVER = True              # True if want recovery
 CAMERA_STREAM = False           # True if using live camera stream, False if using pre-recorded video
@@ -55,13 +60,7 @@ OD_IMG_SIZE = 416               # 640 default, 416 fast, must be multiple of 32.
 # TODO: Documentation for available models
 
 folder = os.getcwd() + "/main_files"
-frame_rate = 60
-# camera_number = folder + "/test_videos/trimmed_huey_redshift.mp4"
-# camera_number = folder + "/test_videos/nhrl_arena.mp4"
-# camera_number = folder + "/test_videos/huey_blushy.mp4"
-# camera_number = folder + "/test_videos/huey_hell.mp4"
-# camera_number = folder + "/test_videos/crude_rot_huey.mp4"
-# camera_number = folder + "/test_videos/two_huey_real_cage_800.mp4"
+
 camera_number   = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = 1
 
@@ -93,6 +92,7 @@ def main():
             warped_frame, homography_matrix = read_prev_homography(captured_image, folder + "/homography_matrix.txt")
             selected_colors = read_prev_colors(folder + "/selected_colors.txt")
 
+        # Build warp maps from homography matrix for faster warping in the main loop
         map_x, map_y = get_warp_maps(homography_matrix)
 
         # 4. Initialize color quantization cv2
@@ -101,7 +101,7 @@ def main():
         
         # 5. Defining all subsystem objects: ML, Corner, Algorithm, Transmission
 
-        # Get predictor, if anything goes wrong here, call Aaron 717-984-3250 #TODO: Document better
+        # Get predictor, if anything goes wrong here, call Aaron #TODO: Document better
         predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
 
         corner_detection = RobotCornerDetection(selected_colors, False, False)
@@ -128,8 +128,6 @@ def main():
         else:
             bb_output_dir = None
 
-        st = RuntimeSheet(SHEET_RUNTIME)
-
         # ----------------------------------------------------------------------
         # 8. Match begins
         if CAMERA_STREAM:
@@ -141,33 +139,26 @@ def main():
 
         prev = ptime()
         last_frame = 0
-        fps_time = ptime()
-        fps_frame = 0
         iteration = 0
         global_flipped = None
         start_time = ptime()
+        is_paused = False  # Pause state for playback
+        
 
         while (CAMERA_STREAM and stream.isOpened() and not stream.stopped) or (not CAMERA_STREAM and cap.isOpened()):
             time_elapsed = ptime() - prev
-            fps = 1/time_elapsed
 
             # 10. Warp image using the Homography Matrix
             rs.start_iter()
-            if (IS_ORIGINAL_FPS or time_elapsed > 1.0 / frame_rate) and (not CAMERA_STREAM or stream.frameCount() > last_frame):
+            if (IS_ORIGINAL_FPS or time_elapsed > 1.0 / FRAME_RATE) and (not CAMERA_STREAM or stream.frameCount() > last_frame):
                 prev = ptime()
 
-                iteration = iteration + 1
+                iteration += 1
 
                 # Save bboxes every BBOX_SAVE_FREQUENCY iterations if SAVE_BBOXES is True
                 if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                     os.makedirs(f"{bb_output_dir}/frame_{iteration}", exist_ok=True)
                     frame_save_dir = os.path.join(bb_output_dir, f"frame_{iteration}")
-
-                # Prints true FPS every second
-                if ptime() - fps_time > 1.0:
-                    print(f"Frames in last 1 second: {iteration - fps_frame}")
-                    fps_frame = iteration
-                    fps_time = ptime()
 
                 # Logs average of last 10 FPS
                 if iteration > 11:
@@ -177,112 +168,114 @@ def main():
                 rs.log("FPS10", fps10)
 
                 # Grabs frame from camera thread if using camera stream, otherwise reads from video
-                t = ptime()
-                if CAMERA_STREAM:
-                    ret, frame = stream.read()
-                    # print("Frame number: " + str(stream.frameCount()))
-                    last_frame = stream.frameCount()
-                else: ret, frame = cap.read()
-                rs.log("Frame Read", ptime() - t)
+                with rs.log_timing("Frame Read"):
+                    if CAMERA_STREAM:
+                        ret, frame = stream.read()
+                        last_frame = stream.frameCount()
+                    else: ret, frame = cap.read()
 
-                if not ret:
-                    print("Failed to capture image" + "\n")
-                    break
-
-                t = ptime() 
-                if SHOW_FRAME:
-                    key = cv2.pollKey()
-                    if key == ord("q"):  # Press Q on keyboard to exit
+                    if not ret:
+                        print("Failed to capture image" + "\n")
                         break
-                    elif key == ord("f"): #F key to flip
-                        print("Backup flipped key pressed")
-                        if global_flipped is None:
-                            global_flipped = True
-                        else:
-                            global_flipped = not global_flipped
-                else:
-                    key = None
-                rs.log("Pollkey", ptime() - t)
+
+                with rs.log_timing("PollKey"):
+                    if SHOW_FRAME:
+                        key = cv2.pollKey()
+                        if key == ord("q"):  # Press Q on keyboard to exit
+                            break
+                        elif key == ord("f"): #F key to flip
+                            print("Backup flipped key pressed")
+                            if global_flipped is None:
+                                global_flipped = True
+                            else:
+                                global_flipped = not global_flipped
+                        elif key == ord("p"):  # Press P to toggle pause
+                            is_paused = not is_paused
+                            print(f"Playback {'paused' if is_paused else 'resumed'}")
+                    else:
+                        key = None
 
 
-                # # 1. GLOBAL PRE-PROCESS (Do this once per frame)
-                # # This ensures consistent lighting across the whole 1080p image
-                # lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
-                # l, a, b = cv2.split(lab)
-                # clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-                # l = clahe.apply(l)
-                # frame = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
-                
-                # t = ptime()
-                # warped_frame = warp(frame, homography_matrix)
-                # rs.log("Warp", ptime() - t)
-
-                t = ptime()
-                warped_frame = warp_map(frame, map_x, map_y)
-                rs.log("Warp", ptime() - t)
+                with rs.log_timing("Warp"):
+                    warped_frame = warp_map(frame, map_x, map_y)
 
                 # 11. Run the Warped Image through Object Detection
-                t = ptime()
-                detected_bots = predictor.predict(warped_frame)
-                rs.log("Object Detection", ptime() - t)
+                with rs.log_timing("Object Detection"):
+                    detected_bots = predictor.predict(warped_frame)
                 
                 if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                     for bot in range(len(detected_bots["bots"])):
                         if detected_bots["bots"][bot]["img"] is not None:
                             cv2.imwrite(f"{frame_save_dir}/detected_bot_{bot}.png", detected_bots["bots"][bot]["img"])
 
-
-
-                if global_flipped == True:
-                    is_flipped = -1
-                else:
-                    is_flipped = 1
+                is_flipped = -1 if global_flipped else 1
 
                 # 11.5 Quantize Colors
-                t = ptime()
-                if COLOR_QUANTIZATION:
-                    detected_bots = quantize(detected_bots, selected_colors, show=False, is_flipped=is_flipped)
-                rs.log("Color Quant", ptime() - t)
+                with rs.log_timing("Color Quantization"):
+                    if COLOR_QUANTIZATION:
+                        detected_bots = quantize(detected_bots, selected_colors, show=False, is_flipped=is_flipped)
 
                 if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                     for bot in range(len(detected_bots["bots"])):
                         if detected_bots["bots"][bot]["img"] is not None:
                             cv2.imwrite(f"{frame_save_dir}/quantized_bot_{bot}.png", detected_bots["bots"][bot]["img"])
 
-                corner_detection.set_bots(detected_bots)
-
                 # 12. Run Object Detection's results through Corner Detection
-                t = ptime()
-                detected_bots_with_data = corner_detection.corner_detection_main()
-                rs.log("CD Main", ptime() - t)
+                with rs.log_timing("Corner Detection"):
+                    corner_detection.set_bots(detected_bots)
+                    detected_bots_with_data = corner_detection.corner_detection_main()
 
-                t = ptime()
-                move_dictionary = algorithm.ram_ram(detected_bots_with_data, CAN_RECOVER, fps=frame_rate, key=key)
-                rs.log("Algorithm", ptime() - t)
+                # Display quantized Huey if enabled (after corner detection identifies Huey)
+                with rs.log_timing("Display Quantized Huey"):
+                    if SHOW_QUANTIZED_HUEY and len(detected_bots["bots"]) > 0:
+                        try:
+                            if detected_bots_with_data and detected_bots_with_data.get("huey") and detected_bots_with_data["huey"].get("bbox") is not None:
+                                huey_bbox = detected_bots_with_data["huey"]["bbox"]
+                                # Find which bot index has this bbox and display only that one
+                                for i, bot in enumerate(detected_bots["bots"]):
+                                    if bot.get("bbox") is not None and np.array_equal(bot["bbox"], huey_bbox):
+                                        if bot.get("img") is not None:
+                                            cv2.imshow("Quantized Huey", bot["img"])
+                                        break
+                        except Exception as e:
+                            pass
 
-                if DISPLAY_ANGLES:
-                    # Moved from inside predict code to keep bb images clean of annotations.
-                    warped_frame = predictor.show_predictions(warped_frame, detected_bots)
+                with rs.log_timing("Algorithm"):
+                    move_dictionary = algorithm.ram_ram(detected_bots_with_data, CAN_RECOVER, fps=FRAME_RATE, key=key)
+                
+                # If paused, wait for key press to advance frame
+                if is_paused:
+                    print("[PAUSED] Press any key to advance one frame, or 'p' to resume")
+                    while True:
+                        key_press = cv2.waitKey(0)
+                        if key_press == ord("p"):  # 'p' resumes playback
+                            is_paused = False
+                            print("Playback resumed")
+                            break
+                        else:  # Any other key advances one frame
+                            break
+                with rs.log_timing("Display"):
+                    if DISPLAY_ANGLES:
+                        # Moved from inside predict code to keep bb images clean of annotations.
 
-                    t = ptime()
-                    final_image = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing, against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped = is_flipped, centroids=corner_detection.centroids)
-                    rs.log("Display Angles", ptime() - t)
+                        warped_frame = predictor.show_predictions(warped_frame, detected_bots)
 
-                    if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
-                        cv2.imwrite(f"{frame_save_dir}/final_image_{iteration}.png", final_image)
+                        if SHOW_HUD:
+                            warped_frame = draw_hud(warped_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
+                        
+                        final_image = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing, against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped = is_flipped, centroids=corner_detection.centroids)
+
+                        if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
+                            cv2.imwrite(f"{frame_save_dir}/final_image_{iteration}.png", final_image)
 
                 # 14. Transmitting the motor values to Huey's if we're using a live video
-                if IS_TRANSMITTING:
-                    t = ptime()
-                    speed = move_dictionary["speed"]
-                    turn = move_dictionary["turn"]
-                    # print(f"Speed: {speed}")
-                    # print(f"Turn: {turn}")
-                    if turn * -1 > 0:
+                with rs.log_timing("Transmission"):
+                    if IS_TRANSMITTING:
+                        speed = move_dictionary["speed"]
+                        turn = move_dictionary["turn"]
+                        # print(f"Speed: {speed}")
+                        # print(f"Turn: {turn}")
                         motor_group.move(speed*is_flipped, turn * -1)
-                    else:
-                        motor_group.move(speed*is_flipped, turn * -1)
-                    rs.log("Transmission", ptime() - t)
                 
                 rs.dump()
 
@@ -290,7 +283,10 @@ def main():
                 display_angles(None, None, warped_frame)
 
             if SHOW_FRAME and not DISPLAY_ANGLES:
-                cv2.imshow("Bounding boxes (no angles)", warped_frame)
+                display_frame = warped_frame
+                if SHOW_HUD:
+                    display_frame = draw_hud(display_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
+                cv2.imshow("Bounding boxes (no angles)", display_frame)
 
         if CAMERA_STREAM:
             stream.stop()
@@ -299,6 +295,11 @@ def main():
 
         if SHOW_FRAME:
             cv2.destroyAllWindows()
+            if SHOW_QUANTIZED_HUEY:
+                try:
+                    cv2.destroyWindow("Quantized Huey")
+                except:
+                    pass
 
     except KeyboardInterrupt:
         print("KEYBOARD INTERRUPT CLEAN UP")

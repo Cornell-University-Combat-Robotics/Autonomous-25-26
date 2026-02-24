@@ -198,9 +198,9 @@ class YoloModel(TemplateModel):
     def predict(self, img, show=False):
         # Inference call
         if self.device != None:
-            results = self.model(img, device=self.device, verbose=True, task='detect', imgsz=self.img_size, max_det=3, iou=0.8)
+            results = self.model(img, device=self.device, verbose=False, task='detect', imgsz=self.img_size, max_det=3, iou=0.8)
         else:
-            results = self.model(img, verbose=True, task='detect', imgsz=self.img_size, max_det=3, iou=0.8)
+            results = self.model(img, verbose=False, task='detect', imgsz=self.img_size, max_det=3, iou=0.8)
         result = results[0]
 
         # 1. BATCH EXTRACT EVERYTHING TO CPU ONCE

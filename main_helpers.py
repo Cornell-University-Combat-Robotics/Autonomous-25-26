@@ -259,3 +259,74 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False):
         bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, thresh_lab=threshold,keep_background=False, show=show)
 
     return detected_bots
+
+def draw_hud(image, fps10=None, move_dictionary=None, iteration=None, playback_speed=None):
+    """
+    Draw a heads-up display (HUD) showing real-time metrics on the image.
+    
+    Args:
+        image: The image to draw the HUD on
+        fps10: Rolling average FPS (10-frame average)
+        move_dictionary: Dictionary containing 'speed' and 'turn' values
+        iteration: Current frame iteration number
+        playback_speed: Current playback speed multiplier (0.05 to 1.0)
+    
+    Returns:
+        The image with HUD information drawn on it
+    """
+    if image is None:
+        return image
+    
+    # HUD display configuration
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 0.6
+    thickness = 2
+    text_color = (0, 255, 0)  # Green color in BGR
+    bg_color = (0, 0, 0)  # Black background
+    x_offset = 10
+    y_offset = 30
+    line_height = 28
+    
+    # Calculate number of lines to display
+    num_lines = 4
+    if playback_speed is not None:
+        num_lines += 1
+    
+    # Create semi-transparent background for HUD
+    hud_height = 10 + (num_lines * line_height)
+    overlay = image.copy()
+    cv2.rectangle(overlay, (5, 5), (250, hud_height), bg_color, -1)
+    cv2.addWeighted(overlay, 0.3, image, 0.7, 0, image)
+    
+    line_num = 0
+    
+    # Display FPS
+    if fps10 is not None:
+        fps_text = f"FPS: {fps10:.1f}"
+        cv2.putText(image, fps_text, (x_offset, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
+        line_num += 1
+    
+    # Display Speed
+    if move_dictionary is not None and "speed" in move_dictionary:
+        speed_text = f"Speed: {move_dictionary['speed']:.2f}"
+        cv2.putText(image, speed_text, (x_offset, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
+        line_num += 1
+    
+    # Display Turn
+    if move_dictionary is not None and "turn" in move_dictionary:
+        turn_text = f"Turn: {move_dictionary['turn']:.2f}"
+        cv2.putText(image, turn_text, (x_offset, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
+        line_num += 1
+    
+    # Display Iteration (frame number)
+    if iteration is not None:
+        iter_text = f"Frame: {iteration}"
+        cv2.putText(image, iter_text, (x_offset, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
+        line_num += 1
+    
+    # Display Playback Speed
+    if playback_speed is not None:
+        speed_mult_text = f"Speed: {playback_speed:.2f}x"
+        cv2.putText(image, speed_mult_text, (x_offset, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
+    
+    return image
