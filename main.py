@@ -35,8 +35,8 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
-WARP_AND_COLOR_PICKING = True  # Re-do warp & color selection
-SELECTION_SCALE = 0.25           # Scale factor for selection windows (0.5 = half size)
+WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
+SELECTION_SCALE = 0.5           # Scale factor for selection windows (0.5 = half size)
 IS_TRANSMITTING = False         # True if connected to live Huey
 WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
@@ -64,7 +64,7 @@ OD_IMG_SIZE = 416               # 640 default, 416 fast, must be multiple of 32.
 folder = os.getcwd() + "/main_files"
 
 # camera_number   = folder + "/test_videos/huey_vs_prince.mp4"
-camera_number   = folder + "/test_videos/prince_v_huey_1080_30.mp4" # Get from drive, 30 FPS
+camera_number   = folder + "/test_videos/prince_v_huey_1080_30.mp4" # 30 FPS
 # camera_number   = folder + "/test_videos/prince_v_huey_ultraHD_30.mp4" # Get from drive, 30 FPS
 # camera_number = 1
 
@@ -95,6 +95,11 @@ def main():
         else:
             warped_frame, homography_matrix = read_prev_homography(captured_image, folder + "/homography_matrix.txt")
             selected_colors = read_prev_colors(folder + "/selected_colors.txt")
+
+        # Shift corner color hues closer to bot color to account for motion blur
+        shift_factor = 0.15
+        selected_colors[1][0] = int(selected_colors[1][0] + (selected_colors[0][0] - selected_colors[1][0]) * shift_factor)
+        selected_colors[2][0] = int(selected_colors[2][0] + (selected_colors[0][0] - selected_colors[2][0]) * shift_factor)
 
         # Build warp maps from homography matrix for faster warping in the main loop
         map_x, map_y = get_warp_maps(homography_matrix)
@@ -147,7 +152,6 @@ def main():
         global_flipped = None
         start_time = ptime()
         is_paused = False  # Pause state for playback
-        
 
         while (CAMERA_STREAM and stream.isOpened() and not stream.stopped) or (not CAMERA_STREAM and cap.isOpened()):
             time_elapsed = ptime() - prev

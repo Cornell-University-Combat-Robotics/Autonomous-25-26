@@ -138,7 +138,7 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
         print(f"Unexpected error occurred in find_our_bot: {e}")
         return None
 
-def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray, selected_colors) -> list:
+def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray, selected_colors, robot_center=None) -> list:
     """
     Finds the centroids of a specific color (front or back) in the given image.
 
@@ -146,14 +146,18 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
         side (str): "front" or "back" for the color.
         image (np.ndarray): The input image in BGR format.
         hsv_image (np.ndarray): The HSV version of the input image.
+        robot_center (tuple): Optional (x, y) center of mass of the robot.
 
     Returns:
         list: Centroids of the detected contours.
     """
 
     # 1. Get image dimensions and center point
-    img_h, img_w = hsv_image.shape[:2]
-    center_x, center_y = img_w // 2, img_h // 2
+    if robot_center is not None:
+        center_x, center_y = robot_center
+    else:
+        img_h, img_w = hsv_image.shape[:2]
+        center_x, center_y = img_w // 2, img_h // 2
 
     # 2. Get contours from your helper function
     contours = get_contours_per_color(side, hsv_image, selected_colors)
@@ -230,8 +234,17 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
         list: A list containing centroids for the front and back corners.
     """
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    centroid_front = find_centroids_per_color("front", image, hsv_image, selected_colors)
-    centroid_back = find_centroids_per_color("back", image, hsv_image, selected_colors)
+    
+    # Find robot center of mass
+    robot_color = np.array(selected_colors[0])
+    mask_robot = cv2.inRange(hsv_image, robot_color, robot_color)
+    M = cv2.moments(mask_robot)
+    robot_center = None
+    if M["m00"] != 0:
+        robot_center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+
+    centroid_front = find_centroids_per_color("front", image, hsv_image, selected_colors, robot_center)
+    centroid_back = find_centroids_per_color("back", image, hsv_image, selected_colors, robot_center)
 
     # Check if we have incomplete points and use get_missing_point to fix it
     if len(centroid_front) == 1 and len(centroid_back) == 2:
