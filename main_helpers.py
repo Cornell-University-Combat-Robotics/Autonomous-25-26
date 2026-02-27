@@ -249,8 +249,9 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False):
     # else:
     #     threshold = 22
 
-    threshold = 18
-    weights = (1.0, 0.15, 0.15)
+    threshold = 24
+    weights_hsv = (1.0, 0.3, 0.3)
+    weights_lab = (1.0, 1.0, 1.0)
     print(selected_colors)
 
     colors_hsv_1x = np.array(selected_colors).reshape(1, -1, 3)
@@ -263,8 +264,8 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False):
     
     bgr_colors = bgr_colors_1x.reshape(-1, 3)  # (N_colors, 3)
     for bot in detected_bots["bots"]:
-        # bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, thresh_lab=threshold,keep_background=False, show=show)
-        bot["img"] = quantize_robot_colors_hsv(bot["img"], bgr_colors, weights=weights,thresh_hsv=threshold,keep_background=False)
+        # bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, weights=weights_lab,thresh_lab=threshold,keep_background=False, show=show)
+        bot["img"] = quantize_robot_colors_hsv(bot["img"], bgr_colors, weights=weights_hsv,thresh_hsv=threshold,keep_background=False)
 
     return detected_bots
 

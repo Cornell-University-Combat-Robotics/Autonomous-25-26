@@ -30,6 +30,7 @@ import time
 def quantize_robot_colors(
     img_bgr,
     robot_colors_bgr,
+    weights=(1.0, 1.0, 1.0),
     thresh_lab=25.0,
     keep_background=True,
     show = False
@@ -53,8 +54,9 @@ def quantize_robot_colors(
     # Define weights for L, a, and b
     # Setting L_weight to 0.0 ignores brightness entirely.
     # Setting it to 0.2 makes it matter, but much less than color.
-    L_weight = 0.05
-    weights = np.array([L_weight, 1.0, 1.0], dtype=np.float32)
+    # L_weight = 0.05
+    # weights = np.array([L_weight, 1.0, 1.0], dtype=np.float32)
+    weights = np.array(weights, dtype=np.float32)
 
     # Start with first color (weighted)
     diff0 = (flat - robot_lab[0]) * weights

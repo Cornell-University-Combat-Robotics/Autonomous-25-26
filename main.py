@@ -35,7 +35,7 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
-WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = True  # Re-do warp & color selection
 SELECTION_SCALE = 0.5           # Scale factor for selection windows (0.5 = half size)
 IS_TRANSMITTING = False         # True if connected to live Huey
 WEAPON_ON = False               # True if weapon motor should be on
@@ -64,7 +64,9 @@ OD_IMG_SIZE = 416               # 640 default, 416 fast, must be multiple of 32.
 folder = os.getcwd() + "/main_files"
 
 # camera_number   = folder + "/test_videos/huey_vs_prince.mp4"
-camera_number   = folder + "/test_videos/prince_v_huey_1080_30.mp4" # 30 FPS
+# camera_number   = folder + "/test_videos/prince_v_huey_1080_30.mp4" # 30 FPS
+# camera_number   = folder + "/test_videos/blue_huey_vs_pp_1080_30.mp4" # 30 FPS
+camera_number   = folder + "/test_videos/nhrldatasped.mp4" # Really sped up, data from night before comp
 # camera_number   = folder + "/test_videos/prince_v_huey_ultraHD_30.mp4" # Get from drive, 30 FPS
 # camera_number = 1
 
@@ -97,13 +99,13 @@ def main():
             selected_colors = read_prev_colors(folder + "/selected_colors.txt")
 
         # Shift corner color hues closer to bot color to account for motion blur
-        shift_factor = 0.05
+        # shift_factor = 0.05
         # Cast to float to avoid uint8 overflow/underflow if selected_colors are numpy arrays
-        hue_robot = float(selected_colors[0][0])
-        hue_front = float(selected_colors[1][0])
-        hue_back = float(selected_colors[2][0])
-        selected_colors[1][0] = int(hue_front + (hue_robot - hue_front) * shift_factor)
-        selected_colors[2][0] = int(hue_back + (hue_robot - hue_back) * shift_factor)
+        # hue_robot = float(selected_colors[0][0])
+        # hue_front = float(selected_colors[1][0])
+        # hue_back = float(selected_colors[2][0])
+        # selected_colors[1][0] = int(hue_front + (hue_robot - hue_front) * shift_factor)
+        # selected_colors[2][0] = int(hue_back + (hue_robot - hue_back) * shift_factor)
 
         # Build warp maps from homography matrix for faster warping in the main loop
         map_x, map_y = get_warp_maps(homography_matrix)
