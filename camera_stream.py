@@ -4,15 +4,22 @@ import time
 
 class CameraStream:
     def __init__(self, src):
+        # 1. Use the 'sum' trick for Windows DirectShow
         self.cap = cv2.VideoCapture(src, cv2.CAP_DSHOW)
-        self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-
         
-        # Performance tuning for Elgato MK2
-        # MJPG is often faster for high-res 60fps
+        # 2. Set Codec FIRST (Essential for Elgato bandwidth)
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+        
+        # 3. Set Resolution
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+        
+        # 4. Set Frame Rate
         self.cap.set(cv2.CAP_PROP_FPS, 60)
         
+        # 5. Buffer size (keep at 1 for low latency)
+        self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
         self.ret, self.frame = self.cap.read()
         self.frame_count = 0
         self.stopped = False

@@ -25,6 +25,9 @@ def key_frame(stream, CAMERA_STREAM):
     while (CAMERA_STREAM and stream.isOpened() and not stream.stopped) or stream.isOpened():
         ret, frame = stream.read()
 
+        # Print size of frame
+        print("Size of frame: " + str(frame.shape))
+
         if ret and frame is not None:
             cv2.imshow("Press 'q' to quit. Press '0' to capture the image", frame)
             key = cv2.waitKey(1) & 0xFF  # Check for key press
