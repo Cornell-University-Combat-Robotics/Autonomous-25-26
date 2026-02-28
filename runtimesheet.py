@@ -77,8 +77,9 @@ class RuntimeSheet:
             # Make a line graph of all columns except FPS over iterations
             plt.figure(figsize=(10, 5))
             for column in df.columns:
-                if column not in ["Start Time", "End Time", "FPS10"]:
+                if column not in ["Start Time", "End Time", "FPS10"] and df[column].sum() > 1:
                     plt.plot(df.index[1:], df[column][1:], label=column)
+            plt.ylim(0, (df["Total"].sum()/len(df)) * 2)
             plt.xlabel("Iteration")
             plt.ylabel("Time (ms)")
             plt.title("Runtime Metrics Over Iterations")
