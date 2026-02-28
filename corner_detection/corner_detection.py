@@ -1,7 +1,8 @@
 import os
 import cv2
 import numpy as np
-from .corner_detection_helpers import find_our_bot, find_centroids, compute_angle_between_midpoints, two_corners
+import matplotlib.pyplot as plt
+from .corner_detection_helpers import find_our_bot, find_centroids, compute_angle_between_midpoints, two_corners, math
 
 class RobotCornerDetection:
     """
@@ -31,6 +32,17 @@ class RobotCornerDetection:
         self.huey_color_percentage_threshold = -1
         self.color_percentage_rows = color_percentage_rows
         self.centroids = []
+        self.diagonals = []
+        self.sides = []
+        self.left_diff = []
+        self.right_diff = []
+
+        plt.ion()
+        plt.plot(self.left_diff, label="Left Difference")
+        plt.plot(self.right_diff, label="Right Difference")
+        plt.grid(True)
+        plt.legend()
+        plt.show()
 
     def set_bots(self, bots: dict):
         self.bots = bots
@@ -78,7 +90,7 @@ class RobotCornerDetection:
             print(f"Unexpected error in detect_our_robot_main: {e}")
             return None
 
-    def corner_detection_main(self, previous_orientations: list, threshold_set=False) -> dict | None:
+    def corner_detection_main(self, previous_orientations: list = [], threshold_set: bool=False) -> dict | None:
         """
         Main function for detecting corners and orientation of the robot.
 
@@ -117,14 +129,39 @@ class RobotCornerDetection:
                 centroid_points = find_centroids(image, self.selected_colors)
                 self.centroids = centroid_points
 
+                print(self.centroids)
+
+                if len(self.centroids) == 2:
+                    if len(self.centroids[0]) == 2 and len(self.centroids[1]) == 2:
+                        self.diagonals[0] = np.linalg.norm(self.centroids[0][0] - self.centroids[1][1]) # Left diagonal
+                        self.diagonals[1] = np.linalg.norm(self.centroids[0][1] - self.centroids[1][0]) # Right diagonal
+                        
+                        self.sides[0] = np.linalg.norm(self.centroids[0][0] - self.centroids[1][0]) # Left side
+                        self.sides[1] = np.linalg.norm(self.centroids[0][1] - self.centroids[1][1]) # Right side 
+                        left_diff = abs(self.diagonals[0] - self.sides[0])
+                        right_diff = abs(self.diagonals[1] - self.sides[1])
+                        self.left_diff.append(left_diff)
+                        self.right_diff.append(right_diff)
+                        ax = plt.gca()
+                        ax.relim()
+                        ax.autoscale_view()
+                        plt.draw()
+                        plt.pause(0.1)
+                        
+                # print(f"🇬🇧🛌🇰🇷DIALGA: {self.diagonals}, 🇬🇧SYDNEY: {self.sides}")
+
                 if (len(centroid_points[0]) + len(centroid_points[1]) == 2):
-                    previous_orientation = previous_orientations[0]
-                    huey["orientation"] = two_corners(centroid_points, previous_orientation)
+                    if previous_orientations is not None and len(previous_orientations) > 0:
+                        previous_orientation = previous_orientations[0]
+                        huey["orientation"] = two_corners(centroid_points, previous_orientation)
+                    else:
+                        huey["orientation"] = None
                     return {"huey": huey, "enemy": enemy_bots}
 
                 elif (len(centroid_points[0]) + len(centroid_points[1]) < 2):
                     print("Less than 2 corners found")
                     return {"huey": huey, "enemy": enemy_bots}
+
 
                 front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5
                 back_midpoint = (centroid_points[1][0] + centroid_points[1][1]) * 0.5
