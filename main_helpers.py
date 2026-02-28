@@ -66,7 +66,7 @@ def read_prev_homography(captured_image, file_path):
 def make_new_homography(captured_image, selection_scale = 1.0):
     if captured_image is None:
         print("No image captured. Press '0' to capture image.")
-        return
+        raise Exception("Image passed to make_new_homography was None.")
     
     homography_matrix = get_homography_mat(captured_image, display_scale=selection_scale)
     warped_frame = warp(captured_image, homography_matrix)

@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import torch
 from time import perf_counter as ptime
+import traceback
 
 from camera_stream import CameraStream
 from runtimesheet import RuntimeSheet
@@ -34,7 +35,7 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
-WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = True  # Re-do warp & color selection
 DISPLAY_SCALE = 0.5             # Display frame smaller for selection with 1080p video, 1.0 default
 IS_TRANSMITTING = False         # True if connected to live Huey
 WEAPON_ON = False               # True if weapon motor should be on
@@ -311,6 +312,7 @@ def main():
         print("KEYBOARD INTERRUPT CLEAN UP")
     except Exception as exception:
         print("UNKNOWN EXCEPTION FAILURE. PROCEEDING TO CLEAN UP:", exception)
+        traceback.print_exc()
     finally:
 
         ## Newbie squadron trial
