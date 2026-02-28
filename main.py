@@ -35,6 +35,7 @@ from warp_main import warp_map
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
 WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
+DISPLAY_SCALE = 0.5             # Display frame smaller for selection with 1080p video, 1.0 default
 IS_TRANSMITTING = False         # True if connected to live Huey
 WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
@@ -79,15 +80,15 @@ def main():
         # 2. Capture initial frame by pressing '0'
         if CAMERA_STREAM:
             stream = CameraStream(camera_number).start()
-            captured_image = key_frame(stream, CAMERA_STREAM)
+            captured_image = key_frame(stream, CAMERA_STREAM, selection_scale=DISPLAY_SCALE)
         else:
             cap = cv2.VideoCapture(camera_number)
-            captured_image = key_frame(cap, CAMERA_STREAM)
+            captured_image = key_frame(cap, CAMERA_STREAM, selection_scale=DISPLAY_SCALE)
     
 
         # 3. Use the initial frame to get a new Homography Matrix and new colors
         if WARP_AND_COLOR_PICKING:
-            warped_frame, homography_matrix = make_new_homography(captured_image)
+            warped_frame, homography_matrix = make_new_homography(captured_image, selection_scale=DISPLAY_SCALE)
             selected_colors = make_new_colors(folder + "/selected_colors.txt", warped_frame)
         # 3. Or use the previously saved Homography Matrix and colors from the txt file
         else:
@@ -193,8 +194,6 @@ def main():
                     if not ret:
                         print("Failed to capture image" + "\n")
                         break
-                
-                print("Size of frame in main loop: " + str(frame.shape))
 
                 with rs.log_timing("PollKey"):
                     if SHOW_FRAME:

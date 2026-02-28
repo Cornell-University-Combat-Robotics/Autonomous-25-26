@@ -17,7 +17,7 @@ from color_quant.quantization import quantize_robot_colors
 Gets first frame of the video and returns it. If frame can't be read or video isn't being 
 processed will print the problem, and return captured_image as none. 
 """
-def key_frame(stream, CAMERA_STREAM):
+def key_frame(stream, CAMERA_STREAM, selection_scale = 1.0):
     captured_image = None
     if stream == None:
             print("Error opening camera stream" + "\n")
@@ -25,11 +25,11 @@ def key_frame(stream, CAMERA_STREAM):
     while (CAMERA_STREAM and stream.isOpened() and not stream.stopped) or stream.isOpened():
         ret, frame = stream.read()
 
-        # Print size of frame
-        print("Size of frame: " + str(frame.shape))
-
         if ret and frame is not None:
-            cv2.imshow("Press 'q' to quit. Press '0' to capture the image", frame)
+            h, w = frame.shape[:2]
+            display_frame = cv2.resize(frame, (int(w * selection_scale), int(h * selection_scale)))
+
+            cv2.imshow("Press 'q' to quit. Press '0' to capture the image", display_frame)
             key = cv2.waitKey(1) & 0xFF  # Check for key press
 
             if key == ord("q"):  # Press 'q' to quit without capturing
@@ -63,12 +63,12 @@ def read_prev_homography(captured_image, file_path):
     warped_frame = warp(captured_image, homography_matrix)
     return warped_frame, homography_matrix
 
-def make_new_homography(captured_image):
+def make_new_homography(captured_image, selection_scale = 1.0):
     if captured_image is None:
         print("No image captured. Press '0' to capture image.")
         return
     
-    homography_matrix = get_homography_mat(captured_image)
+    homography_matrix = get_homography_mat(captured_image, display_scale=selection_scale)
     warped_frame = warp(captured_image, homography_matrix)
 
     return warped_frame, homography_matrix

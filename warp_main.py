@@ -27,7 +27,7 @@ import numpy as np
 import cv2
 import os
 
-def get_homography_mat(frame):
+def get_homography_mat(frame, display_scale=1.0):
     corners = []
     outer_padding = 50
     clickable_padding = 150
@@ -36,26 +36,37 @@ def get_homography_mat(frame):
     # Add black border around the frame.
     padded_frame = cv2.copyMakeBorder(frame, total_padding, total_padding, total_padding, total_padding, cv2.BORDER_CONSTANT, value=(0, 0, 0))
 
+    # Resize for display
+    h, w = padded_frame.shape[:2]
+    display_frame = cv2.resize(padded_frame, (int(w * display_scale), int(h * display_scale)))
+
     def click_event(event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN:
-            if x < outer_padding or y < outer_padding or x >= padded_frame.shape[1] - outer_padding or y >= padded_frame.shape[0] - outer_padding:
-                print(f"Clicked outside valid area: ({x}, {y})")
+            # Map display coordinates back to original frame coordinates
+            orig_x = int(x / display_scale)
+            orig_y = int(y / display_scale)
+
+            if orig_x < outer_padding or orig_y < outer_padding or orig_x >= padded_frame.shape[1] - outer_padding or orig_y >= padded_frame.shape[0] - outer_padding:       
+                print(f"Clicked outside valid area: ({orig_x}, {orig_y})")
                 return
 
-            corners.append([x - outer_padding, y - outer_padding])  # Save coords relative to original frame
-            print(f"Point added: {x - outer_padding}, {y - outer_padding}")
+            corners.append([orig_x - outer_padding, orig_y - outer_padding])  # Save coords relative to original frame
+            print(f"Point added: {orig_x - outer_padding}, {orig_y - outer_padding}")
             draw_corners()
 
     def draw_corners():
-        frame_copy = padded_frame.copy()
+        frame_copy = display_frame.copy()
         for point in corners:
-            draw_point = (point[0] + outer_padding, point[1] + outer_padding)
+            # Map original coordinates to display coordinates for drawing
+            draw_x = int((point[0] + outer_padding) * display_scale)
+            draw_y = int((point[1] + outer_padding) * display_scale)
+            draw_point = (draw_x, draw_y)
             cv2.circle(frame_copy, draw_point, 5, (0, 255, 0), -1)
             cv2.putText(frame_copy, str(point), draw_point, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
 
         cv2.imshow("Warp: Select arena corners from top left, top right, bottom right to bottom left. Press 'z' to undo click", frame_copy)
 
-    cv2.imshow("Warp: Select arena corners from top left, top right, bottom right to bottom left. Press 'z' to undo click", padded_frame)
+    cv2.imshow("Warp: Select arena corners from top left, top right, bottom right to bottom left. Press 'z' to undo click", display_frame)
     cv2.setMouseCallback("Warp: Select arena corners from top left, top right, bottom right to bottom left. Press 'z' to undo click", click_event)
 
     key = cv2.waitKey(1) & 0xFF
