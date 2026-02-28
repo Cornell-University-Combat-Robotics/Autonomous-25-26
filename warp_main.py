@@ -175,6 +175,9 @@ def get_warp_maps(h_mat, dst_size=(ARENA_WIDTH, ARENA_WIDTH)):
     # Reshape back to the image grid
     map_x = src_coords[0].reshape(h, w).astype(np.float32)
     map_y = src_coords[1].reshape(h, w).astype(np.float32)
+
+    # # CV_16SC2 converts map_x and map_y into a specialized 2-channel fixed-point map
+    # map1, map2 = cv2.convertMaps(map_x, map_y, cv2.CV_16SC2)
     
     return map_x, map_y
 

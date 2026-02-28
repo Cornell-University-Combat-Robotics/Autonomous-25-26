@@ -34,7 +34,7 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
-WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = True  # Re-do warp & color selection
 DISPLAY_SCALE = 0.5             # Display frame smaller for selection with 1080p video, 1.0 default
 IS_TRANSMITTING = False         # True if connected to live Huey
 WEAPON_ON = False               # True if weapon motor should be on
@@ -74,6 +74,7 @@ if IS_TRANSMITTING:
     
 rs = RuntimeSheet(use=SHEET_RUNTIME)
 # ------------------------------ BEFORE THE MATCH ------------------------------
+@profile
 def main():
     stream = None
     try:

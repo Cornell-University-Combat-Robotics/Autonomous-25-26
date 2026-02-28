@@ -46,7 +46,7 @@ class YoloModel(TemplateModel):
         self.device = device
         self.img_size = image_size
         # compiled_model = core.compile_model(model=model, device_name=device.value)
-    @profile
+
     def predict(self, img, show=False, manual_preprocess=False):
         # Max_det = max number of detections, 3 for housebot + 2 bots. Stops YOLO from hallucinating extra bots when confidence is low. Iou=0.8 to prevent multiple detections on same bot.
         if manual_preprocess:

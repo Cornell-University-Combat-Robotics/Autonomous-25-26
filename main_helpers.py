@@ -242,7 +242,7 @@ def initialize_quantization():
     dummy = np.zeros((8, 8, 3), dtype=np.uint8)
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2LAB)
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2HSV)
-
+@profile
 def quantize(detected_bots, selected_colors, show, is_flipped=False):
     if(is_flipped == 1):
         threshold = 18

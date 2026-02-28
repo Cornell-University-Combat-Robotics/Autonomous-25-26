@@ -27,6 +27,7 @@ import time
     palette_bgr : np.ndarray
         The robot colors used (same as robot_colors_bgr, cast to uint8).
     """
+
 def quantize_robot_colors(
     img_bgr,
     robot_colors_bgr,
