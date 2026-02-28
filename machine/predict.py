@@ -3,6 +3,9 @@ import time
 import cv2
 from dotenv import load_dotenv
 from ultralytics import YOLO
+import numpy as np
+import torch
+import torch.nn.functional as F
 
 # from template_model import TemplateModel # to run in machine
 from machine.template_model import TemplateModel  # to run in main
@@ -43,20 +46,65 @@ class YoloModel(TemplateModel):
         self.device = device
         self.img_size = image_size
         # compiled_model = core.compile_model(model=model, device_name=device.value)
-    
-    def predict(self, img, show=False):
+    @profile
+    def predict(self, img, show=False, manual_preprocess=False):
         # Max_det = max number of detections, 3 for housebot + 2 bots. Stops YOLO from hallucinating extra bots when confidence is low. Iou=0.8 to prevent multiple detections on same bot.
-        if self.device != None:
+        if manual_preprocess:
+            if self.device == "cuda":
+                # Resize and preprocess on GPU
+                # 1. Upload to GPU (HWC, BGR, uint8) -> (CHW, BGR, uint8)
+                input_tensor = torch.from_numpy(img).to(self.device, non_blocking=True).permute(2, 0, 1)
+                
+                # 2. BGR to RGB and Normalize (CHW, RGB, float32)
+                input_tensor = input_tensor[[2, 1, 0], :, :].float() / 255.0
+                
+                # 3. Add batch dimension
+                input_tensor = input_tensor.unsqueeze(0)
+                
+                # 4. Resize
+                input_tensor = F.interpolate(input_tensor, size=(self.img_size, self.img_size), mode='bilinear', align_corners=False)
+            else:
+                # Resize and preprocess on CPU
+                resized = cv2.resize(img, (self.img_size, self.img_size))
+                input_tensor = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
+                input_tensor = input_tensor.transpose(2, 0, 1) # HWC to CHW
+                input_tensor = np.ascontiguousarray(input_tensor, dtype=np.float32) / 255.0
+                input_tensor = torch.from_numpy(input_tensor)
+                
+                if self.device:
+                    input_tensor = input_tensor.to(self.device)
+                
+                input_tensor = input_tensor.unsqueeze(0) # Add batch dimension
+            
+            results = self.model(input_tensor, verbose=True, task='detect', imgsz=self.img_size, max_det=5, iou=0.8)
+            result = results[0]
+            
+            # Scale coordinates back to original image size
+            scale_x = img.shape[1] / self.img_size
+            scale_y = img.shape[0] / self.img_size
+            
+            boxes_xyxy = result.boxes.xyxy.cpu().numpy()
+            boxes_xyxy[:, [0, 2]] *= scale_x
+            boxes_xyxy[:, [1, 3]] *= scale_y
+            
+            boxes_xywh = result.boxes.xywh.cpu().numpy()
+            boxes_xywh[:, [0, 2]] *= scale_x
+            boxes_xywh[:, [1, 3]] *= scale_y
+            
+            boxes_cls = result.boxes.cls.cpu().numpy()
+            
+        elif self.device != None:
             results = self.model(img, device=self.device, verbose=True, task='detect', imgsz=self.img_size, max_det=5, iou=0.8)
+            result = results[0]
+            boxes_xyxy = result.boxes.xyxy.cpu().numpy()
+            boxes_xywh = result.boxes.xywh.cpu().numpy()
+            boxes_cls = result.boxes.cls.cpu().numpy()
         else:
             results = self.model(img, verbose=True, task='detect', imgsz=self.img_size, max_det=5, iou=0.8)
-        result = results[0]
-
-        # 1. BATCH EXTRACT EVERYTHING TO CPU ONCE
-        # This is the secret sauce. .cpu().numpy() is faster than calling .tolist() inside a loop.
-        boxes_xyxy = result.boxes.xyxy.cpu().numpy()
-        boxes_xywh = result.boxes.xywh.cpu().numpy()
-        boxes_cls = result.boxes.cls.cpu().numpy()
+            result = results[0]
+            boxes_xyxy = result.boxes.xyxy.cpu().numpy()
+            boxes_xywh = result.boxes.xywh.cpu().numpy()
+            boxes_cls = result.boxes.cls.cpu().numpy()
 
         robots = []
         housebots = []

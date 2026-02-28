@@ -34,7 +34,7 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
-WARP_AND_COLOR_PICKING = True  # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
 DISPLAY_SCALE = 0.5             # Display frame smaller for selection with 1080p video, 1.0 default
 IS_TRANSMITTING = False         # True if connected to live Huey
 WEAPON_ON = False               # True if weapon motor should be on
@@ -50,6 +50,7 @@ CAMERA_STREAM = False           # True if using live camera stream, False if usi
 SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
 BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
+MANUAL_PREPROCESS = False        # Manually resize and package tensor for object detection
 
 # MODEL_NAME = "SmallComp"        # Used for comp, best accuracy if you have the compute for it.
 MODEL_NAME = "NanoSizeVariant"  # Use with lower image size for faster performance, not much worse accuracy.
@@ -218,7 +219,7 @@ def main():
 
                 # 11. Run the Warped Image through Object Detection
                 with rs.log_timing("Object Detection"):
-                    detected_bots = predictor.predict(warped_frame)
+                    detected_bots = predictor.predict(warped_frame, manual_preprocess=MANUAL_PREPROCESS)
                 
                 if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                     for bot in range(len(detected_bots["bots"])):
