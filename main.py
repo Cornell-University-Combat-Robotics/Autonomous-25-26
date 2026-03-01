@@ -55,7 +55,7 @@ BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n
 MODEL_NAME = "NanoSizeVariant"  # Use with lower image size for faster performance, not much worse accuracy.
 
 # Image size for object detection model, lower number -> faster, slightly worse accuracy.
-OD_IMG_SIZE = 320               # 640 default, 416 fast, must be multiple of 32. Don't go below 320. 
+OD_IMG_SIZE = 416               # 640 default, 416 fast, must be multiple of 32. Don't go below 320. 
 
 # If model gives a bug, ask Aaron which model/image size to use for your system.
 # TODO: Documentation for available models
