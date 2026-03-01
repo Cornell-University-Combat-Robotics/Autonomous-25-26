@@ -34,7 +34,7 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
-WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = True  # Re-do warp & color selection
 DISPLAY_SCALE = 0.5             # Display frame smaller for selection with 1080p video, 1.0 default
 IS_TRANSMITTING = False         # True if connected to live Huey
 WEAPON_ON = False               # True if weapon motor should be on
@@ -43,10 +43,10 @@ IS_ORIGINAL_FPS = True          # Process every captured frame, False -> cap at 
 FRAME_RATE = 60                 # FPS used for algo stuff, update to expected FPS on your system.
 DISPLAY_ANGLES = True           # Only show angles if SHOW_FRAME is True
 SHOW_HUD = True                # Show heads-up display with FPS, speed, turn, frame number
-SHOW_QUANTIZED_HUEY = True      # Display the quantized bounding box of Huey in separate window
+SHOW_QUANTIZED_HUEY = False      # Display the quantized bounding box of Huey in separate window
 COLOR_QUANTIZATION = True       # True if color quantization is on
 CAN_RECOVER = True              # True if want recovery
-CAMERA_STREAM = True           # True if using live camera stream, False if using pre-recorded video
+CAMERA_STREAM = False           # True if using live camera stream, False if using pre-recorded video
 SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
 BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
@@ -55,15 +55,15 @@ BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n
 MODEL_NAME = "NanoSizeVariant"  # Use with lower image size for faster performance, not much worse accuracy.
 
 # Image size for object detection model, lower number -> faster, slightly worse accuracy.
-OD_IMG_SIZE = 416               # 640 default, 416 fast, must be multiple of 32. Don't go below 320. 
+OD_IMG_SIZE = 320               # 640 default, 416 fast, must be multiple of 32. Don't go below 320. 
 
 # If model gives a bug, ask Aaron which model/image size to use for your system.
 # TODO: Documentation for available models
 
 folder = os.getcwd() + "/main_files"
 
-# camera_number   = folder + "/test_videos/huey_vs_prince.mp4"
-camera_number = 1
+camera_number   = folder + "/test_videos/huey_vs_prince.mp4"
+# camera_number = 1
 # camera_number = 0
 
 if IS_TRANSMITTING:

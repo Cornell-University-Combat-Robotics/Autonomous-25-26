@@ -11,11 +11,14 @@ class CameraStream:
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
         
         # 3. Set Resolution
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+        # self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+        # self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)        
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         
         # 4. Set Frame Rate
-        self.cap.set(cv2.CAP_PROP_FPS, 60)
+        # self.cap.set(cv2.CAP_PROP_FPS, 60)
+        self.cap.set(cv2.CAP_PROP_FPS, 120)
         
         # 5. Buffer size (keep at 1 for low latency)
         self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
@@ -47,9 +50,10 @@ class CameraStream:
                 last_success = time.time()
             else:
                 # If the camera hiccups, don't kill the thread immediately
-                time.sleep(0.001) 
+                # time.sleep(0.001) 
+                continue
             
-            time.sleep(0.003)
+            # time.sleep(0.003)
 
     def read(self):
         return self.ret, self.frame
