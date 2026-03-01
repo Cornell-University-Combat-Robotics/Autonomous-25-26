@@ -197,7 +197,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
     return algorithm
 
 
-def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False,  centroids=[]):
+def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False,  centroids=[], show=True):
     if is_recovering:
         cv2.putText(image, "RECOVERING", (550, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
@@ -259,11 +259,12 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
                 cv2.arrowedLine(image, (start_x, start_y),
                                 end_point, (0, 0, 255), 2)
 
-    if initial_run:
-        cv2.imshow(
-            "Initial Run: Battle with Predictions. Press '0' to continue", image)
-    else:
-        cv2.imshow("Battle with Predictions", image)
+    if show:
+        if initial_run:
+            cv2.imshow(
+                "Initial Run: Battle with Predictions. Press '0' to continue", image)
+        else:
+            cv2.imshow("Battle with Predictions", image)
 
     return image
 
