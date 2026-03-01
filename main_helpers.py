@@ -243,11 +243,14 @@ def initialize_quantization():
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2LAB)
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2HSV)
 
-def quantize(detected_bots, selected_colors, show, is_flipped=False):
+def quantize(detected_bots, selected_colors, show, is_flipped=False, settings=False):
     if(is_flipped == 1):
         threshold = 18
     else:
         threshold = 22
+
+    if settings:
+        threshold = settings['threshold']
 
     colors_hsv_1x = np.array(selected_colors).reshape(1, -1, 3)
 
