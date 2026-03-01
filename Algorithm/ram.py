@@ -241,7 +241,7 @@ class Ram():
     '''
     def predict_desired_turn_and_speed(self):
         check_wall(self.enemy_position)
-        enemy_future_position = self.enemy_position
+        enemy_future_position = self.enemy_future_position
         
         huey_position_copy = np.copy(self.huey_position)
         if np.linalg.norm(self.enemy_position - huey_position_copy) < Ram.DANGER_ZONE:

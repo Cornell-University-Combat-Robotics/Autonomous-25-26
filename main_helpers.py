@@ -162,7 +162,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
         print("Initial Corner Detection Output: " + str(first_run_orientation))
         print("Initial Algorithm Output: " + str(first_move_dictionary))
         
-        display_angles(first_run_orientation, first_move_dictionary, warped_frame, True)
+        display_angles(first_run_orientation, first_move_dictionary, warped_frame, enemy_orientation=algorithm.enemy_orientation, enemy_future_position= algorithm.enemy_future_position,initial_run=True)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
     else:
@@ -216,6 +216,8 @@ def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orient
 
             # RED line: Huey's Desired Orientation according to Algorithm
             if move_dictionary and (move_dictionary["turn"]):
+                print("🧑‍🎤MOVE DICTIONARY: DISPLAY ANGLES: 🧑‍🎤" + str(move_dictionary))
+                print("🙇‍♂️MOVE DICTIONARY TURN: DISPLAY ANGLES:🙇‍♂️ " + str(move_dictionary["turn"]))
                 turn = move_dictionary["turn"] # angle in degrees / 180
                 new_orientation_degrees = orientation_degrees + (turn * 180)
 
@@ -242,6 +244,7 @@ def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orient
 
             end_point_enemy = (int(start_x_enemy + 300 * dx), int(start_y_enemy + 300 * dy))
             cv2.arrowedLine(image, (start_x_enemy, start_y_enemy), end_point_enemy, (67, 255, 0), 2)
+            cv2.arrowedLine(image, (start_x, start_y), (start_x_enemy_fut, start_y_enemy_fut), (255, 0, 212), 2)
             cv2.circle(image, (start_x_enemy_fut, start_y_enemy_fut), 5, (67, 255, 0), 2 )
 
     if initial_run:
