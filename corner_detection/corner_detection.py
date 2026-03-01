@@ -36,10 +36,14 @@ class RobotCornerDetection:
         self.sides = []
         self.left_diff = []
         self.right_diff = []
+        self.ratio = []
 
         plt.ion()
-        plt.plot(self.left_diff, label="Left Difference")
-        plt.plot(self.right_diff, label="Right Difference")
+        # fig, ax = plt.subplots()
+        # plt.plot(self.left_diff, label="Left Difference")
+        # plt.plot(self.right_diff, label="Right Difference")
+        plt.plot(self.diagonals, label = "Diagonals")
+        plt.plot(self.sides, label = "Sides")
         plt.grid(True)
         plt.legend()
         plt.show()
@@ -131,20 +135,47 @@ class RobotCornerDetection:
 
                 print(self.centroids)
 
-                if len(self.centroids) == 2:
-                    if len(self.centroids[0]) == 2 and len(self.centroids[1]) == 2:
-                        self.diagonals[0] = np.linalg.norm(self.centroids[0][0] - self.centroids[1][1]) # Left diagonal
-                        self.diagonals[1] = np.linalg.norm(self.centroids[0][1] - self.centroids[1][0]) # Right diagonal
+                if len(self.centroids) == 2 and len(self.centroids[0]) == len(self.centroids[1]) == 2:
+
+                        # Left distances
+                        hypo_l = (np.linalg.norm(self.centroids[0][0] - self.centroids[1][1]))
+                        side_l = (np.linalg.norm(self.centroids[0][0] - self.centroids[1][0]))
+
+                        # Right distances
+                        hypo_r = (np.linalg.norm(self.centroids[0][1] - self.centroids[1][0]))
+                        side_r = (np.linalg.norm(self.centroids[0][1] - self.centroids[1][1]))
+
+                        if  hypo_l < side_l: # Identify longest as hypotenuse
+                            temp = hypo_l
+                            hypo_l = side_l
+                            side_l = temp
                         
-                        self.sides[0] = np.linalg.norm(self.centroids[0][0] - self.centroids[1][0]) # Left side
-                        self.sides[1] = np.linalg.norm(self.centroids[0][1] - self.centroids[1][1]) # Right side 
-                        left_diff = abs(self.diagonals[0] - self.sides[0])
-                        right_diff = abs(self.diagonals[1] - self.sides[1])
+                        if  hypo_r < side_r:
+                            temp = hypo_r
+                            hypo_r = side_r
+                            side_r = temp
+
+                        self.diagonals.append(hypo_l)
+                        self.diagonals.append(hypo_r)
+
+                        self.sides.append(side_l)
+                        self.sides.append(side_r)
+
+                        left_diff = abs(self.diagonals[-2] - self.sides[-2])
+                        right_diff = abs(self.diagonals[-1] - self.sides[-1])
+                        self.ratio.append((self.diagonals[-2]+ self.diagonals[-1])/(self.sides[-2]+self.sides[-1]))
                         self.left_diff.append(left_diff)
                         self.right_diff.append(right_diff)
+                        # print(f"LEFT diff: {left_diff}, RIGHT diff: {right_diff}")
+                    
                         ax = plt.gca()
                         ax.relim()
                         ax.autoscale_view()
+                        # plt.plot(self.left_diff, label="Left Difference", color = 'blue')
+                        # plt.plot(self.right_diff, label="Right Difference", color='coral')
+                        # plt.plot(self.diagonals, label = "Diagonals", color = 'mediumpurple')
+                        # plt.plot(self.sides, label = "Sides", color = "xkcd:browny orange")
+                        plt.plot(self.ratio, label = "Ratio of Diagonals/Sides", color = "xkcd:blue with a hint of purple")
                         plt.draw()
                         plt.pause(0.1)
                         

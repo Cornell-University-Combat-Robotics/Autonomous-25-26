@@ -60,7 +60,8 @@ frame_rate = 60
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/crude_rot_huey.mp4"
 # camera_number = folder + "/test_videos/two_huey_real_cage_800.mp4"
-camera_number   = folder + "/test_videos/huey_vs_prince.mp4"
+# camera_number   = folder + "/test_videos/huey_vs_prince.mp4"
+camera_number   = folder + "/test_videos/vangoghuey.mp4"
 # camera_number = 1
 
 if IS_TRANSMITTING:

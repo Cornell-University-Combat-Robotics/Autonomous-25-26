@@ -283,17 +283,17 @@ def get_missing_point(points: list) -> list:
     1. Calculate the distance from each blue point to the red point.
     2. Identify the longer distance (hypotenuse).
     3. Copy the blue point associated with the hypotenuse near the red point
-            to form the second red point.
+        to form the second red point.
     - If given 2 red points and 1 blue point:
     1. Calculate the distance from each red point to the blue point.
     2. Identify the longer distance (hypotenuse).
     3. Copy the red point associated with the hypotenuse near the blue point
-            to form the second blue point.
+        to form the second blue point.
 
     Args:
-            points (list): A list containing two sublists:
-                                    - points[0]: List of red points.
-                                    - points[1]: List of blue points.
+        points (list): A list containing two sublists:
+            - points[0]: List of red points.
+            - points[1]: List of blue points.
 
     Returns:
             list: A list containing updated red and blue points.
