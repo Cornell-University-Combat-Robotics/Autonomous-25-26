@@ -259,14 +259,30 @@ class Ram():
         huey_position_invert = invert_y(huey_position_copy)
         direction = enemy_future_position - huey_position_invert
         
-        # calculate the angle between the bot and the enemy
-        ratio = np.dot(direction, orientation) / \
-            (np.linalg.norm(direction) * np.linalg.norm(orientation))
-        ratio = clamp(ratio, -1, 1)
-        angle = np.degrees(np.arccos(ratio))
-        sign = np.sign(np.cross(orientation, direction))
-        angle *= sign
-        return angle * (Ram.MAX_TURN / 180.0), 1-(np.sign(angle) * (angle) * (Ram.MAX_SPEED / 180.0))
+        # # CORRECT OLD CODE GO BACK TO THIS
+        # # calculate the angle between the bot and the enemy
+        # ratio = np.dot(direction, orientation) / \
+        #     (np.linalg.norm(direction) * np.linalg.norm(orientation))
+        # ratio = clamp(ratio, -1, 1)
+        # angle = np.degrees(np.arccos(ratio))
+        # sign = np.sign(np.cross(orientation, direction))
+        # angle *= sign
+        # return angle * (Ram.MAX_TURN / 180.0), 1-(np.sign(angle) * (angle) * (Ram.MAX_SPEED / 180.0))
+
+        # SLOP: TESTIGN THIS CODE ITS OLD
+        direction_norm = np.linalg.norm(direction)
+        if direction_norm < 1e-6:
+            return (0, 0)
+
+        dot = float(np.dot(orientation, direction))
+        cross = float(orientation[0] * direction[1] - orientation[1] * direction[0])
+
+        angle_rad = math.atan2(cross, dot)                           # signed, continuous [-pi, pi]
+        angle_deg = math.degrees(angle_rad)
+
+        turn = clamp(angle_deg / 180.0, -1.0, 1.0)
+        speed = 1.0 - min(1.0, abs(angle_deg) / 180.0)
+        return turn, speed
 
     def orientation_and_front_intersection_t(self, dx: float, dy_img: float, bbox, eps: float = 1e-6):
         """
@@ -302,6 +318,7 @@ class Ram():
     
     """
     def get_enemy_orientation(self, bots):
+        self.enemy_future_position = self.enemy_position
         last_good = self.enemy_old_orientation
         if not (bots and bots.get("enemy") and bots["enemy"].get("bbox") is not None):
             return last_good
@@ -309,9 +326,22 @@ class Ram():
         if len(self.enemy_previous_positions) == 0:
             return last_good
         
+        # If bbox missing, we can still do a velocity-based future estimate
+        # SLOP: THIS IS PURELY TESTING CODE, AHJSDAKSJHJDLKASJd
+        if len(self.enemy_previous_positions) > 0:
+            prev = self.enemy_previous_positions[-1]
+            cur = self.enemy_position
+            if prev is not None and cur is not None:
+                v = cur - prev
+                if np.isfinite(v).all() and np.linalg.norm(v) < 250:  # reject teleports
+                    lookahead_frames = 4  # tune (or use fps)
+                    cand = cur + v * lookahead_frames
+                    cand = np.array(cand, dtype=float)
+                    check_wall(cand)
+                    self.enemy_future_position = cand
+        
         prev_pos = self.enemy_previous_positions[-1]
         cur_pos = self.enemy_position
-        print(f"🎄🎄prev: {prev_pos}, 🎄🎄curr: {cur_pos}")
 
         if np.array_equal(cur_pos, np.array([-1.0, -1.0])) or np.array_equal(prev_pos, np.array([-1.0, -1.0])):
             return last_good
@@ -358,7 +388,7 @@ class Ram():
             self.huey_previous_positions.append(self.huey_position)
             self.huey_previous_orientations.append(self.huey_orientation)
 
-        if self.huey_pos_count % 5 == 0:
+        if self.huey_pos_count % 1 == 0:
             self.huey_previous_positions.append(self.huey_position)
             self.huey_previous_orientations.append(self.huey_orientation)
 
@@ -445,7 +475,7 @@ class Ram():
             # PID Shenanigans. Only use PID for the turn values
             if self.USE_PID and self.delta_t != 0:
                 if self.delta_t > 0:
-                    derivative = (self.huey_orientation - self.huey_previous_orientations[-1]) / (self.delta_t * 180.0)
+                    derivative = (((self.huey_orientation - self.huey_previous_orientations[-1] + 180) % 360 ) -180) / (self.delta_t * 180.0)
                 else:
                     derivative = 0
                 

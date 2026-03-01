@@ -30,7 +30,7 @@ from warp_main import warp
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
-WARP_AND_COLOR_PICKING = True  # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
 WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
@@ -54,10 +54,10 @@ OD_IMG_SIZE = 416               # 640 default, 416 fast, must be multiple of 32.
 
 folder = os.getcwd() + "/main_files"
 frame_rate = 30
-camera_number = folder + "/test_videos/trimmed_huey_redshift.mp4"
+# camera_number = folder + "/test_videos/trimmed_huey_redshift.mp4"
 # camera_number = folder + "/test_videos/nhrl_arena.mp4"
 # camera_number = folder + "/test_videos/huey_blushy.mp4"
-# camera_number = folder + "/test_videos/huey_hell.mp4"
+camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/crude_rot_huey.mp4"
 # camera_number = folder + "/test_videos/two_huey_real_cage_800.mp4"
 # camera_number   = folder + "/test_videos/huey_vs_prince.mp4"
