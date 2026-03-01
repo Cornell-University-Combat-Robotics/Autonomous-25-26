@@ -3,8 +3,11 @@ import cv2
 import numpy as np
 import csv
 import pandas as pd
+from collections import deque
+
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 MIN_THRESHOLD = 0.035
+
 
 @staticmethod
 def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
@@ -26,9 +29,9 @@ def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
     mask = cv2.inRange(hsv_image, bot_color, bot_color)
 
     # Count the number of non-zero pixels in the mask
-    # cv2.imshow("Robot Mask", mask)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    cv2.imshow("Robot Mask", mask)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
     return cv2.countNonZero(mask)
 
 def get_contours_per_color(side: str, hsv_image: np.ndarray, selected_colors) -> list[np.ndarray]:
@@ -51,14 +54,14 @@ def get_contours_per_color(side: str, hsv_image: np.ndarray, selected_colors) ->
 
     mask = cv2.inRange(hsv_image, selected_color_hsv, selected_color_hsv)
 
-    # cv2.imshow("Corners Mask", mask)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    cv2.imshow("Corners Mask", mask)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return contours
 
-def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=False) -> tuple[np.ndarray | None, int] | None:
+def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=False) -> np.ndarray | None:
     """
     Identifies which image contains our robot based on a predefined robot color.
 
@@ -76,22 +79,17 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
 
         bot_color_percentages = []
 
-        for image in images: #this for loop handles whether the image is the huey bot
-            total_pixels = np.shape(image)[0]*np.shape(image)[1]
-
+        for image in images: # this for loop handles whether the image is the huey bot
             if image is None:
                 print("Warning: One of the images is None, skipping...")
                 continue
             
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
-            # print("OOGABOOGA", color_pixel_count)
-
             image_area = image.size/3
             color_percentage = color_pixel_count/image_area
-            # print(f"OOGABOOGA {color_pixel_count}, {image_area}, {color_percentage}")
 
             bot_color_percentages.append(color_percentage)
-            #check if the next if statement is redundant since we are tracking the percentages with the list...
+            # check if the next if statement is redundant since we are tracking the percentages with the list...
             # and sorting it to find the max. potentially, we do not need this calculation. Another note,
             # the color percentages are very variable during the match so i don't know if we should just 
             # continuously set a max.      
@@ -100,9 +98,9 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
                 max_color_percentage = color_percentage
 
         bot_color_percentages.sort()
-        #self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2]))
+        # self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2]))
         
-        if threshold_set: #Set initial threshold
+        if threshold_set: # Set initial threshold
             if len(bot_color_percentages) > 1 and bot_color_percentages[-1] > 0:
                 self.huey_color_percentage_threshold = max((bot_color_percentages[-1] + bot_color_percentages[-2]) / 2, MIN_THRESHOLD)
                 print("Threshold: " + str(self.huey_color_percentage_threshold))
@@ -114,7 +112,7 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
         elif len(bot_color_percentages) > 1 and max_color_percentage < min(MIN_THRESHOLD, self.huey_color_percentage_threshold):
             our_bot_image = None
         
-        #Writing information to be graphed
+        # Writing information to be graphed
         if len(bot_color_percentages) >= 2:
             self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2],self.huey_color_percentage_threshold))
         if len(bot_color_percentages) == 1:
@@ -215,9 +213,9 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
         points = [centroid_front, centroid_back]
         centroid_front, centroid_back = get_missing_point(points)
 
-    # Ensure we have exactly 2 points for front and back
-    if len(centroid_front) < 2 or len(centroid_back) < 2:
-        return np.array([[], []])  # Return empty arrays if not enough points
+    # # Ensure we have exactly 2 points for front and back
+    # if len(centroid_front) < 2 or len(centroid_back) < 2:
+    #     return np.array([[], []])  # Return empty arrays if not enough points
 
     # Convert to numpy arrays with consistent shape
     front_array = np.array(centroid_front[:2])  # Take first 2 points if more exist
@@ -225,7 +223,7 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     
     return np.array([front_array, back_array])
 
-def two_corners(centroid_points: np.ndarray, previous_orientation: float) -> float:
+def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagonals: deque, sides: deque) -> float:
     """
     Handles orientation calculation when only 2 points are detected.
     """
@@ -250,9 +248,78 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float) -> flo
 
     # CASE 2: 1 Front and 1 Back Corner detected.
     elif len(front_points) == 1 and len(back_points) == 1:
-        raise ValueError("Cannot reliably calculate orientation with 1 front and 1 back point using perpendicular logic.")
+        if len(diagonals) > 0:
+            diagonal_avg = sum(diagonals)/len(diagonals)
+            sides_avg = sum(sides)/len(sides)
+            cutoff = (diagonal_avg + sides_avg)/2
+            corner_distance = distance(front_points[0], back_points[0])
+
+            dx = front_points[0][0] - back_points[0][0]
+            dy = front_points[0][1] - back_points[0][1]
+            angle = math.atan2(dy,dx)
+            
+            # CASE 2.1: Both corners are on the same side
+            if (corner_distance < cutoff):
+                print(f"🌫️🌫️🌫️🌫️🌫️CORNERS ON SAME SIDE: {angle} degrees")
+                return angle
+            
+            # CASE 2.2: The corners are diagonal
+            else:
+                p1 = (angle + 45) % 360
+                p2 = (angle - 45) % 360
+                print(f"🌈🌈🌈CORNERS ON DIFFERENT SIDE: {p1} or {p2} degrees🌈🌈🌈")
+                
+                return pick_closest_angle(p1, p2, previous_orientation)
 
     raise ValueError(f"Invalid point configuration: Front={len(front_points)}, Back={len(back_points)}")
+
+def calc_diagonal_and_side_length(centroids, diagonals, sides):
+    """
+    Helper to calculate the diagonal and side length if we have 4 corners
+    We use the average of the last 20 diagonal and side lenghts (1.5d and d) in the case of 1 front 1 back corner
+    """
+    
+    if len(centroids) == 2 and len(centroids[0]) == len(centroids[1]) == 2:
+        # Left distances
+        hypo_l = (np.linalg.norm(centroids[0][0] - centroids[1][1]))
+        side_l = (np.linalg.norm(centroids[0][0] - centroids[1][0]))
+
+        # Right distances
+        hypo_r = (np.linalg.norm(centroids[0][1] - centroids[1][0]))
+        side_r = (np.linalg.norm(centroids[0][1] - centroids[1][1]))
+
+        if  hypo_l < side_l: # Identify longest as hypotenuse
+            temp = hypo_l
+            hypo_l = side_l
+            side_l = temp
+        
+        if  hypo_r < side_r:
+            temp = hypo_r
+            hypo_r = side_r
+            side_r = temp
+
+        diagonals.append(hypo_l)
+        diagonals.append(hypo_r)
+        sides.append(side_l)
+        sides.append(side_r)
+
+        # left_diff = abs(diagonals[-2] - sides[-2])
+        # right_diff = abs(diagonals[-1] - sides[-1])
+        # # ratio.append((diagonals[-2]+ diagonals[-1])/(sides[-2]+sides[-1]))
+        # left_diff.append(left_diff)
+        # right_diff.append(right_diff)
+        # print(f"LEFT diff: {left_diff}, RIGHT diff: {right_diff}")
+    
+        # ax = plt.gca()
+        # ax.relim()
+        # ax.autoscale_view()
+        # plt.plot(left_diff, label="Left Difference", color = 'blue')
+        # plt.plot(right_diff, label="Right Difference", color='coral')
+        # plt.plot(diagonals, label = "Diagonals", color = 'mediumpurple')
+        # plt.plot(sides, label = "Sides", color = "xkcd:browny orange")
+        # plt.plot(ratio, label = "Ratio of Diagonals/Sides", color = "xkcd:blue with a hint of purple")
+        # plt.draw()
+        # plt.pause(0.1)
 
 def pick_closest_angle(angle1: float, angle2: float, target: float) -> float:
     """Helper to find which candidate is closer to the previous orientation."""

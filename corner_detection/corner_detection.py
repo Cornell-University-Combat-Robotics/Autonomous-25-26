@@ -2,7 +2,7 @@ import os
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from .corner_detection_helpers import find_our_bot, find_centroids, compute_angle_between_midpoints, two_corners, math
+from .corner_detection_helpers import find_our_bot, find_centroids, compute_angle_between_midpoints, two_corners, math, deque, calc_diagonal_and_side_length
 
 class RobotCornerDetection:
     """
@@ -10,6 +10,8 @@ class RobotCornerDetection:
     based on their unique colors and shapes.
     """
     
+    LENGTH_BUFFER = 20
+
     def __init__(self, selected_colors: list, display_final_image: bool = False, display_possible_hueys: bool = False, color_percentage_rows = []):
         """
         Initializes the RobotCornerDetection class.
@@ -32,21 +34,21 @@ class RobotCornerDetection:
         self.huey_color_percentage_threshold = -1
         self.color_percentage_rows = color_percentage_rows
         self.centroids = []
-        self.diagonals = []
-        self.sides = []
+        self.diagonals = deque(maxlen=RobotCornerDetection.LENGTH_BUFFER)
+        self.sides = deque(maxlen=RobotCornerDetection.LENGTH_BUFFER)
         self.left_diff = []
         self.right_diff = []
         self.ratio = []
 
-        plt.ion()
-        # fig, ax = plt.subplots()
-        # plt.plot(self.left_diff, label="Left Difference")
-        # plt.plot(self.right_diff, label="Right Difference")
-        plt.plot(self.diagonals, label = "Diagonals")
-        plt.plot(self.sides, label = "Sides")
-        plt.grid(True)
-        plt.legend()
-        plt.show()
+        # plt.ion()
+        # # fig, ax = plt.subplots()
+        # # plt.plot(self.left_diff, label="Left Difference")
+        # # plt.plot(self.right_diff, label="Right Difference")
+        # plt.plot(self.diagonals, label = "Diagonals")
+        # plt.plot(self.sides, label = "Sides")
+        # plt.grid(True)
+        # plt.legend()
+        # plt.show()
 
     def set_bots(self, bots: dict):
         self.bots = bots
@@ -134,57 +136,16 @@ class RobotCornerDetection:
                 self.centroids = centroid_points
 
                 print(self.centroids)
-
-                if len(self.centroids) == 2 and len(self.centroids[0]) == len(self.centroids[1]) == 2:
-
-                        # Left distances
-                        hypo_l = (np.linalg.norm(self.centroids[0][0] - self.centroids[1][1]))
-                        side_l = (np.linalg.norm(self.centroids[0][0] - self.centroids[1][0]))
-
-                        # Right distances
-                        hypo_r = (np.linalg.norm(self.centroids[0][1] - self.centroids[1][0]))
-                        side_r = (np.linalg.norm(self.centroids[0][1] - self.centroids[1][1]))
-
-                        if  hypo_l < side_l: # Identify longest as hypotenuse
-                            temp = hypo_l
-                            hypo_l = side_l
-                            side_l = temp
-                        
-                        if  hypo_r < side_r:
-                            temp = hypo_r
-                            hypo_r = side_r
-                            side_r = temp
-
-                        self.diagonals.append(hypo_l)
-                        self.diagonals.append(hypo_r)
-
-                        self.sides.append(side_l)
-                        self.sides.append(side_r)
-
-                        left_diff = abs(self.diagonals[-2] - self.sides[-2])
-                        right_diff = abs(self.diagonals[-1] - self.sides[-1])
-                        self.ratio.append((self.diagonals[-2]+ self.diagonals[-1])/(self.sides[-2]+self.sides[-1]))
-                        self.left_diff.append(left_diff)
-                        self.right_diff.append(right_diff)
-                        # print(f"LEFT diff: {left_diff}, RIGHT diff: {right_diff}")
-                    
-                        ax = plt.gca()
-                        ax.relim()
-                        ax.autoscale_view()
-                        # plt.plot(self.left_diff, label="Left Difference", color = 'blue')
-                        # plt.plot(self.right_diff, label="Right Difference", color='coral')
-                        # plt.plot(self.diagonals, label = "Diagonals", color = 'mediumpurple')
-                        # plt.plot(self.sides, label = "Sides", color = "xkcd:browny orange")
-                        plt.plot(self.ratio, label = "Ratio of Diagonals/Sides", color = "xkcd:blue with a hint of purple")
-                        plt.draw()
-                        plt.pause(0.1)
+                
+                # Every time we calculate 4 points, calculate diagonal and side length in the case of 1 front 1 back corner in the future
+                calc_diagonal_and_side_length(self.centroids, self.diagonals, self.sides)
                         
                 # print(f"🇬🇧🛌🇰🇷DIALGA: {self.diagonals}, 🇬🇧SYDNEY: {self.sides}")
 
                 if (len(centroid_points[0]) + len(centroid_points[1]) == 2):
                     if previous_orientations is not None and len(previous_orientations) > 0:
                         previous_orientation = previous_orientations[0]
-                        huey["orientation"] = two_corners(centroid_points, previous_orientation)
+                        huey["orientation"] = two_corners(centroid_points, previous_orientation, self.diagonals, self.sides)
                     else:
                         huey["orientation"] = None
                     return {"huey": huey, "enemy": enemy_bots}
@@ -192,7 +153,6 @@ class RobotCornerDetection:
                 elif (len(centroid_points[0]) + len(centroid_points[1]) < 2):
                     print("Less than 2 corners found")
                     return {"huey": huey, "enemy": enemy_bots}
-
 
                 front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5
                 back_midpoint = (centroid_points[1][0] + centroid_points[1][1]) * 0.5

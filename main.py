@@ -61,7 +61,9 @@ frame_rate = 60
 # camera_number = folder + "/test_videos/crude_rot_huey.mp4"
 # camera_number = folder + "/test_videos/two_huey_real_cage_800.mp4"
 # camera_number   = folder + "/test_videos/huey_vs_prince.mp4"
-camera_number   = folder + "/test_videos/vangoghuey.mp4"
+# camera_number   = folder + "/test_videos/vangoghuey.mp4"
+# camera_number   = folder + "/test_videos/diagona_huey.mp4"
+camera_number   = folder + "/test_videos/blink224_huey.mp4"
 # camera_number = 1
 
 if IS_TRANSMITTING:
@@ -100,7 +102,6 @@ def main():
 
         # Get predictor, if anything goes wrong here, call Aaron 717-984-3250 #TODO: Document better
         predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
-
         corner_detection = RobotCornerDetection(selected_colors, False, False)
         algorithm = None
         # TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
@@ -125,7 +126,7 @@ def main():
         else:
             bb_output_dir = None
 
-        st = RuntimeSheet(SHEET_RUNTIME)
+        # st = RuntimeSheet(SHEET_RUNTIME)
 
         # ----------------------------------------------------------------------
         # 8. Match begins
@@ -234,7 +235,6 @@ def main():
                             cv2.imwrite(f"{frame_save_dir}/quantized_bot_{bot}.png", detected_bots["bots"][bot]["img"])
 
                 corner_detection.set_bots(detected_bots)
-
                 # 12. Run Object Detection's results through Corner Detection
                 t = ptime()
                 previous_orientations = algorithm.previous_orientations()
@@ -318,7 +318,7 @@ def main():
             cap.release()
             cv2.destroyAllWindows()
 
-        rs.save("runtimesheet")
+        # rs.save("runtimesheet")
 
 if __name__ == "__main__":
     main()
