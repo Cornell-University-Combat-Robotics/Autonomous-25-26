@@ -54,7 +54,7 @@ class YoloModel(TemplateModel):
     def predict(self, img, show=False, rs=None):
         # Max_det = max number of detections, 3 for housebot + 2 bots. Stops YOLO from hallucinating extra bots when confidence is low. Iou=0.8 to prevent multiple detections on same bot.
         predict_kwargs = {"verbose": False, "task": 'detect',
-                          "imgsz": self.img_size, "max_det": 5, "iou": 0.8}
+                          "imgsz": self.img_size, "max_det": 3, "iou": 0.45}
         if self.device is not None:
             predict_kwargs["device"] = self.device
 

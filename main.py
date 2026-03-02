@@ -37,7 +37,7 @@ from warp_main import warp_map
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
 # Re-do warp & color selection
-WARP_AND_COLOR_PICKING = True
+WARP_AND_COLOR_PICKING = False
 # Display frame smaller for selection with 1080p video, 1.0 default
 DISPLAY_SCALE = 0.8
 # True to send transmissions to live Huey via Arduino
@@ -356,26 +356,28 @@ def main():
                     cv2.imshow("Quantized Huey", frames["huey"])
 
             # pollKey handles the GUI event loop
-            key = cv2.pollKey() & 0xFF
+            key = cv2.pollKey()
 
-            if key == ord("q"):
-                stop_event.set()
-            elif key == ord("f"):
-                print("Backup flipped key pressed")
-                if shared_state["flipped"] is None:
-                    shared_state["flipped"] = True
-                else:
-                    shared_state["flipped"] = not shared_state["flipped"]
-                if shared_state["paused"]:
+            if key != -1:
+                key_8bit = key & 0xFF
+                if key_8bit == ord("q"):
+                    stop_event.set()
+                elif key_8bit == ord("f"):
+                    print("Backup flipped key pressed")
+                    if shared_state["flipped"] is None:
+                        shared_state["flipped"] = True
+                    else:
+                        shared_state["flipped"] = not shared_state["flipped"]
+                    if shared_state["paused"]:
+                        shared_state["skip_frame"] = True
+                elif key_8bit == ord("p"):
+                    shared_state["paused"] = not shared_state["paused"]
+                    shared_state["skip_frame"] = False
+                    print(
+                        f"Playback {'paused' if shared_state['paused'] else 'resumed'}")
+                elif shared_state["paused"]:
+                    # Any other key while paused skips one frame
                     shared_state["skip_frame"] = True
-            elif key == ord("p"):
-                shared_state["paused"] = not shared_state["paused"]
-                shared_state["skip_frame"] = False
-                print(
-                    f"Playback {'paused' if shared_state['paused'] else 'resumed'}")
-            elif key != -1 and shared_state["paused"]:
-                # Any other key while paused skips one frame
-                shared_state["skip_frame"] = True
 
             # Pass key to perception thread (resetting it to None if no key pressed is handled by waitKey returning 255)
             shared_state["key"] = key if key != -1 else None
