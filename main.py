@@ -355,7 +355,7 @@ def main():
                     cv2.imshow("Quantized Huey", frames["huey"])
 
             # pollKey handles the GUI event loop
-            key = cv2.pollKey()
+            key = cv2.pollKey() & 0xFF
 
             if key == ord("q"):
                 stop_event.set()
