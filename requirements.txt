@@ -23,3 +23,4 @@ onnxruntime==1.22.1              # import onnxruntime
 openvino==2025.4.1               # import openvino
 openpyxl==3.1.2                  # import openpyxl (for Excel files)
 coremltools>=9.0                # import coremltools (for Core ML models)
+plotly>=6.5.2                   # import plotly, better graphs

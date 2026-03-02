@@ -10,7 +10,7 @@ import torch
 from time import perf_counter as ptime
 
 from camera_stream import CameraStream
-from runtimesheet import RuntimeSheet
+from runtimesheet.runtimesheet import RuntimeSheet
 import matplotlib.pyplot as plt
 from algorithm.ram import Ram
 from corner_detection.corner_detection import RobotCornerDetection
@@ -82,7 +82,8 @@ OD_IMG_SIZE = 320
 
 folder = os.getcwd() + "/main_files"
 
-camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = 1
 # camera_number = 0
 
@@ -112,7 +113,7 @@ def main():
             captured_image = key_frame(
                 stream, CAMERA_STREAM, selection_scale=DISPLAY_SCALE)
         else:
-            cap = cv2.VideoCapture(camera_number, cv2.CAP_FFMPEG)
+            cap = cv2.VideoCapture(camera_number)
             captured_image = key_frame(
                 cap, CAMERA_STREAM, selection_scale=DISPLAY_SCALE)
 
@@ -431,7 +432,7 @@ def main():
             cap.release()
             cv2.destroyAllWindows()
 
-        rs.save("runtimesheet")
+        rs.save("itertimes")
 
 
 if __name__ == "__main__":
