@@ -150,7 +150,7 @@ def get_predictor(MODEL_NAME, OD_IMG_SIZE):
 
 def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel):
     # 5.1: Defining Transmission Object if we're using a live video
-    ser = OurSerial()
+    ser = OurSerial(baudrate=115200) # Updated from 9600 to handle higher fps, push new arduino code
     motor_group = Motor(ser=ser, channel=speed_motor_channel,
                         channel2=turn_motor_channel)
     if JANK_CONTROLLER:
