@@ -93,7 +93,10 @@ class CameraStream:
 if __name__ == "__main__":
     # Initialize the stream
     # Change '0' to your specific camera index if needed
-    cam = CameraStream(src=1).start()
+    
+    camera_number = 1
+    
+    cam = CameraStream(src=camera_number).start()
     
     print("Camera Stream Started. Press 'q' to quit.")
 
