@@ -42,7 +42,7 @@ def key_frame(stream, CAMERA_STREAM, selection_scale=1.0):
             elif key == ord("0"):  # Press '0' to capture the image and exit
                 captured_image = frame.copy()
                 return captured_image
-            time.sleep(0.01)
+            time.sleep(0.02)
         else:
             print("Failed to read frame" + "\n")
             return captured_image

@@ -1,14 +1,22 @@
 import cv2
 import threading
 import time
+import platform
 
 class CameraStream:
     def __init__(self, src):
-        # 1. Use the 'sum' trick for Windows DirectShow
-        self.cap = cv2.VideoCapture(src, cv2.CAP_DSHOW)
+        # Use CAP_DSHOW if on Windows, if on Mac use AVFoundation, otherwise use default
+        if platform.system() == "Windows":
+            self.cap = cv2.VideoCapture(src, cv2.CAP_DSHOW)
+        elif platform.system() == "Darwin":
+            self.cap = cv2.VideoCapture(src, cv2.CAP_AVFOUNDATION)
+        else:
+            self.cap = cv2.VideoCapture(src)
         
         # 2. Set Codec FIRST (Essential for Elgato bandwidth)
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+        
+        # Elgato FaceCam Mk2 can capture at 1080p 60fps or 720p 120fps, among others
         
         # 3. Set Resolution
         # self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
@@ -39,21 +47,10 @@ class CameraStream:
             if not self.cap.isOpened():
                 self.stopped = True
                 
-                
-            # print("try GRAB")
-                
             ret, frame = self.cap.read()
             if ret:
                 self.ret, self.frame = ret, frame
                 self.frame_count = self.frame_count + 1
-                # print("Time between grabs: " + str(time.time() - last_success))
-                last_success = time.time()
-            else:
-                # If the camera hiccups, don't kill the thread immediately
-                # time.sleep(0.001) 
-                continue
-            
-            # time.sleep(0.003)
 
     def read(self):
         return self.ret, self.frame

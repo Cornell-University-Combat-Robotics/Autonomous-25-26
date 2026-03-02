@@ -36,22 +36,38 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
-DISPLAY_SCALE = 0.5             # Display frame smaller for selection with 1080p video, 1.0 default
-IS_TRANSMITTING = False         # True if connected to live Huey
-WEAPON_ON = False               # True if weapon motor should be on
-SHOW_FRAME = True               # Show camera feed frames
-IS_ORIGINAL_FPS = True          # Process every captured frame, False -> cap at FRAME_RATE
-FRAME_RATE = 60                 # FPS used for algo stuff, update to expected FPS on your system.
-DISPLAY_ANGLES = True           # Only show angles if SHOW_FRAME is True
-SHOW_HUD = True                 # Show heads-up display with FPS, speed, turn, frame number
-SHOW_QUANTIZED_HUEY = False     # Display the quantized bounding box of Huey in separate window
-COLOR_QUANTIZATION = True       # True if color quantization is on
-CAN_RECOVER = True              # True if want recovery
-CAMERA_STREAM = False           # True if using live camera stream, False if using pre-recorded video
-SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
-SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
-BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
+# Re-do warp & color selection
+WARP_AND_COLOR_PICKING = False   
+# Display frame smaller for selection with 1080p video, 1.0 default
+DISPLAY_SCALE = 0.8
+# True to send transmissions to live Huey via Arduino
+IS_TRANSMITTING = False         
+# True if weapon motor should be on
+WEAPON_ON = False               
+# Show camera feed frames
+SHOW_FRAME = True            
+# Only use when SHOW_FRAME is True   
+DISPLAY_ANGLES = True           
+# Process every captured frame, False -> cap at FRAME_RATE
+IS_ORIGINAL_FPS = True
+# FPS used for algo stuff, update to expected FPS on your system.
+FRAME_RATE = 120
+# Show heads-up display with FPS, speed, turn, frame number
+SHOW_HUD = True
+# Display the quantized bounding box of Huey in separate window
+SHOW_QUANTIZED_HUEY = False
+# True to use color quantization, should always be True
+COLOR_QUANTIZATION = True    
+# True to use recovery 
+CAN_RECOVER = True             
+# True if using live camera stream, False if using a video file
+CAMERA_STREAM = False
+# Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
+SHEET_RUNTIME = True
+# Save bounding box images every BBOX_SAVE_FREQUENCY iterations
+SAVE_BBOXES = False
+# How often to save bounding box images (every n iterations)
+BBOX_SAVE_FREQUENCY = 10
 
 # MODEL_NAME = "SmallComp"        # Used for comp, best accuracy if you have the compute for it.
 # Use with lower image size for faster performance, not much worse accuracy.
@@ -59,7 +75,7 @@ MODEL_NAME = "NanoSizeVariant"
 
 # Image size for object detection model, lower number -> faster, slightly worse accuracy.
 # 640 default, 416 fast, must be multiple of 32. Don't go below 320.
-OD_IMG_SIZE = 416
+OD_IMG_SIZE = 320
 
 # If model gives a bug, ask Aaron which model/image size to use for your system.
 # TODO: Documentation for available models
@@ -82,7 +98,8 @@ rs = RuntimeSheet(use=SHEET_RUNTIME)
 frame_buffer = deque(maxlen=1)
 stop_event = threading.Event()
 # Shared state for controls passed from UI thread to Perception thread
-shared_state = {"key": None, "flipped": None, "paused": False}
+shared_state = {"key": None, "flipped": None,
+                "paused": False, "skip_frame": False}
 
 
 def main():
@@ -95,7 +112,7 @@ def main():
             captured_image = key_frame(
                 stream, CAMERA_STREAM, selection_scale=DISPLAY_SCALE)
         else:
-            cap = cv2.VideoCapture(camera_number)
+            cap = cv2.VideoCapture(camera_number, cv2.CAP_FFMPEG)
             captured_image = key_frame(
                 cap, CAMERA_STREAM, selection_scale=DISPLAY_SCALE)
 
@@ -175,8 +192,12 @@ def main():
 
                 # Handle Pause (Simple spin wait)
                 if shared_state["paused"]:
-                    time.sleep(0.1)
-                    continue
+                    if shared_state["skip_frame"]:
+                        shared_state["skip_frame"] = False
+                        # Proceed to process one frame
+                    else:
+                        time.sleep(0.05)
+                        continue
 
                 time_elapsed = ptime() - prev
 
@@ -327,8 +348,8 @@ def main():
                 if frames["huey"] is not None and SHOW_QUANTIZED_HUEY:
                     cv2.imshow("Quantized Huey", frames["huey"])
 
-            # WaitKey handles the GUI event loop
-            key = cv2.waitKey(1) & 0xFF
+            # pollKey handles the GUI event loop
+            key = cv2.pollKey()
 
             if key == ord("q"):
                 stop_event.set()
@@ -338,18 +359,25 @@ def main():
                     shared_state["flipped"] = True
                 else:
                     shared_state["flipped"] = not shared_state["flipped"]
+                if shared_state["paused"]:
+                    shared_state["skip_frame"] = True
             elif key == ord("p"):
                 shared_state["paused"] = not shared_state["paused"]
+                shared_state["skip_frame"] = False
                 print(
                     f"Playback {'paused' if shared_state['paused'] else 'resumed'}")
+            elif key != -1 and shared_state["paused"]:
+                # Any other key while paused skips one frame
+                shared_state["skip_frame"] = True
 
             # Pass key to perception thread (resetting it to None if no key pressed is handled by waitKey returning 255)
-            shared_state["key"] = key if key != 255 else None
+            shared_state["key"] = key if key != -1 else None
 
             # Check if thread died
             if not perception_thread.is_alive():
                 break
-
+        
+        # Wait for the background perception thread to finish its current iteration and exit
         perception_thread.join()
 
         if CAMERA_STREAM:
