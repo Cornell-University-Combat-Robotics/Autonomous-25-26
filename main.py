@@ -37,7 +37,7 @@ from warp_main import warp_map
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
 # Re-do warp & color selection
-WARP_AND_COLOR_PICKING = False
+WARP_AND_COLOR_PICKING = True
 # Display frame smaller for selection with 1080p video, 1.0 default
 DISPLAY_SCALE = 0.8
 # True to send transmissions to live Huey via Arduino
@@ -83,7 +83,8 @@ OD_IMG_SIZE = 320
 folder = os.getcwd() + "/main_files"
 
 # camera_number = folder + "/test_videos/huey_vs_prince.mp4"
-camera_number = folder + "/test_videos/huey_hell.mp4"
+# camera_number = folder + "/test_videos/huey_hell.mp4"
+camera_number = folder + "/test_videos/orbital_huey.mp4"
 # camera_number = 1
 # camera_number = 0
 
