@@ -24,7 +24,4 @@ auto/
 auto26/
 matt_env/
 color_output.csv
-runtimesheet.csv
-runtimesheet.png
-runtimesheet.xlsx
-runtimesheet_stacked.png
+runtimesheet/
