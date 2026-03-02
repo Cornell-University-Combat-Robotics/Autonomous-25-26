@@ -240,6 +240,7 @@ def main():
                     key = shared_state["key"]
                     is_flipped = -1 if shared_state["flipped"] else 1
 
+                    # Warp image to homography matrix using maps
                     with rs.log_timing("Warp"):
                         warped_frame = warp_map(frame, map_x, map_y)
 
@@ -289,6 +290,16 @@ def main():
                     with rs.log_timing("Algorithm"):
                         move_dictionary = algorithm.ram_ram(
                             detected_bots_with_data, CAN_RECOVER, fps=FRAME_RATE, key=key)
+                        
+                    # 14. Transmitting the motor values to Huey's if we're using a live video
+                    with rs.log_timing("Transmission"):
+                        if IS_TRANSMITTING:
+                            speed = move_dictionary["speed"]
+                            turn = move_dictionary["turn"]
+                            motor_group.move(speed*is_flipped, turn * -1)
+                            # Added this post-comp, see if it works?
+                            if WEAPON_ON:
+                                weapon_motor_group.move(1)
 
                     # Prepare Main Display Image
                     main_display_img = None
@@ -320,13 +331,6 @@ def main():
                         "main": main_display_img,
                         "huey": huey_display_img
                     })
-
-                    # 14. Transmitting the motor values to Huey's if we're using a live video
-                    with rs.log_timing("Transmission"):
-                        if IS_TRANSMITTING:
-                            speed = move_dictionary["speed"]
-                            turn = move_dictionary["turn"]
-                            motor_group.move(speed*is_flipped, turn * -1)
 
                     rs.dump()
 
