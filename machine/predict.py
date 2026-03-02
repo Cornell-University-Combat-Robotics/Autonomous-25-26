@@ -62,16 +62,6 @@ class YoloModel(TemplateModel):
 
         result = results[0]
 
-        if rs and hasattr(result, 'speed'):
-            # YOLO speed is in ms, RuntimeSheet expects seconds
-            rs.log("OD Preprocess", result.speed.get('preprocess', 0) / 1000.0)
-            rs.log("OD Inference", result.speed.get('inference', 0) / 1000.0)
-            rs.log("OD Postprocess", result.speed.get(
-                'postprocess', 0) / 1000.0)
-
-        if rs:
-            custom_start = time.perf_counter()
-
         # 1. BATCH EXTRACT EVERYTHING TO CPU ONCE
         # This is the secret sauce. .cpu().numpy() is faster than calling .tolist() inside a loop.
         boxes_xyxy = result.boxes.xyxy.cpu().numpy()

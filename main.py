@@ -37,17 +37,17 @@ from warp_main import warp_map
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
 # Re-do warp & color selection
-WARP_AND_COLOR_PICKING = False   
+WARP_AND_COLOR_PICKING = False
 # Display frame smaller for selection with 1080p video, 1.0 default
 DISPLAY_SCALE = 0.8
 # True to send transmissions to live Huey via Arduino
-IS_TRANSMITTING = False         
+IS_TRANSMITTING = False
 # True if weapon motor should be on
-WEAPON_ON = False               
+WEAPON_ON = False
 # Show camera feed frames
-SHOW_FRAME = True            
-# Only use when SHOW_FRAME is True   
-DISPLAY_ANGLES = True           
+SHOW_FRAME = True
+# Only use when SHOW_FRAME is True
+DISPLAY_ANGLES = True
 # Process every captured frame, False -> cap at FRAME_RATE
 IS_ORIGINAL_FPS = True
 # FPS used for algo stuff, update to expected FPS on your system.
@@ -57,9 +57,9 @@ SHOW_HUD = True
 # Display the quantized bounding box of Huey in separate window
 SHOW_QUANTIZED_HUEY = False
 # True to use color quantization, should always be True
-COLOR_QUANTIZATION = True    
-# True to use recovery 
-CAN_RECOVER = True             
+COLOR_QUANTIZATION = True
+# True to use recovery
+CAN_RECOVER = True
 # True if using live camera stream, False if using a video file
 CAMERA_STREAM = False
 # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
@@ -245,6 +245,7 @@ def main():
                         warped_frame = warp_map(frame, map_x, map_y)
 
                     # 11. Run the Warped Image through Object Detection
+                    # Internal timings (Preprocess, Inference, etc.) are handled inside predict()
                     with rs.log_timing("Object Detection"):
                         detected_bots = predictor.predict(warped_frame)
 
@@ -290,7 +291,7 @@ def main():
                     with rs.log_timing("Algorithm"):
                         move_dictionary = algorithm.ram_ram(
                             detected_bots_with_data, CAN_RECOVER, fps=FRAME_RATE, key=key)
-                        
+
                     # 14. Transmitting the motor values to Huey's if we're using a live video
                     with rs.log_timing("Transmission"):
                         if IS_TRANSMITTING:
@@ -380,7 +381,7 @@ def main():
             # Check if thread died
             if not perception_thread.is_alive():
                 break
-        
+
         # Wait for the background perception thread to finish its current iteration and exit
         perception_thread.join()
 
