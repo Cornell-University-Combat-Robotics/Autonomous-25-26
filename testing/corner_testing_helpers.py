@@ -52,3 +52,5 @@ def angle_difference(a1, a2):
     if diff > 180:
         diff = 360 - diff
     return abs(diff)
+
+

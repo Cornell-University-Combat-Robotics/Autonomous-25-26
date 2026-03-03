@@ -18,7 +18,7 @@ from main_helpers import (
 )
 
 #Settings
-SAMPLE = True
+SAMPLE = False
 NONE_SCORE = 45 #How "bad" is it to get no orientation
 
 # Change this to your folder path
@@ -41,7 +41,7 @@ print(selected_colors)
 
 corner_detection = RobotCornerDetection(selected_colors, False, False)
 
-def detect_corners(quant_settings=False):
+def test_detect_corners(quant_settings=False):
     total_frames = 0
     frames_with_orientation = 0
 
@@ -102,8 +102,6 @@ def detect_corners(quant_settings=False):
 
                     if true_angle:
                         print(f"Angle difference: {current_angle_difference}")
-
-
                 
                 cv2.imshow("Image Viewer", quantized_img)
                 print(f"Showing: {filename} (quantized)")
@@ -113,7 +111,7 @@ def detect_corners(quant_settings=False):
                     print("--------------------------------")
                     print(f"Settings: {quant_settings}")
                     print(f"Frames with orientation: {frames_with_orientation} / {total_frames}")
-                    print(f"Average Theta: {total_theta/frames_with_orientation}")
+                    print(f"Average Theta: {total_theta/max(frames_with_orientation, 1)}")
                     print(f"Score: {total_score/total_frames}")
                     print("--------------------------------")
                     return (total_score/total_frames)
@@ -122,17 +120,21 @@ def detect_corners(quant_settings=False):
 
     return (total_score/total_frames)
 
+def test_detect_corners_black_box(threshold, L_weight, RG_weight, BY_weight):
+    return test_detect_corners(quant_settings={
+        "threshold": threshold,
+        "quantization_weights": [L_weight, RG_weight, BY_weight]
+    })
+
+#MAIN:
 print("PRESS 0 TO SWITCH IMAGES AND N TO ITERATE QUANTIZATION SETTINGS")
 
 orientation_scores = {}
 
-for i in range(15, 35, 5):
-
-    orientation_scores[i] = detect_corners(quant_settings={
-        "threshold": i
+for i in range(20, 45, 3):
+    orientation_scores[i] = test_detect_corners(quant_settings={
+        "threshold": i,
+        "quantization_weights": [0.2, 0.4, 0.4]
     })
-
-    # orientation_scores[i]['Orientation (captured, total)'] = (frames_with_orientation, total_frames)
-    # print(f"Threshold = {i}% Frames with orientation {frames_with_orientation}/{total_frames} => {(frames_with_orientation/total_frames)*100:.002f}%")
 
 print(str(orientation_scores))

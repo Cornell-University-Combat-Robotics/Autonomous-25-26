@@ -240,18 +240,19 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
 
 def initialize_quantization():
     dummy = np.zeros((8, 8, 3), dtype=np.uint8)
-    # dummy = np.zeros((20, 8, 3), dtype=np.uint8)
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2LAB)
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2HSV)
 
-def quantize(detected_bots, selected_colors, show, is_flipped=False, settings=False):
+def quantize(detected_bots, selected_colors, show, is_flipped=False, settings=None):
     if(is_flipped == 1):
         threshold = 18
     else:
         threshold = 22
 
+    custom_weights = None
     if settings:
         threshold = settings['threshold']
+        custom_weights = settings['quantization_weights']
 
     colors_hsv_1x = np.array(selected_colors).reshape(1, -1, 3)
 
@@ -264,7 +265,7 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False, settings=Fa
     
     bgr_colors = bgr_colors_1x.reshape(-1, 3)  # (N_colors, 3)
     for bot in detected_bots["bots"]:
-        bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, thresh_lab=threshold,keep_background=False, show=show)
+        bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, thresh_lab=threshold,keep_background=False, show=show, custom_weights=custom_weights)
 
     return detected_bots
 
