@@ -53,7 +53,8 @@ SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQU
 BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
 
 # MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
-MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
+# MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
+MODEL_NAME = "Nano320Temp"        # Model trained with Huey images from matches, trained at 320 image size
 
 # Image size for object detection model, lower number -> faster, slightly worse accuracy.
 # 640 default, 416 fast, must be multiple of 32. Don't go below 320.
@@ -64,8 +65,8 @@ OD_IMG_SIZE = 320
 folder = os.getcwd() + "/main_files"
 
 # camera_number = folder + "/test_videos/huey_vs_prince.mp4"
-camera_number = folder + "/test_videos/huey_hell.mp4"
-# camera_number = folder + "/test_videos/orbital_huey.mp4"
+# camera_number = folder + "/test_videos/huey_hell.mp4"
+camera_number = folder + "/test_videos/orbital_huey.mp4"
 # camera_number = 1
 # camera_number = 0
 
