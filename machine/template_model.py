@@ -15,7 +15,7 @@ class TemplateModel:
         """
         raise "Not implemented in subclass"
 
-    def predict(self, img: np.ndarray, confidence_threshold: float = 0.5, show: bool = False) -> dict:
+    def predict(self, img: np.ndarray, confidence_threshold: float = 0.5, show: bool = False, rs=None) -> dict:
         """
         Uses the model to make a prediction on a singular image, [img].
         All predictions above [confidence_threshold] are added to the resulting prediction dictionary.
