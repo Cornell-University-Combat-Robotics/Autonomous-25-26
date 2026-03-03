@@ -26,3 +26,4 @@ openvino==2026.0               # import openvino
 openpyxl==3.1.2                  # import openpyxl (for Excel files)
 coremltools>=9.0                # import coremltools (for Core ML models)
 plotly>=6.5.2                   # import plotly, better graphs
+cv2_enumerate_cameras           # Used for see_all_cameras.py

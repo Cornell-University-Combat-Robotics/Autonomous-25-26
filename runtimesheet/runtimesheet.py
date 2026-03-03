@@ -96,54 +96,62 @@ class RuntimeSheet:
             plt.legend()
             plt.savefig(output_name + ".png")
             # Vector format for infinite zoom
-            plt.savefig(output_name + ".svg")
-            plt.close()
+            
+            # Set to False for comp, don't want to spend a lot of time on these if we need to restart fast.
+            MAKE_COMPLEX_PLOTS = True
+            
+            if MAKE_COMPLEX_PLOTS:
+                plt.savefig(output_name + ".svg")
+                plt.close()
 
-            # Make a stacked area graph of the same data
-            plt.figure(figsize=(10, 5))
-            # Get columns to stack (excluding metadata and total)
-            stack_cols = [col for col in df.columns if col not in [
-                "Start Time", "End Time", "Total", "FPS10"] and df[col].sum() > 1]
+                # Make a stacked area graph of the same data
+                plt.figure(figsize=(10, 5))
+                # Get columns to stack (excluding metadata and total)
+                stack_cols = [col for col in df.columns if col not in [
+                    "Start Time", "End Time", "Total", "FPS10"] and df[col].sum() > 1]
 
-            if len(df) > 1 and stack_cols:
-                # Sort columns by average value (lowest to highest for bottom-to-top stacking)
-                sorted_cols = df[stack_cols].mean(
-                ).sort_values().index.tolist()
-                plt.stackplot(df.index[1:], [df[col][1:]
-                              for col in sorted_cols], labels=sorted_cols)
-                plt.ylim(0, (df["Total"].sum()/len(df)) * 2)
-                plt.xlabel("Iteration")
-                plt.ylabel("Time (ms)")
-                plt.title("Stacked Runtime Metrics Over Iterations")
-                plt.legend(loc='upper left')
-                plt.savefig(output_name + "_stacked.png")
-                # Vector format for infinite zoom
-                plt.savefig(output_name + "_stacked.svg")
-            plt.close()
+                if len(df) > 1 and stack_cols:
+                    # Sort columns by average value (lowest to highest for bottom-to-top stacking)
+                    sorted_cols = df[stack_cols].mean(
+                    ).sort_values().index.tolist()
+                    plt.stackplot(df.index[1:], [df[col][1:]
+                                for col in sorted_cols], labels=sorted_cols)
+                    plt.ylim(0, (df["Total"].sum()/len(df)) * 2)
+                    plt.xlabel("Iteration")
+                    plt.ylabel("Time (ms)")
+                    plt.title("Stacked Runtime Metrics Over Iterations")
+                    plt.legend(loc='upper left')
+                    plt.savefig(output_name + "_stacked.png")
+                    # Vector format for infinite zoom
+                    plt.savefig(output_name + "_stacked.svg")
+                plt.close()
 
-            # Interactive HTML Export using Plotly
-            try:
-                import plotly.express as px
+                # Interactive HTML Export using Plotly
+                try:
+                    import plotly.express as px
 
-                # Prepare a slice of the dataframe (skipping first iteration outlier)
-                pdf = df.iloc[1:].copy()
-                pdf['Iteration'] = pdf.index
+                    # Prepare a slice of the dataframe (skipping first iteration outlier)
+                    pdf = df.iloc[1:].copy()
+                    pdf['Iteration'] = pdf.index
 
-                # Interactive Line Chart
-                # render_mode='webgl' ensures high performance for 4000+ points
-                fig_line = px.line(pdf, x='Iteration', y=stack_cols,
-                                   title='Interactive Runtime Metrics (Line View)',
-                                   labels={
-                                       'value': 'Time (ms)', 'variable': 'Metric'},
-                                   render_mode='webgl')
-                fig_line.write_html(output_name + "_interactive.html")
+                    # Interactive Line Chart
+                    # render_mode='webgl' ensures high performance for 4000+ points
+                    fig_line = px.line(pdf, x='Iteration', y=stack_cols,
+                                    title='Interactive Runtime Metrics (Line View)',
+                                    labels={
+                                        'value': 'Time (ms)', 'variable': 'Metric'},
+                                    render_mode='webgl')
+                    fig_line.write_html(output_name + "_interactive.html")
 
-                # Interactive Stacked Area Chart
-                fig_stack = px.area(pdf, x='Iteration', y=sorted_cols,
-                                    title='Interactive Runtime Metrics (Stacked View)',
-                                    labels={'value': 'Time (ms)', 'variable': 'Metric'})
-                fig_stack.write_html(output_name + "_interactive_stacked.html")
+                    # Interactive Stacked Area Chart
+                    fig_stack = px.area(pdf, x='Iteration', y=sorted_cols,
+                                        title='Interactive Runtime Metrics (Stacked View)',
+                                        labels={'value': 'Time (ms)', 'variable': 'Metric'})
+                    fig_stack.write_html(output_name + "_interactive_stacked.html")
 
-            except ImportError:
-                print(
-                    "\n[Note] Plotly not found. For interactive HTML graphs, run: pip install plotly")
+                except ImportError:
+                    print(
+                        "\n[Note] Plotly not found. For interactive HTML graphs, run: pip install plotly")
+                    
+            else:
+                plt.close()
