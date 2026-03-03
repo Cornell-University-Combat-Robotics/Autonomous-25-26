@@ -1,7 +1,6 @@
 import os
 import time
 import cv2
-# import openvino as ov
 from dotenv import load_dotenv
 from ultralytics import YOLO
 
@@ -15,12 +14,117 @@ FONT = cv2.FONT_HERSHEY_SIMPLEX
 DEBUG = False
 
 
+class YoloModel(TemplateModel):
+    # General template for using YOLO to load model files and use them.
+
+    def __init__(self, model_name, model_type, image_size, device=None):
+        match model_type:
+            case "TensorRT":
+                # Works best on NVIDIA GPUs, engine file must be compiled on the PC that it is running on.
+                model_extension = ".engine"
+                self.model = YOLO(
+                    f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
+            case "ONNX":
+                # Optimal for CPU performance
+                model_extension = ".onnx"
+                self.model = YOLO(
+                    f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
+            case "PT":
+                # Default kinda
+                model_extension = ".pt"
+                self.model = YOLO(
+                    f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
+            case "OpenVINO":
+                # Optimal for Intel CPUs, needs a lil work
+                self.model = YOLO(
+                    f"./machine/models/{model_name}/{image_size}/{model_name}_openvino_model/")
+            case "CoreML":
+                # Optimal for M-series Macs
+                model_extension = ".mlpackage"
+                self.model = YOLO(
+                    f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
+            case _:
+                raise ValueError(
+                    f"Invalid model type: {model_type}. Must be one of 'TensorRT', 'ONNX', 'PT', 'OpenVINO', or 'CoreML'.")
+
+        self.device = device
+        self.img_size = image_size
+        # compiled_model = core.compile_model(model=model, device_name=device.value)
+
+    def predict(self, img, show=False, rs=None):
+        # Max_det = max number of detections, 3 for housebot + 2 bots. Stops YOLO from hallucinating extra bots when confidence is low. Iou=0.8 to prevent multiple detections on same bot.
+        predict_kwargs = {"verbose": False, "task": self.model.task,
+                          "imgsz": self.img_size, "max_det": 3}
+        if self.device is not None:
+            predict_kwargs["device"] = self.device
+
+        results = self.model(img, **predict_kwargs)
+
+        result = results[0]
+
+        # 1. BATCH EXTRACT EVERYTHING TO CPU ONCE
+        # This is the secret sauce. .cpu().numpy() is faster than calling .tolist() inside a loop.
+        boxes_xyxy = result.boxes.xyxy.cpu().numpy()
+        boxes_xywh = result.boxes.xywh.cpu().numpy()
+        boxes_cls = result.boxes.cls.cpu().numpy()
+
+        robots = []
+        housebots = []
+
+        # 2. Iterate over the NumPy arrays (much faster)
+        for i in range(len(boxes_xyxy)):
+            x1, y1, x2, y2 = boxes_xyxy[i]
+            cx, cy, _, _ = boxes_xywh[i]
+            cls = boxes_cls[i]
+
+            # 3. Clip coordinates safely
+            x1_c, y1_c = max(0, x1), max(0, y1)
+            x2_c, y2_c = min(700, x2), min(700, y2)
+
+            cropped_img = img[int(y1_c): int(y2_c), int(x1_c): int(x2_c)]
+
+            data = {
+                "bbox": [[x1_c, y1_c], [x2_c, y2_c]],
+                "center": [cx, cy],
+                "img": cropped_img
+            }
+
+            if cls == 0:
+                housebots.append(data)
+            else:
+                robots.append(data)
+
+        output = {"bots": robots, "housebot": housebots}
+        return output
+
+    def show_predictions(self, img, bots_dict):
+        for label, bots in bots_dict.items():
+
+            for bot in bots:
+
+                # Extract bounding box coordinates and class details
+                x_min, y_min = bot["bbox"][0]
+                x_max, y_max = bot["bbox"][1]
+
+                # Choose color based on the class
+                if "housebot" in label:
+                    color = (0, 0, 255)  # Red for housebot
+                else:
+                    color = (255, 255, 255)  # White for bots
+
+                # Draw the bounding box
+                cv2.rectangle(img, (int(x_min), int(y_min)),
+                              (int(x_max), int(y_max)), color, 2)
+
+        return img
+
+
 class RoboflowModel(TemplateModel):
     def __init__(self):
         self.model = get_model(model_id="nhrl-robots/14",
                                api_key=ROBOFLOW_API_KEY)  # TODO
 
-    def predict(self, img, confidence_threshold=0.5, show=False, track=False):
+    def predict(self, img, confidence_threshold=0.5, show=False, track=False, rs=None):
         out = self.model.infer(img)
 
         bots = {}
@@ -162,102 +266,6 @@ class RoboflowModel(TemplateModel):
 
     def evaluate(self, test_path):
         return super().evaluate(test_path)
-
-
-class YoloModel(TemplateModel):
-    # General template for using YOLO to load model files and use them.
-
-    def __init__(self, model_name, model_type, image_size, device=None):
-        match model_type:
-            case "TensorRT":
-                # Works best on NVIDIA GPUs, engine file must be compiled on the PC that it is running on.
-                model_extension = ".engine"
-                self.model = YOLO(f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
-            case "ONNX":
-                # Optimal for CPU performance
-                model_extension = ".onnx"
-                self.model = YOLO(f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
-            case "PT":
-                # Default kinda
-                model_extension = ".pt"
-                self.model = YOLO(f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
-            case "OpenVINO":
-                # Optimal for Intel CPUs, needs a lil work
-                self.model = YOLO(f"./machine/models/{model_name}/{image_size}/{model_name}_openvino_model/")
-            case "CoreML":
-                # Optimal for M-series Macs
-                model_extension = ".mlpackage"
-                self.model = YOLO(f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
-            case _:
-                raise ValueError(f"Invalid model type: {model_type}. Must be one of 'TensorRT', 'ONNX', 'PT', 'OpenVINO', or 'CoreML'.")
-                
-        self.device = device
-        self.img_size = image_size
-        # compiled_model = core.compile_model(model=model, device_name=device.value)
-        
-    def predict(self, img, show=False):
-        # This prints timing info
-        if self.device != None:
-            results = self.model(img, device=self.device, verbose=False, task='detect', imgsz=self.img_size)
-        else:
-            results = self.model(img, verbose=False, task='detect', imgsz=self.img_size)
-        # If multiple img passed, results has more than one element
-        result = results[0]
-
-        robots = []
-        housebots = []
-
-        for box in result.boxes:
-            x1, y1, x2, y2 = box.xyxy[0].tolist()
-            cx, cy, width, height = box.xywh[0].tolist()
-            cropped_img = img[int(y1): int(y2), int(x1): int(x2)]
-
-            # cv2.imshow('image', cropped_img)
-            # cv2.waitKey(0)
-            # cv2.destroyAllWindows
-
-            dict = {"bbox": [[max(0, x1), max(0, y1)], [min(700, x2), min(
-                700, y2)]], "center": [cx, cy], "img": cropped_img}
-
-            if box.cls == 0:
-                housebots.append(dict)
-            else:
-                robots.append(dict)
-
-        out = {"bots": robots, "housebot": housebots}
-        # if show:
-        #     self.show_predictions(img, out)
-
-        return out
-
-    def show_predictions(self, img, bots_dict):
-        for label, bots in bots_dict.items():
-
-            for bot in bots:
-
-                # Extract bounding box coordinates and class details
-                x_min, y_min = bot["bbox"][0]
-                x_max, y_max = bot["bbox"][1]
-
-                # Choose color based on the class
-                if "housebot" in label:
-                    color = (0, 0, 255)  # Red for housebot
-                else:
-                    color = (255, 255, 255)  # White for bots
-
-                # Draw the bounding box
-                cv2.rectangle(img, (int(x_min), int(y_min)),
-                              (int(x_max), int(y_max)), color, 2)
-
-                # # Add label text
-                # cv2.putText(img, label, (int(x_min), int(
-                #     y_min - 10)), FONT, 0.5, color, 2)
-
-        # cv2.imshow("YoloModel Predictions", img)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-
-        return img
 
 
 # Main code block

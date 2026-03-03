@@ -89,7 +89,7 @@ class RobotCornerDetection:
 
                 return our_bot
             else:
-                print("No valid bot images found.")
+                # print("No valid bot images found.")
                 return None
         
         except Exception as e:
@@ -170,7 +170,7 @@ class RobotCornerDetection:
 
                 return result
             else:
-                print("Image doesn't exist")
+                # print("Image doesn't exist")
                 return {"huey": {}, "enemy": {}}
 
         except Exception as e:
