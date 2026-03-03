@@ -42,7 +42,7 @@ def key_frame(stream, CAMERA_STREAM, selection_scale=1.0):
             elif key == ord("0"):  # Press '0' to capture the image and exit
                 captured_image = frame.copy()
                 return captured_image
-            time.sleep(0.01)
+            time.sleep(0.02)
         else:
             print("Failed to read frame" + "\n")
             return captured_image
@@ -106,37 +106,20 @@ def make_new_colors(output_file_path, warped_frame):
     return selected_colors
 
 
-def is_coreml_available():
-    # 1. Platform Check: CoreML inference only runs on macOS
-    # if platform.system() != "Darwin":
-    #     return False
-
-    # 2. Library & Hardware Check
-    try:
-        import coremltools as ct
-        # get_all_compute_devices() returns a list of hardware the framework can see
-        # This will fail or return an empty/CPU-only list if the OS/Framework is broken
-        devices = ct.models.MLComputeDevice.get_all_compute_devices()
-        return len(devices) > 0
-    except (ImportError, AttributeError, Exception):
-        # Fails if coremltools isn't installed or if
-        # run on an OS version where the API doesn't exist
-        return False
-
-
 def get_predictor(MODEL_NAME, OD_IMG_SIZE):
     if torch.cuda.is_available():
         print(f"Using {MODEL_NAME} on CUDA for object detection.")
         predictor = YoloModel(MODEL_NAME, "TensorRT",
                               OD_IMG_SIZE, device="cuda")
 
-    elif is_coreml_available() or torch.backends.mps.is_available():
+    elif torch.backends.mps.is_available():
         print(f"Using {MODEL_NAME} with CoreML for object detection.")
         predictor = YoloModel(MODEL_NAME, "CoreML", OD_IMG_SIZE)
 
-    elif torch.backends.mps.is_available():
-        print(f"Using {MODEL_NAME} on MPS for object detection.")
-        predictor = YoloModel(MODEL_NAME, "PT", OD_IMG_SIZE, device="mps")
+    # CoreML is better for all Macs i'm pretty sure
+    # elif torch.backends.mps.is_available():
+    #     print(f"Using {MODEL_NAME} on MPS for object detection.")
+    #     predictor = YoloModel(MODEL_NAME, "PT", OD_IMG_SIZE, device="mps")
 
     elif ov.Core().get_available_devices() and "CPU" in ov.Core().get_available_devices():
         print(f"Using {MODEL_NAME} with OpenVINO on CPU for object detection.")
@@ -197,7 +180,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
     return algorithm
 
 
-def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False,  centroids=[]):
+def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False,  centroids=[], show=True):
     if is_recovering:
         cv2.putText(image, "RECOVERING", (550, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
@@ -259,11 +242,12 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
                 cv2.arrowedLine(image, (start_x, start_y),
                                 end_point, (0, 0, 255), 2)
 
-    if initial_run:
-        cv2.imshow(
-            "Initial Run: Battle with Predictions. Press '0' to continue", image)
-    else:
-        cv2.imshow("Battle with Predictions", image)
+    if show:
+        if initial_run:
+            cv2.imshow(
+                "Initial Run: Battle with Predictions. Press '0' to continue", image)
+        else:
+            cv2.imshow("Battle with Predictions", image)
 
     return image
 
