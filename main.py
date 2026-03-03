@@ -34,50 +34,33 @@ from warp_main import warp_map
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
-JANK_CONTROLLER = False         # Deprecated, True if using backup controller
-# Re-do warp & color selection
-WARP_AND_COLOR_PICKING = True
-# Display frame smaller for selection with 1080p video, 1.0 default
-DISPLAY_SCALE = 1.0
-# True to send transmissions to live Huey via Arduino
-IS_TRANSMITTING = False
-# True if weapon motor should be on
-WEAPON_ON = False
-# Show camera feed frames
-SHOW_FRAME = True
-# Only use when SHOW_FRAME is True
-DISPLAY_ANGLES = True
-# Process every captured frame, False -> cap at FRAME_RATE
-IS_ORIGINAL_FPS = True
-# FPS used for algo stuff, update to expected FPS on your system.
-FRAME_RATE = 120
-# Show heads-up display with FPS, speed, turn, frame number
-SHOW_HUD = True
-# Display the quantized bounding box of Huey in separate window
-SHOW_QUANTIZED_HUEY = False
-# True to use color quantization, should always be True
-COLOR_QUANTIZATION = True
-# True to use recovery
-CAN_RECOVER = True
-# True if using live camera stream, False if using a video file
-CAMERA_STREAM = False
-# Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
-SHEET_RUNTIME = True
-# Save bounding box images every BBOX_SAVE_FREQUENCY iterations
-SAVE_BBOXES = False
-# How often to save bounding box images (every n iterations)
-BBOX_SAVE_FREQUENCY = 10
+JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
+WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
+DISPLAY_SCALE = 1.0             # Display frame smaller for selection with 1080p video, 1.0 default
+IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
+WEAPON_ON = False               # True if weapon motor should be on
+SHOW_FRAME = True               # Show camera feed frames
+DISPLAY_ANGLES = True           # Only use when SHOW_FRAME is True
+IS_ORIGINAL_FPS = True          # Process every captured frame, False -> cap at FRAME_RATE
+FRAME_RATE = 120                # FPS used for algo stuff, update to expected FPS on your system.
+SHOW_HUD = True                 # Show heads-up display with FPS, speed, turn, frame number
+SHOW_QUANTIZED_HUEY = True     # Display the quantized bounding box of Huey in separate window
+COLOR_QUANTIZATION = True       # True to use color quantization, should always be True
+CAN_RECOVER = True              # True to use recovery
+CAMERA_STREAM = False           # True if using live camera stream, False if using a video file
+SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
+SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
+BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
 
-# MODEL_NAME = "SmallComp"        # Used for comp, best accuracy if you have the compute for it.
-# Use with lower image size for faster performance, not much worse accuracy.
-MODEL_NAME = "NanoSizeVariant"
+# MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
+# MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
+MODEL_NAME = "Nano320Temp"        # Model trained with Huey images from matches, trained at 320 image size
 
 # Image size for object detection model, lower number -> faster, slightly worse accuracy.
 # 640 default, 416 fast, must be multiple of 32. Don't go below 320.
 OD_IMG_SIZE = 320
 
-# If model gives a bug, ask Aaron which model/image size to use for your system.
-# TODO: Documentation for available models
+# If model can't be found or gives a bug, use convert_models.py to regenerate the model w/ above parameters
 
 folder = os.getcwd() + "/main_files"
 
@@ -132,18 +115,17 @@ def main():
         # Build warp maps from homography matrix for faster warping in the main loop
         map_x, map_y = get_warp_maps(homography_matrix)
 
-        # 4. Initialize color quantization cv2
+        # Initialize color quantization cv2
         if COLOR_QUANTIZATION:
             initialize_quantization()
-
-        # 5. Defining all subsystem objects: ML, Corner, Algorithm, Transmission
 
         # Get predictor, if anything goes wrong here, call Aaron #TODO: Document better
         predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
 
+        # Initialize corner detection
         corner_detection = RobotCornerDetection(selected_colors, False, False)
-        algorithm = None
-        # TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
+        
+        # Initialize transmission TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
             ser, motor_group, weapon_motor_group = get_motor_groups(
                 JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
@@ -152,12 +134,14 @@ def main():
 
         cv2.destroyAllWindows()
 
+        # Initialize algorithm
         if WARP_AND_COLOR_PICKING:
             algorithm = first_run(predictor, warped_frame,
                                   SHOW_FRAME, corner_detection, selected_colors)
         else:
             algorithm = Ram()
 
+        # Initialize BBox save directory
         if SAVE_BBOXES:
             if not os.path.exists("bbox_output"):
                 os.makedirs("bbox_output")

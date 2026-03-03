@@ -5,7 +5,8 @@ models_folder = "./machine/models/"
 # PRE-REQ: Make a new folder in the model name folder with your desired image size as the name, and drag the pt file into there.
 
 # model_name = "SmallComp"
-model_name = "NanoSizeVariant"
+# model_name = "NanoSizeVariant"
+model_name = "Nano320Temp"
 
 # Smaller number -> Faster
 desired_model_input_size = 320
