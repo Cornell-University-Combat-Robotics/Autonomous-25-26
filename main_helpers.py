@@ -240,6 +240,7 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
 
 def initialize_quantization():
     dummy = np.zeros((8, 8, 3), dtype=np.uint8)
+    # dummy = np.zeros((20, 8, 3), dtype=np.uint8)
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2LAB)
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2HSV)
 
@@ -253,6 +254,7 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False, settings=Fa
         threshold = settings['threshold']
 
     colors_hsv_1x = np.array(selected_colors).reshape(1, -1, 3)
+
 
     # OpenCV expects uint8 or float32, not int32
     if colors_hsv_1x.dtype != np.uint8:
