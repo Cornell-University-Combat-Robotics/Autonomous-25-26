@@ -6,7 +6,6 @@ from collections import deque
 import pandas as pd
 import cv2
 import numpy as np
-import torch
 from time import perf_counter as ptime
 
 from camera_stream import CameraStream
@@ -37,9 +36,9 @@ from warp_main import warp_map
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
 # Re-do warp & color selection
-WARP_AND_COLOR_PICKING = False
+WARP_AND_COLOR_PICKING = True
 # Display frame smaller for selection with 1080p video, 1.0 default
-DISPLAY_SCALE = 0.8
+DISPLAY_SCALE = 1.0
 # True to send transmissions to live Huey via Arduino
 IS_TRANSMITTING = False
 # True if weapon motor should be on

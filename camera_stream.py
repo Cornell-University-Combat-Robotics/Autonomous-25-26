@@ -9,6 +9,7 @@ class CameraStream:
         if platform.system() == "Windows":
             self.cap = cv2.VideoCapture(src, cv2.CAP_DSHOW)
         elif platform.system() == "Darwin":
+            print("doin it on mac")
             self.cap = cv2.VideoCapture(src, cv2.CAP_AVFOUNDATION)
         else:
             self.cap = cv2.VideoCapture(src)
@@ -22,7 +23,9 @@ class CameraStream:
         # self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
         # self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)        
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)        
+        # self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 960)
+        # self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 540)
         
         # 4. Set Frame Rate
         # self.cap.set(cv2.CAP_PROP_FPS, 60)
@@ -34,6 +37,12 @@ class CameraStream:
         self.ret, self.frame = self.cap.read()
         self.frame_count = 0
         self.stopped = False
+        
+        # Print FPS, frame width, frame height of self.cap object
+        print(f"FPS: {self.cap.get(cv2.CAP_PROP_FPS)}")
+        print(f"Frame Width: {self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)}")
+        print(f"Frame Height: {self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}")
+
 
     def start(self):
         # Using daemon=True so the thread stops when main.py exits
