@@ -1,5 +1,6 @@
 import math
 import cv2
+import numpy as np
 
 def draw_orientation_arrow(frame, detected_bots_with_data, arrow_length=50, thickness=2):
     for bot_name, data in detected_bots_with_data.items():
@@ -17,3 +18,28 @@ def draw_orientation_arrow(frame, detected_bots_with_data, arrow_length=50, thic
         cv2.arrowedLine(frame, (cx, cy), (ex, ey), (0, 255, 255), thickness, tipLength=0.3)
         cv2.putText(frame, f"{bot_name}: {data['orientation']:.1f}°",
                     (cx + 5, cy - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+
+def get_darkness_score(image, selected_colors):
+    '''NOT IN USE'''
+    bot_color_rgb = np.array([selected_colors[0][0], selected_colors[0][1], selected_colors[0][2]])
+
+    bot_color_hsv = cv2.cvtColor(bot_color_rgb, cv2.COLOR_BGR2HSV)
+    hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+    mask = cv2.inRange(hsv_image, bot_color_hsv, bot_color_hsv)
+
+    #TODO: Figure out masking? (display real version)
+
+    # mask = cv2.inRange(image, bot_color_rgb, bot_color_rgb)
+    print(bot_color_rgb)
+
+    # lower_green = np.array([0, 100, 0])
+    # print(lower_green)
+    # upper_green = np.array([100, 255, 100])
+    # mask = cv2.inRange(image, lower_green, upper_green)
+
+    cv2.imshow("Robot Mask", mask)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    print(cv2.countNonZero(mask))
+
