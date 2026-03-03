@@ -20,17 +20,17 @@ def draw_orientation_arrow(frame, detected_bots_with_data, arrow_length=50, thic
                     (cx + 5, cy - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
 
 def get_darkness_score(image, selected_colors):
-    '''NOT IN USE'''
+    '''NOT IN USE -- BROKEN'''
     bot_color_rgb = np.array([selected_colors[0][0], selected_colors[0][1], selected_colors[0][2]])
 
-    bot_color_hsv = cv2.cvtColor(bot_color_rgb, cv2.COLOR_BGR2HSV)
-    hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    # bot_color_hsv = cv2.cvtColor(bot_color_rgb, cv2.COLOR_BGR2HSV)
+    # hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-    mask = cv2.inRange(hsv_image, bot_color_hsv, bot_color_hsv)
+    # mask = cv2.inRange(hsv_image, bot_color_hsv, bot_color_hsv)
 
     #TODO: Figure out masking? (display real version)
 
-    # mask = cv2.inRange(image, bot_color_rgb, bot_color_rgb)
+    mask = cv2.inRange(image, bot_color_rgb, bot_color_rgb)
     print(bot_color_rgb)
 
     # lower_green = np.array([0, 100, 0])
@@ -43,3 +43,12 @@ def get_darkness_score(image, selected_colors):
     cv2.destroyAllWindows()
     print(cv2.countNonZero(mask))
 
+def angle_difference(a1, a2):
+    """
+    Returns the smallest difference between two angles (in degrees).
+    Result is always between 0 and 180.
+    """
+    diff = (a2 - a1) % 360
+    if diff > 180:
+        diff = 360 - diff
+    return abs(diff)

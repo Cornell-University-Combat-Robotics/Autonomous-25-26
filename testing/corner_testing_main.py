@@ -9,7 +9,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
-from corner_testing_helpers import draw_orientation_arrow, get_darkness_score
+from corner_testing_helpers import draw_orientation_arrow, get_darkness_score, angle_difference
 from corner_detection.corner_detection import RobotCornerDetection
 from main_helpers import (
     display_angles,
@@ -52,6 +52,10 @@ def detect_corners(quant_settings=False):
     total_frames = 0
     frames_with_orientation = 0
 
+    total_theta = 0
+
+    total_score = 0 #If orientation, theta. If none, 90
+
     for filename in os.listdir(FOLDER_PATH):
         if filename.lower().endswith(IMAGE_EXTENSIONS):
             image_path = os.path.join(FOLDER_PATH, filename)
@@ -64,8 +68,6 @@ def detect_corners(quant_settings=False):
                 print(f"Failed to load: {image_path}")
                 continue
             
-            # get_overquantize_score(image, selected_colors)
-
             height, width = image.shape[:2]
 
             # Fake bounding box, the whole image
@@ -86,29 +88,41 @@ def detect_corners(quant_settings=False):
             corner_detection.set_bots(quantized_bots)
             detected_bots_with_data = corner_detection.corner_detection_main()
 
+            true_angle = angle_lookup.get(filename)
+
             total_frames += 1
             if detected_bots_with_data['huey']['orientation'] != None:
                 frames_with_orientation += 1
-
-            # print(detected_bots_with_data)
-
-            print(f"Correct Angle: {angle_lookup.get(filename)}")
-            print(f"Calculated Angle: {detected_bots_with_data['huey']['orientation']}")
-
+                if true_angle:
+                    current_angle_difference = angle_difference(true_angle, detected_bots_with_data['huey']['orientation'])
+                    total_theta += current_angle_difference
+                    total_score += current_angle_difference
+            else:
+                total_score += 90
 
             if SAMPLE:
                 if detected_bots_with_data['huey']['orientation'] != None:
                     draw_orientation_arrow(quantized_img, detected_bots_with_data)
+
+                print(f"Correct Angle: {angle_lookup.get(filename)}")
+                print(f"Calculated Angle: {detected_bots_with_data['huey']['orientation']}")
+                
                 cv2.imshow("Image Viewer", quantized_img)
                 print(f"Showing: {filename} (quantized)")
 
                 key = cv2.waitKey(0)  # Wait for key press
-                if key == ord('n'):   # Press 'q' to quit early
-                    return frames_with_orientation, total_frames
+                if key == ord('n'):   # Press 'n' to move to next setting
+                    print("--------------------------------")
+                    print(f"Settings: {quant_settings}")
+                    print(f"Frames with orientation: {frames_with_orientation} / {total_frames}")
+                    print(f"Average Theta: {total_theta/frames_with_orientation}")
+                    print(f"Score: {total_score/total_frames}")
+                    print("--------------------------------")
+                    return 
     if SAMPLE:
         cv2.destroyAllWindows()
 
-    return frames_with_orientation, total_frames
+    # return ...
 
 print("PRESS 0 TO SWITCH IMAGES AND N TO ITERATE QUANTIZATION SETTINGS")
 
@@ -116,12 +130,11 @@ orientation_scores = {}
 
 for i in range(20, 80, 10):
 
-
-    frames_with_orientation, total_frames = detect_corners(quant_settings={
+    detect_corners(quant_settings={
         "threshold": i
     })
 
     # orientation_scores[i]['Orientation (captured, total)'] = (frames_with_orientation, total_frames)
     # print(f"Threshold = {i}% Frames with orientation {frames_with_orientation}/{total_frames} => {(frames_with_orientation/total_frames)*100:.002f}%")
 
-print(str(orientation_scores))
+# print(str(orientation_scores))
