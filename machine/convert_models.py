@@ -8,7 +8,7 @@ models_folder = "./machine/models/"
 model_name = "NanoSizeVariant"
 
 # Smaller number -> Faster
-desired_model_input_size = 320
+desired_model_input_size = 416
 
 # CoreML for M-series macs, engine for NVIDIA gpus
 desired_format = "coreml"
