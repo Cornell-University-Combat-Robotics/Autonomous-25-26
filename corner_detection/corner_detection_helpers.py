@@ -29,9 +29,9 @@ def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
     mask = cv2.inRange(hsv_image, bot_color, bot_color)
 
     # Count the number of non-zero pixels in the mask
-    cv2.imshow("Robot Mask", mask)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # cv2.imshow("Robot Mask", mask)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
     return cv2.countNonZero(mask)
 
 def get_contours_per_color(side: str, hsv_image: np.ndarray, selected_colors) -> list[np.ndarray]:
@@ -54,9 +54,9 @@ def get_contours_per_color(side: str, hsv_image: np.ndarray, selected_colors) ->
 
     mask = cv2.inRange(hsv_image, selected_color_hsv, selected_color_hsv)
 
-    cv2.imshow("Corners Mask", mask)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # cv2.imshow("Corners Mask", mask)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
 
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return contours
@@ -220,8 +220,11 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     # Convert to numpy arrays with consistent shape
     front_array = np.array(centroid_front[:2])  # Take first 2 points if more exist
     back_array = np.array(centroid_back[:2])    # Take first 2 points if more exist
-    
-    return np.array([front_array, back_array])
+    # if len(centroid_back) == 0:
+    #     back_array = np.empty((0, 2))
+    # if len(centroid_front) == 0:
+    #     back_array = np.empty((0, 2))
+    return np.array([front_array, back_array], dtype=object)
 
 def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagonals: deque, sides: deque) -> float:
     """
@@ -234,7 +237,7 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
     if len(front_points) == 2 or len(back_points) == 2:
         # Correctly pick the points based on which list has 2
         points = front_points if len(front_points) == 2 else back_points
-        
+
         point1, point2 = points[0], points[1]
         dx = point2[0] - point1[0]
         dy = -(point2[1] - point1[1]) # Flip Y for image coordinates
@@ -243,6 +246,8 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
 
         angle1 = (line_angle + 90) % 360 # Perpendicular possibilities
         angle2 = (line_angle - 90) % 360
+
+        print("dee")
         
         return pick_closest_angle(angle1, angle2, previous_orientation)
 

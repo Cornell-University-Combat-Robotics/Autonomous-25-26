@@ -104,22 +104,26 @@ class RobotCornerDetection:
             dict: A dictionary containing details of the robot and enemy robots.
         """
         try:
+            print("🚗")
             bot_images = [bot["img"] for bot in self.bots["bots"]]
             image = self.detect_our_robot_main(bot_images, threshold_set)
             
             if image is not None:
+                print("👁️")
                 # Find the identified bot (our robot)
                 huey_bbox = None
                 for bot_data in self.bots["bots"]:
                     if bot_data["img"] is image:
                         huey_bbox = bot_data["bbox"]
                         break
+                print("🏇")
 
                 huey = {
                     "bbox": huey_bbox,
                     "center": np.mean(huey_bbox, axis=0), # center of the bot with respect to the entire arena
                     "orientation": None,
                 }
+                print("🐺")
 
                 # Enemy bots are all except the identified bot
                 enemy_bots = {}
@@ -132,8 +136,12 @@ class RobotCornerDetection:
                             }
                             break
 
+                print("🐋")
                 centroid_points = find_centroids(image, self.selected_colors)
+                print("😬")
                 self.centroids = centroid_points
+
+                # print("pointy type", type(centroid_points[0][0]))
 
                 print(self.centroids)
                 
