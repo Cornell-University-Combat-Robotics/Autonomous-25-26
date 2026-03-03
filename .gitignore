@@ -26,3 +26,4 @@ matt_env/
 color_output.csv
 runtimesheet/
 13venv/
+*.lprof
