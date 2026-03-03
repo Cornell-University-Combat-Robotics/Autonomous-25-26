@@ -6,7 +6,8 @@ models_folder = "./machine/models/"
 
 # model_name = "SmallComp"
 # model_name = "NanoSizeVariant"
-model_name = "Nano320Temp"
+# model_name = "Nano320Temp"
+model_name = "NanoSegHueyPrince"
 
 # Smaller number -> Faster
 desired_model_input_size = 320
@@ -20,8 +21,10 @@ desired_format = "coreml"
 base_model_extension = ".pt"
 
 # Load the YOLO model
-model = YOLO(models_folder + model_name + "/" + str(desired_model_input_size) + "/" + model_name + base_model_extension)
+model = YOLO(models_folder + model_name + "/" + str(desired_model_input_size) +
+             "/" + model_name + base_model_extension, task='segment')
 
-print(model.export(format=desired_format, imgsz=desired_model_input_size, half=True, simplify=True))
+print(model.export(format=desired_format, imgsz=desired_model_input_size,
+      half=True, simplify=True, task='segment'))
 
 # Terminal prompt: yolo export model=./machine/models/SmallComp/416/SmallComp.pt format=engine simplify=True imgsz=416 half=True
