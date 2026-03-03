@@ -123,8 +123,8 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
         elif len(bot_color_percentages) == 0:
             self.color_percentage_rows.append((0, 0, self.huey_color_percentage_threshold))
 
-        if our_bot_image is None:
-            print("Huey is not found")
+        # if our_bot_image is None:
+        #     print("Huey is not found")
             
         # cv2.imshow("OUR BOT!", our_bot_image)
         # cv2.waitKey(0)

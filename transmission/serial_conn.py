@@ -25,7 +25,7 @@ class OurSerial():
 
     """
 
-    def __init__(self, baudrate=9600, timeout=1, port=None):
+    def __init__(self, baudrate=115200, timeout=1, port=None):
         """
         Parameters
         ----------
