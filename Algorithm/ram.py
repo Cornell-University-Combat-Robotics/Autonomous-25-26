@@ -291,7 +291,7 @@ class Ram():
             self.enemy_previous_positions = self.enemy_previous_positions[int(len(self.enemy_previous_positions)-self.HISTORY_BUFFER):]
         
         if time.time() < self.recovering_until:
-            print("Recovering...")
+            # print("Recovering...")
             return self.huey_move(self.recover_speed, self.recover_turn)
         else:
             self.recovering_until = 0
@@ -338,7 +338,7 @@ class Ram():
         else:
             self.huey_previous_positions.append(self.huey_previous_positions[-1])
             self.huey_previous_orientations.append(self.huey_previous_orientations[-1])
-            print("Prev pos appended.")
+            # print("Prev pos appended.")
             return self.huey_move(self.huey_old_speed, self.huey_old_turn)
 
         if bots["enemy"]:
@@ -358,7 +358,7 @@ class Ram():
 
             return self.huey_move(speed, turn)
         else:
-            print("enemy bot not detected, previous position appended")
+            # print("enemy bot not detected, previous position appended")
             self.enemy_previous_positions.append(self.enemy_previous_positions[-1])
             self.enemy_position = self.enemy_previous_positions[-1]
             turn, speed = self.predict_desired_turn_and_speed()
