@@ -18,7 +18,7 @@ from main_helpers import (
 )
 
 #Settings
-SAMPLE = True #Displays each image in window
+DISPLAY_IMAGES = True #Displays each image in window
 NO_ORIENTATION_SCORE = 35 #Angle that is equivelently bad to no orientation
 
 # Folder paths
@@ -45,7 +45,7 @@ print(selected_colors)
 
 corner_detection = RobotCornerDetection(selected_colors, False, False)
 
-def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, SAMPLE=SAMPLE, NO_ORIENTATION_SCORE=NO_ORIENTATION_SCORE):
+def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, DISPLAY_IMAGES=DISPLAY_IMAGES, NO_ORIENTATION_SCORE=NO_ORIENTATION_SCORE):
 
     #Format quantization settings
     quant_settings={
@@ -67,7 +67,8 @@ def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, SAMPLE=SAMPLE
         if filename.lower().endswith(IMAGE_EXTENSIONS):
             image_path = os.path.join(FOLDER_PATH, filename)
             
-            print(f"Processing: {image_path}")
+            if DISPLAY_IMAGES:
+                print(f"Processing: {image_path}")
             
             image = cv2.imread(image_path)
 
@@ -111,7 +112,7 @@ def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, SAMPLE=SAMPLE
             else:
                 total_score += NO_ORIENTATION_SCORE
 
-            if SAMPLE:
+            if DISPLAY_IMAGES:
                 print(f"Correct Angle: {angle_lookup.get(filename)}")
                 print(f"Calculated Angle: {detected_bots_with_data['huey']['orientation']}")
                 if detected_bots_with_data['huey']['orientation'] != None:
@@ -133,7 +134,7 @@ def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, SAMPLE=SAMPLE
                     print(f"Score: {total_score/total_frames}")
                     print("--------------------------------")
                     return (total_score/total_frames)
-    if SAMPLE:
+    if DISPLAY_IMAGES:
         cv2.destroyAllWindows()
 
     return (total_score/total_frames)

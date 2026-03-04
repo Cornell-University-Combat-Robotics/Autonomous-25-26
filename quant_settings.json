@@ -1,0 +1,12 @@
+{
+    "Green Huey":
+    {
+        "threshold": 16.77,
+        "quantization_weights": [0.096, 0.215, 0.444]
+    },
+    "Ryan God Settings":
+    {
+        "threshold": 24.725,
+        "quantization_weights": [0.171, 0.3777, 0.669]
+    }
+}

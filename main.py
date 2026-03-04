@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+import json
 from collections import deque
 
 import pandas as pd
@@ -35,14 +36,14 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
-WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
 DISPLAY_SCALE = 1.0             # Display frame smaller for selection with 1080p video, 1.0 default
 IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
 WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
 DISPLAY_ANGLES = True           # Only use when SHOW_FRAME is True
 IS_ORIGINAL_FPS = True          # Process every captured frame, False -> cap at FRAME_RATE
-FRAME_RATE = 120                # FPS used for algo stuff, update to expected FPS on your system.
+FRAME_RATE = 50                # FPS used for algo stuff, update to expected FPS on your system.
 SHOW_HUD = True                 # Show heads-up display with FPS, speed, turn, frame number
 SHOW_QUANTIZED_HUEY = True     # Display the quantized bounding box of Huey in separate window
 COLOR_QUANTIZATION = True       # True to use color quantization, should always be True
@@ -77,10 +78,14 @@ if IS_TRANSMITTING:
 
 rs = RuntimeSheet(use=SHEET_RUNTIME)
 
-quantization_settings = {
-    'threshold': 33.77,
-    'quantization_weights': [0.005, 0.477, 0.99]
-}
+quant_settings_file = "quant_settings.json"
+with open(quant_settings_file, "r") as f:
+    all_settings = json.load(f)
+
+#Qua
+quantization_settings = all_settings["Ryan God Settings"]
+# quantization_settings = all_settings["Green Huey"]
+# quantization_settings = None
 
 # ------------------------------ BEFORE THE MATCH ------------------------------
 
@@ -173,9 +178,6 @@ def main():
             iteration = 0
             start_time = ptime()
 
-            total_frames = 0
-            frames_with_orientation = 0
-
             while not stop_event.is_set():
                 # Check if source is still open
                 if CAMERA_STREAM and (not stream.isOpened() or stream.stopped):
@@ -265,10 +267,6 @@ def main():
                         corner_detection.set_bots(detected_bots)
                         detected_bots_with_data = corner_detection.corner_detection_main()
 
-                    total_frames += 1
-                    if detected_bots_with_data['huey']['orientation']:
-                        frames_with_orientation += 1
-
                     # Prepare Quantized Huey Image (for display buffer)
                     huey_display_img = None
                     with rs.log_timing("Display Quantized Huey"):
@@ -331,11 +329,6 @@ def main():
                     })
 
                     rs.dump()
-
-            print(f"Total Frames: {total_frames}")
-            print(f"Frames with orientation {frames_with_orientation}")
-            print(f"Percentage {frames_with_orientation/total_frames:.3f}")
-
 
         # Start the Perception Thread
         perception_thread = threading.Thread(
@@ -436,7 +429,7 @@ def main():
             cap.release()
             cv2.destroyAllWindows()
 
-        # rs.save("itertimes")
+        rs.save("itertimes")
 
 
 if __name__ == "__main__":

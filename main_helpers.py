@@ -260,21 +260,13 @@ def initialize_quantization():
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2HSV)
 
 def quantize(detected_bots, selected_colors, show, is_flipped=False, settings=None):
+    
+    #Settings if no custom settings are input:
     custom_weights = None
     if(is_flipped == 1):
         threshold = 18
     else:
         threshold = 22
-
-    #*******************************************************
-    #OG Goat params
-    threshold = 24.725 #Ryan god tuning
-    custom_weights = [0.171, 0.3777, 0.669] #Ryan god tuning
-
-    #Testing other params
-    # threshold = 12.3
-    # custom_weights = [0.125, 0.167, 0.92]
-    #*******************************************************
 
     if settings:
         threshold = settings['threshold']
