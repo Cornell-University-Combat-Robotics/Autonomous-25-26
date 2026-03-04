@@ -266,6 +266,7 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False, settings=No
         threshold = 22
 
     custom_weights = None
+
     if settings:
         threshold = settings['threshold']
         custom_weights = settings['quantization_weights']
@@ -278,6 +279,18 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False, settings=No
         colors_hsv_1x = np.clip(colors_hsv_1x, 0, 255).astype(np.uint8)
 
     bgr_colors_1x = cv2.cvtColor(colors_hsv_1x, cv2.COLOR_HSV2BGR)
+
+
+    #*******************************************************
+    #OG Goat params
+    threshold = 24.725 #Ryan god tuning
+    custom_weights = [0.171, 0.3777, 0.669] #Ryan god tuning
+
+    #Testing
+    # threshold = 12.3
+    # custom_weights = [0.125, 0.167, 0.92]
+    #*******************************************************
+
 
     bgr_colors = bgr_colors_1x.reshape(-1, 3)  # (N_colors, 3)
     for bot in detected_bots["bots"]:
