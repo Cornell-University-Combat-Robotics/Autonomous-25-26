@@ -76,6 +76,12 @@ if IS_TRANSMITTING:
     weapon_motor_channel = 4
 
 rs = RuntimeSheet(use=SHEET_RUNTIME)
+
+quantization_settings = {
+    'threshold': 33.77,
+    'quantization_weights': [0.005, 0.477, 0.99]
+}
+
 # ------------------------------ BEFORE THE MATCH ------------------------------
 
 # Threading globals
@@ -246,7 +252,7 @@ def main():
                     with rs.log_timing("Color Quantization"):
                         if COLOR_QUANTIZATION:
                             detected_bots = quantize(
-                                detected_bots, selected_colors, show=False, is_flipped=is_flipped)
+                                detected_bots, selected_colors, show=False, is_flipped=is_flipped, settings=quantization_settings)
 
                     if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                         for bot in range(len(detected_bots["bots"])):
@@ -430,7 +436,7 @@ def main():
             cap.release()
             cv2.destroyAllWindows()
 
-        rs.save("itertimes")
+        # rs.save("itertimes")
 
 
 if __name__ == "__main__":

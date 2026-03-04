@@ -33,9 +33,7 @@ def quantize_robot_colors(
     thresh_lab=25.0,
     keep_background=True,
     show = False,
-    custom_weights = None
-    show = False,
-    custom_weights=None
+    custom_weights = None,
 ):
     H, W = img_bgr.shape[:2]
     N = H * W

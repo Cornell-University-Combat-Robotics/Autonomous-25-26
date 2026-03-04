@@ -18,13 +18,18 @@ from main_helpers import (
 )
 
 #Settings
-SAMPLE = True
-NONE_SCORE = 20 #How "bad" is it to get no orientation
+SAMPLE = True #Displays each image in window
+NO_ORIENTATION_SCORE = 35 #Angle that is equivelently bad to no orientation
 
-# Change this to your folder path
-FOLDER_PATH = "testing/testing_data/huey_unquantized"
+# Folder paths
+ALL_TRAINING_DATA_PATH = "testing/testing_data/"
+
+#--- CHANGE THESE ---
+FOLDER_PATH = os.path.join(ALL_TRAINING_DATA_PATH, "huey_unquantized")
+FIRST_HUEY_PATH = os.path.join(FOLDER_PATH, "1061.png")
+
 LABELED_DATA_PATH = os.path.join(FOLDER_PATH, "angles_output.csv")
-folder = os.getcwd() + "/testing"
+TESTING_DIR = os.getcwd() + "/testing"
 
 #Set up angle lookup
 df = pd.read_csv(LABELED_DATA_PATH)
@@ -33,25 +38,32 @@ angle_lookup = dict(zip(df["filename"], df["angle"]))
 # Valid image file extensions
 IMAGE_EXTENSIONS = (".png")
 
-first_heuy_path = os.path.join(FOLDER_PATH, "1061.png")
-first_huey = cv2.imread(first_heuy_path)
-selected_colors = make_new_colors(folder + "/selected_colors.txt", first_huey)
-print("COLORS:")
+first_huey = cv2.imread(FIRST_HUEY_PATH)
+selected_colors = make_new_colors(TESTING_DIR + "/selected_colors.txt", first_huey)
+print("Selected Colors:")
 print(selected_colors)
 
 corner_detection = RobotCornerDetection(selected_colors, False, False)
 
-def test_detect_corners(quant_settings=False):
+def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, SAMPLE=SAMPLE, NO_ORIENTATION_SCORE=NO_ORIENTATION_SCORE):
+
+    #Format quantization settings
+    quant_settings={
+        "threshold": threshold,
+        "quantization_weights": [L_weight, RG_weight, BY_weight]
+    }
+
     total_frames = 0
     frames_with_orientation = 0
 
-    total_theta = 0
+    total_theta = 0 #Keeps track of true sum of angle differences
 
-    total_score = 0 #If orientation, theta. If none, 90
+    total_score = 0 #If orientation, theta. If none, add selected score
 
-    initialize_quantization() #PASS IN SETTINGS!!!
+    initialize_quantization()
 
-    for filename in os.listdir(FOLDER_PATH):
+    #Loop through all images in dataset folder
+    for filename in os.listdir(FOLDER_PATH): 
         if filename.lower().endswith(IMAGE_EXTENSIONS):
             image_path = os.path.join(FOLDER_PATH, filename)
             
@@ -65,8 +77,8 @@ def test_detect_corners(quant_settings=False):
             
             height, width = image.shape[:2]
 
-            # Fake bounding box, the whole image
-            bbox = (0, 0, width, height)
+            
+            bbox = (0, 0, width, height) # Fake bounding box for corner detection (the whole image)
             formated_image = {
                 "bots": [
                     {
@@ -76,12 +88,11 @@ def test_detect_corners(quant_settings=False):
                 ]
             }
             
-            quantized_bots = quantize(formated_image, selected_colors, show=False, is_flipped=False, settings=quant_settings)
+            quantized_bots = quantize(formated_image, selected_colors, show=False, is_flipped=False, settings=quant_settings) #Quantize with custom settings
             quantized_img = quantized_bots['bots'][0]['img']
 
             corner_detection.set_bots(quantized_bots)
             detected_bots_with_data = corner_detection.corner_detection_main()
-            # print(detected_bots_with_data)
             
             bbox = detected_bots_with_data['huey']['bbox']
             x, y, w, h = bbox
@@ -93,12 +104,12 @@ def test_detect_corners(quant_settings=False):
             total_frames += 1
             if detected_bots_with_data['huey']['orientation'] != None:
                 frames_with_orientation += 1
-                if true_angle:
+                if true_angle: #If there exists a true angle in the csv (should always be true if data is labeled correctly)
                     current_angle_difference = angle_difference(true_angle, detected_bots_with_data['huey']['orientation'])
                     total_theta += current_angle_difference
                     total_score += current_angle_difference
             else:
-                total_score += NONE_SCORE
+                total_score += NO_ORIENTATION_SCORE
 
             if SAMPLE:
                 print(f"Correct Angle: {angle_lookup.get(filename)}")
@@ -127,21 +138,12 @@ def test_detect_corners(quant_settings=False):
 
     return (total_score/total_frames)
 
-def test_detect_corners_black_box(threshold, L_weight, RG_weight, BY_weight):
-    return test_detect_corners(quant_settings={
-        "threshold": threshold,
-        "quantization_weights": [L_weight, RG_weight, BY_weight]
-    })
+if __name__ == "__main__":
+    print("PRESS 0 TO SWITCH IMAGES AND N TO ITERATE QUANTIZATION SETTINGS")
 
-#MAIN:
-print("PRESS 0 TO SWITCH IMAGES AND N TO ITERATE QUANTIZATION SETTINGS")
+    orientation_scores = {}
 
-orientation_scores = {}
+    for i in range(20, 45, 3):
+        orientation_scores[i] = test_detect_corners(i, 0.1, 1.0, 1.0, 1.0)
 
-for i in range(20, 45, 3):
-    orientation_scores[i] = test_detect_corners(quant_settings={
-        "threshold": i,
-        "quantization_weights": [0.2, 0.4, 0.4]
-    })
-
-print(str(orientation_scores))
+    print(str(orientation_scores))
