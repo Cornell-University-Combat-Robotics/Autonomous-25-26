@@ -85,7 +85,6 @@ stop_event = threading.Event()
 shared_state = {"key": None, "flipped": None,
                 "paused": False, "skip_frame": False}
 
-
 def main():
     stream = None
     try:
@@ -167,6 +166,9 @@ def main():
             last_frame = 0
             iteration = 0
             start_time = ptime()
+
+            total_frames = 0
+            frames_with_orientation = 0
 
             while not stop_event.is_set():
                 # Check if source is still open
@@ -257,6 +259,10 @@ def main():
                         corner_detection.set_bots(detected_bots)
                         detected_bots_with_data = corner_detection.corner_detection_main()
 
+                    total_frames += 1
+                    if detected_bots_with_data['huey']['orientation']:
+                        frames_with_orientation += 1
+
                     # Prepare Quantized Huey Image (for display buffer)
                     huey_display_img = None
                     with rs.log_timing("Display Quantized Huey"):
@@ -320,6 +326,11 @@ def main():
 
                     rs.dump()
 
+            print(f"Total Frames: {total_frames}")
+            print(f"Frames with orientation {frames_with_orientation}")
+            print(f"Percentage {frames_with_orientation/total_frames:.3f}")
+
+
         # Start the Perception Thread
         perception_thread = threading.Thread(
             target=perception_pipeline, daemon=True)
@@ -376,6 +387,7 @@ def main():
             stream.stop()
         print("============================")
         print("Video finished successfully!")
+
 
         if SHOW_FRAME:
             cv2.destroyAllWindows()

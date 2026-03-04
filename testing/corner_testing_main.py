@@ -18,7 +18,7 @@ from main_helpers import (
 )
 
 #Settings
-SAMPLE = False
+SAMPLE = True
 NONE_SCORE = 20 #How "bad" is it to get no orientation
 
 # Change this to your folder path
