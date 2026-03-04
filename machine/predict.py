@@ -73,8 +73,10 @@ class YoloModel(TemplateModel):
 
         # Extract masks if segmentation is active and available
         masks = None
+        segments = None
         if self.segment and hasattr(result, 'masks') and result.masks is not None:
             masks = result.masks.data.cpu().numpy()
+            segments = result.masks.xy
 
         robots = []
         housebots = []
@@ -92,18 +94,25 @@ class YoloModel(TemplateModel):
             cropped_img = img[int(y1_c): int(y2_c), int(x1_c): int(x2_c)]
 
             # If segmentation is active, mask out pixels outside the detection mask
+            segment_points = None
             if masks is not None and i < len(masks):
                 # Resize mask to match original image dimensions
                 full_mask = cv2.resize(masks[i], (img.shape[1], img.shape[0]))
                 # Crop the mask to the bounding box and apply threshold
-                mask_crop = (full_mask[int(y1_c): int(y2_c), int(x1_c): int(x2_c)] > 0.5).astype(np.uint8)
+                mask_crop = (full_mask[int(y1_c): int(y2_c), int(
+                    x1_c): int(x2_c)] > 0.5).astype(np.uint8)
                 # Apply mask to the cropped image
-                cropped_img = cv2.bitwise_and(cropped_img, cropped_img, mask=mask_crop)
+                cropped_img = cv2.bitwise_and(
+                    cropped_img, cropped_img, mask=mask_crop)
+
+                if segments is not None and i < len(segments):
+                    segment_points = segments[i].astype(np.int32)
 
             data = {
                 "bbox": [[x1_c, y1_c], [x2_c, y2_c]],
                 "center": [cx, cy],
-                "img": cropped_img
+                "img": cropped_img,
+                "segment_points": segment_points
             }
 
             if cls == 0:
@@ -116,22 +125,28 @@ class YoloModel(TemplateModel):
 
     def show_predictions(self, img, bots_dict):
         for label, bots in bots_dict.items():
-
             for bot in bots:
-
-                # Extract bounding box coordinates and class details
-                x_min, y_min = bot["bbox"][0]
-                x_max, y_max = bot["bbox"][1]
-
                 # Choose color based on the class
                 if "housebot" in label:
                     color = (0, 0, 255)  # Red for housebot
                 else:
                     color = (255, 255, 255)  # White for bots
 
-                # Draw the bounding box
-                cv2.rectangle(img, (int(x_min), int(y_min)),
-                              (int(x_max), int(y_max)), color, 2)
+                # Draw segmentation outline and "cloud" if available
+                if "segment_points" in bot and bot["segment_points"] is not None:
+                    # Create a semi-transparent "cloud" overlay
+                    overlay = img.copy()
+                    cv2.fillPoly(overlay, [bot["segment_points"]], color)
+                    cv2.addWeighted(overlay, 0.2, img, 0.8, 0, img)
+                    # Draw the sharp outline
+                    cv2.polylines(img, [bot["segment_points"]],
+                                  isClosed=True, color=color, thickness=2)
+                else:
+                    # Fallback to bounding box if no segmentation data
+                    x_min, y_min = bot["bbox"][0]
+                    x_max, y_max = bot["bbox"][1]
+                    cv2.rectangle(img, (int(x_min), int(y_min)),
+                                  (int(x_max), int(y_max)), color, 2)
 
         return img
 
