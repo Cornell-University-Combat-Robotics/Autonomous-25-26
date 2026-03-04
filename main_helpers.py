@@ -106,15 +106,15 @@ def make_new_colors(output_file_path, warped_frame):
     return selected_colors
 
 
-def get_predictor(MODEL_NAME, OD_IMG_SIZE):
+def get_predictor(MODEL_NAME, OD_IMG_SIZE, SEGMENT=False):
     if torch.cuda.is_available():
         print(f"Using {MODEL_NAME} on CUDA for object detection.")
         predictor = YoloModel(MODEL_NAME, "TensorRT",
-                              OD_IMG_SIZE, device="cuda")
+                            OD_IMG_SIZE, device="cuda", SEGMENT=SEGMENT)
 
     elif torch.backends.mps.is_available():
         print(f"Using {MODEL_NAME} with CoreML for object detection.")
-        predictor = YoloModel(MODEL_NAME, "CoreML", OD_IMG_SIZE)
+        predictor = YoloModel(MODEL_NAME, "CoreML", OD_IMG_SIZE, SEGMENT=SEGMENT)
 
     # CoreML is better for all Macs i'm pretty sure
     # elif torch.backends.mps.is_available():
@@ -123,11 +123,11 @@ def get_predictor(MODEL_NAME, OD_IMG_SIZE):
 
     elif ov.Core().get_available_devices() and "CPU" in ov.Core().get_available_devices():
         print(f"Using {MODEL_NAME} with OpenVINO on CPU for object detection.")
-        predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE)
+        predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE, SEGMENT=SEGMENT)
 
     else:
         print(f"Using {MODEL_NAME} with ONNX on CPU for object detection.")
-        predictor = YoloModel(MODEL_NAME, "ONNX", OD_IMG_SIZE, device="cpu")
+        predictor = YoloModel(MODEL_NAME, "ONNX", OD_IMG_SIZE, device="cpu", SEGMENT=SEGMENT)
     return predictor
 
 

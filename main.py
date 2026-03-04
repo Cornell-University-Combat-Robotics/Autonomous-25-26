@@ -35,7 +35,7 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
 DISPLAY_SCALE = 1.0             # Display frame smaller for selection with 1080p video, 1.0 default
 IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
 WEAPON_ON = False               # True if weapon motor should be on
@@ -50,23 +50,28 @@ CAN_RECOVER = True              # True to use recovery
 CAMERA_STREAM = False           # True if using live camera stream, False if using a video file
 SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
-BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
+BBOX_SAVE_FREQUENCY = 20        # How often to save bounding box images (every n iterations)
+SEGMENT = True                  # True to use segmentation when getting bounding boxes
 
+# Object detection models
 # MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
 # MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
-MODEL_NAME = "Nano320Temp"        # Model trained with Huey images from matches, trained at 320 image size
+# MODEL_NAME = "Nano320Temp"        # Model trained with added Huey images from matches, trained at 320 image size
+
+# Segmentation models
+MODEL_NAME = "NanoSegHueyPrince"    # Segmentation model trained with 200 images from Huey v Prince
 
 # Image size for object detection model, lower number -> faster, slightly worse accuracy.
 # 640 default, 416 fast, must be multiple of 32. Don't go below 320.
-OD_IMG_SIZE = 320
+OD_IMG_SIZE = 640
 
 # If model can't be found or gives a bug, use convert_models.py to regenerate the model w/ above parameters
 
 folder = os.getcwd() + "/main_files"
 
-# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-camera_number = folder + "/test_videos/orbital_huey.mp4"
+# camera_number = folder + "/test_videos/orbital_huey.mp4"
 # camera_number = 1
 # camera_number = 0
 
@@ -120,7 +125,7 @@ def main():
             initialize_quantization()
 
         # Get predictor, if anything goes wrong here, call Aaron #TODO: Document better
-        predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
+        predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE, SEGMENT)
 
         # Initialize corner detection
         corner_detection = RobotCornerDetection(selected_colors, False, False)

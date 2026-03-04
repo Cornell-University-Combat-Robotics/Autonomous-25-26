@@ -1,6 +1,7 @@
 import os
 import time
 import cv2
+import numpy as np
 from dotenv import load_dotenv
 from ultralytics import YOLO
 
@@ -17,32 +18,34 @@ DEBUG = False
 class YoloModel(TemplateModel):
     # General template for using YOLO to load model files and use them.
 
-    def __init__(self, model_name, model_type, image_size, device=None):
+    def __init__(self, model_name, model_type, image_size, device=None, SEGMENT=False):
+        self.segment = SEGMENT
+        task = "segment" if SEGMENT else "detect"
         match model_type:
             case "TensorRT":
                 # Works best on NVIDIA GPUs, engine file must be compiled on the PC that it is running on.
                 model_extension = ".engine"
                 self.model = YOLO(
-                    f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
+                    f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}", task=task)
             case "ONNX":
                 # Optimal for CPU performance
                 model_extension = ".onnx"
                 self.model = YOLO(
-                    f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
+                    f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}", task=task)
             case "PT":
                 # Default kinda
                 model_extension = ".pt"
                 self.model = YOLO(
-                    f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
+                    f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}", task=task)
             case "OpenVINO":
                 # Optimal for Intel CPUs, needs a lil work
                 self.model = YOLO(
-                    f"./machine/models/{model_name}/{image_size}/{model_name}_openvino_model/")
+                    f"./machine/models/{model_name}/{image_size}/{model_name}_openvino_model/", task=task)
             case "CoreML":
                 # Optimal for M-series Macs
                 model_extension = ".mlpackage"
                 self.model = YOLO(
-                    f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
+                    f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}", task=task)
             case _:
                 raise ValueError(
                     f"Invalid model type: {model_type}. Must be one of 'TensorRT', 'ONNX', 'PT', 'OpenVINO', or 'CoreML'.")
@@ -68,6 +71,11 @@ class YoloModel(TemplateModel):
         boxes_xywh = result.boxes.xywh.cpu().numpy()
         boxes_cls = result.boxes.cls.cpu().numpy()
 
+        # Extract masks if segmentation is active and available
+        masks = None
+        if self.segment and hasattr(result, 'masks') and result.masks is not None:
+            masks = result.masks.data.cpu().numpy()
+
         robots = []
         housebots = []
 
@@ -82,6 +90,15 @@ class YoloModel(TemplateModel):
             x2_c, y2_c = min(700, x2), min(700, y2)
 
             cropped_img = img[int(y1_c): int(y2_c), int(x1_c): int(x2_c)]
+
+            # If segmentation is active, mask out pixels outside the detection mask
+            if masks is not None and i < len(masks):
+                # Resize mask to match original image dimensions
+                full_mask = cv2.resize(masks[i], (img.shape[1], img.shape[0]))
+                # Crop the mask to the bounding box and apply threshold
+                mask_crop = (full_mask[int(y1_c): int(y2_c), int(x1_c): int(x2_c)] > 0.5).astype(np.uint8)
+                # Apply mask to the cropped image
+                cropped_img = cv2.bitwise_and(cropped_img, cropped_img, mask=mask_crop)
 
             data = {
                 "bbox": [[x1_c, y1_c], [x2_c, y2_c]],
