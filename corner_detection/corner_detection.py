@@ -104,12 +104,11 @@ class RobotCornerDetection:
             dict: A dictionary containing details of the robot and enemy robots.
         """
         try:
-            print("🚗")
+            
             bot_images = [bot["img"] for bot in self.bots["bots"]]
             image = self.detect_our_robot_main(bot_images, threshold_set)
             
             if image is not None:
-                print("👁️")
                 # Find the identified bot (our robot)
                 huey_bbox = None
                 for bot_data in self.bots["bots"]:
@@ -141,15 +140,13 @@ class RobotCornerDetection:
                 print("😬")
                 self.centroids = centroid_points
 
-                # print("pointy type", type(centroid_points[0][0]))
-
                 print(self.centroids)
                 
                 # Every time we calculate 4 points, calculate diagonal and side length in the case of 1 front 1 back corner in the future
                 calc_diagonal_and_side_length(self.centroids, self.diagonals, self.sides)
                         
                 # print(f"🇬🇧🛌🇰🇷DIALGA: {self.diagonals}, 🇬🇧SYDNEY: {self.sides}")
-
+                print("🚗")
                 if (len(centroid_points[0]) + len(centroid_points[1]) == 2):
                     if previous_orientations is not None and len(previous_orientations) > 0:
                         previous_orientation = previous_orientations[-1] # why index 0...

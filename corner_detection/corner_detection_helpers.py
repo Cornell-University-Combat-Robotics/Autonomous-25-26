@@ -220,27 +220,27 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     # Convert to numpy arrays with consistent shape
     front_array = np.array(centroid_front[:2])  # Take first 2 points if more exist
     back_array = np.array(centroid_back[:2])    # Take first 2 points if more exist
-    # if len(centroid_back) == 0:
-    #     back_array = np.empty((0, 2))
-    # if len(centroid_front) == 0:
-    #     back_array = np.empty((0, 2))
+
     return np.array([front_array, back_array], dtype=object)
 
 def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagonals: deque, sides: deque) -> float:
     """
     Handles orientation calculation when only 2 points are detected.
     """
+    print("🐼")
     front_points = centroid_points[0]
     back_points = centroid_points[1]
 
     # CASE 1: Only 2 Front Corners detected OR Only 2 Back Corners detected
+    print("🐒")
     if len(front_points) == 2 or len(back_points) == 2:
         # Correctly pick the points based on which list has 2
         points = front_points if len(front_points) == 2 else back_points
-
+        print("🙊🙊🙊")
         point1, point2 = points[0], points[1]
         dx = point2[0] - point1[0]
         dy = -(point2[1] - point1[1]) # Flip Y for image coordinates
+        print("🙈🙈🙈")
         
         line_angle = math.degrees(math.atan2(dy, dx))
 
@@ -254,13 +254,15 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
     # CASE 2: 1 Front and 1 Back Corner detected.
     elif len(front_points) == 1 and len(back_points) == 1:
         if len(diagonals) > 0:
+            print("🦧")
             diagonal_avg = sum(diagonals)/len(diagonals)
             sides_avg = sum(sides)/len(sides)
             cutoff = (diagonal_avg + sides_avg)/2
             corner_distance = distance(front_points[0], back_points[0])
-
+            print("💛💛💛")
             dx = front_points[0][0] - back_points[0][0]
             dy = front_points[0][1] - back_points[0][1]
+            print("💛")
             angle = math.atan2(dy,dx)
             
             # CASE 2.1: Both corners are on the same side
