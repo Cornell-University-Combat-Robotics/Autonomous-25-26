@@ -38,14 +38,14 @@ def quantize_robot_colors(
     N = H * W
     
     #OG Goat params from Ryan Tuning, best for Huey v Prince
-    thresh_lab = 24.725 #Ryan god tuning
-    weights = np.array([0.171, 0.3777, 0.669], dtype=np.float32) # Ryan god tuning
+    # thresh_lab = 24.725 #Ryan god tuning
+    # weights = np.array([0.171, 0.3777, 0.669], dtype=np.float32) # Ryan god tuning
     
     # Define weights for L, a, and b
     # Setting L_weight to 0.0 ignores brightness entirely.
     # Setting it to 0.2 makes it matter, but much less than color.
-    # L_weight = 0.05
-    # weights = np.array([L_weight, 1.0, 1.0], dtype=np.float32)
+    L_weight = 0.05
+    weights = np.array([L_weight, 1.0, 1.0], dtype=np.float32)
     
     # Convert image to Lab
     img_lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
