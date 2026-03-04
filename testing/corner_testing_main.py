@@ -18,8 +18,8 @@ from main_helpers import (
 )
 
 #Settings
-SAMPLE = True
-NONE_SCORE = 45 #How "bad" is it to get no orientation
+SAMPLE = False
+NONE_SCORE = 20 #How "bad" is it to get no orientation
 
 # Change this to your folder path
 FOLDER_PATH = "testing/testing_data/huey_unquantized"
