@@ -152,8 +152,9 @@ class RobotCornerDetection:
 
                 if (len(centroid_points[0]) + len(centroid_points[1]) == 2):
                     if previous_orientations is not None and len(previous_orientations) > 0:
-                        previous_orientation = previous_orientations[0]
+                        previous_orientation = previous_orientations[-1] # why index 0...
                         huey["orientation"] = two_corners(centroid_points, previous_orientation, self.diagonals, self.sides)
+                        print(f"PREV ORIENT: 🌸🐋💛 {previous_orientation}")
                     else:
                         huey["orientation"] = None
                     return {"huey": huey, "enemy": enemy_bots}

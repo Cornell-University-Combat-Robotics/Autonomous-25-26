@@ -35,20 +35,20 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
 DISPLAY_SCALE = 1.0             # Display frame smaller for selection with 1080p video, 1.0 default
 IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
 WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
 DISPLAY_ANGLES = True           # Only use when SHOW_FRAME is True
 IS_ORIGINAL_FPS = True          # Process every captured frame, False -> cap at FRAME_RATE
-FRAME_RATE = 120                # FPS used for algo stuff, update to expected FPS on your system.
+FRAME_RATE = 60                # FPS used for algo stuff, update to expected FPS on your system.
 SHOW_HUD = True                 # Show heads-up display with FPS, speed, turn, frame number
 SHOW_QUANTIZED_HUEY = True     # Display the quantized bounding box of Huey in separate window
 COLOR_QUANTIZATION = True       # True to use color quantization, should always be True
 CAN_RECOVER = True              # True to use recovery
 CAMERA_STREAM = False           # True if using live camera stream, False if using a video file
-SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
+SHEET_RUNTIME = False            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
 BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
 
@@ -261,7 +261,7 @@ def main():
                     # 12. Run Object Detection's results through Corner Detection
                     with rs.log_timing("Corner Detection"):
                         corner_detection.set_bots(detected_bots)
-                        detected_bots_with_data = corner_detection.corner_detection_main()
+                        detected_bots_with_data = corner_detection.corner_detection_main(algorithm.huey_previous_orientations)
 
                     # Prepare Quantized Huey Image (for display buffer)
                     huey_display_img = None

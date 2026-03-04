@@ -247,7 +247,7 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
         angle1 = (line_angle + 90) % 360 # Perpendicular possibilities
         angle2 = (line_angle - 90) % 360
 
-        print("dee")
+        
         
         return pick_closest_angle(angle1, angle2, previous_orientation)
 
