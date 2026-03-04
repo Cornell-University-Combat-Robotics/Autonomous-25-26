@@ -261,10 +261,14 @@ def initialize_quantization():
 
 
 def quantize(detected_bots, selected_colors, show, is_flipped=False):
-    if (is_flipped == 1):
-        threshold = 18
-    else:
-        threshold = 22
+    # if (is_flipped == 1):
+    #     threshold = 18
+    # else:
+    #     threshold = 22
+
+    #RYAN GOD SETTINGS (optimized for green huey based on prince video):
+    threshold = 24.725 
+    custom_weights = [0.171, 0.377, 0.669]
 
     colors_hsv_1x = np.array(selected_colors).reshape(1, -1, 3)
 
@@ -277,7 +281,7 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False):
     bgr_colors = bgr_colors_1x.reshape(-1, 3)  # (N_colors, 3)
     for bot in detected_bots["bots"]:
         bot["img"] = quantize_robot_colors(
-            bot["img"], bgr_colors, thresh_lab=threshold, keep_background=False, show=show)
+            bot["img"], bgr_colors, thresh_lab=threshold, keep_background=False, show=show, custom_weights=custom_weights)
 
     return detected_bots
 
