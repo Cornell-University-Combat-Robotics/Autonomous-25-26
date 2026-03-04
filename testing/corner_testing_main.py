@@ -9,7 +9,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
-from corner_testing_helpers import draw_orientation_arrow, get_darkness_score, angle_difference
+from corner_testing_helpers import draw_orientation_arrow, get_darkness_score, angle_difference, draw_manual_arrow
 from corner_detection.corner_detection import RobotCornerDetection
 from main_helpers import (
     make_new_colors,
@@ -81,7 +81,13 @@ def test_detect_corners(quant_settings=False):
 
             corner_detection.set_bots(quantized_bots)
             detected_bots_with_data = corner_detection.corner_detection_main()
-
+            # print(detected_bots_with_data)
+            
+            bbox = detected_bots_with_data['huey']['bbox']
+            x, y, w, h = bbox
+            cx = int(x + w / 2)
+            cy = int(y + h / 2)
+            
             true_angle = angle_lookup.get(filename)
 
             total_frames += 1
@@ -99,6 +105,7 @@ def test_detect_corners(quant_settings=False):
                 print(f"Calculated Angle: {detected_bots_with_data['huey']['orientation']}")
                 if detected_bots_with_data['huey']['orientation'] != None:
                     draw_orientation_arrow(quantized_img, detected_bots_with_data)
+                    draw_manual_arrow(quantized_img, cx, cy, true_angle)
 
                     if true_angle:
                         print(f"Angle difference: {current_angle_difference}")
