@@ -269,7 +269,8 @@ class Ram():
             self.huey_previous_positions.append(self.huey_position)
             self.huey_previous_orientations.append(self.huey_orientation)
 
-        if self.huey_pos_count % 5 == 0:
+        # Changed from 5 to 1, TODO: recovery values need adjusted
+        if self.huey_pos_count % 1 == 0:
             self.huey_previous_positions.append(self.huey_position)
             self.huey_previous_orientations.append(self.huey_orientation)
 
@@ -349,7 +350,7 @@ class Ram():
             # PID Shenanigans. Only use PID for the turn values
             if self.USE_PID and self.delta_t != 0:
                 if self.delta_t > 0:
-                    derivative = (self.huey_orientation - self.huey_previous_orientations[-1]) / (self.delta_t * 180.0)
+                    derivative = (((self.huey_orientation - self.huey_previous_orientations[-1] + 180) % 360 ) -180) / (self.delta_t * 180.0)
                 else:
                     derivative = 0
                 
