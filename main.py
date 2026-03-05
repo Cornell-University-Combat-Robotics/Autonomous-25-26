@@ -39,7 +39,7 @@ WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
 # Display frame smaller for selection with 1080p video, 1.0 default
 DISPLAY_SCALE = 1.0
 IS_TRANSMITTING = True         # True to send transmissions to live Huey via Arduino
-WEAPON_ON = True               # True if weapon motor should be on
+WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
 DISPLAY_ANGLES = True           # Only use when SHOW_FRAME is True
 # Process every captured frame, False -> cap at FRAME_RATE
@@ -94,7 +94,7 @@ frame_buffer = deque(maxlen=1)
 stop_event = threading.Event()
 # Shared state for controls passed from UI thread to Perception thread
 shared_state = {"key": None, "flipped": None,
-                "paused": False, "skip_frame": False, "weapon_on": False}
+                "paused": False, "skip_frame": False, "weapon_on": WEAPON_ON}
 
 
 def main():
