@@ -112,6 +112,8 @@ class Ram():
         self.recover_turn = 0.5
         self.is_recovering = False
         self.is_backing = False
+        # TODO: add this as an initializer
+        self.targeting_method = 3
     # ----------------------------- HELPER METHODS -----------------------------
 
     ''' use a PID controller to move the bot to the desired position '''
@@ -238,10 +240,22 @@ class Ram():
     ''' 
     Returns the predicted desired orientation angle of the bot given all parameters, NOTE: the positive direction is counterclockwise
     Precondition: our_position & enemy_position 
+    targeting method is where we set enemy_future position to. It defaults to self.enemy_position
     '''
     def predict_desired_turn_and_speed(self):
         check_wall(self.enemy_position)
-        enemy_future_position = self.enemy_future_position
+        check_wall(self.enemy_future_position)
+        assert self.targeting_method == 1 or self.targeting_method == 2 or self.targeting_method == 3
+        match self.targeting_method:
+            case 1:
+                # center of bbox
+                enemy_future_position = self.enemy_position
+            case 2:
+                # front of bbox
+                enemy_future_position = self.enemy_future_position
+            case 3:
+                # back of bbox
+                enemy_future_position = self.enemy_future_position
         
         huey_position_copy = np.copy(self.huey_position)
         if np.linalg.norm(self.enemy_position - huey_position_copy) < Ram.DANGER_ZONE:
@@ -284,7 +298,7 @@ class Ram():
         speed = 1.0 - min(1.0, abs(angle_deg) / 180.0)
         return turn, speed
 
-    def orientation_and_front_intersection_t(self, dx: float, dy_img: float, bbox, eps: float = 1e-6):
+    def bbox_intersection(self, orientation: float, bbox, eps: float = 1e-6, front=1):
         """
         Given motion components in IMAGE coords (dx, dy_img) and an axis-aligned bbox (two corners),
         compute:
@@ -294,10 +308,7 @@ class Ram():
 
         bbox format assumed: bbox[0]=(x1,y1), bbox[1]=(x2,y2) (corners, any order)
         """
-        # orientation in math coords (y up), then normalize
-        dy_math = -dy_img
-        orientation = (np.degrees(np.arctan2(dy_math, dx)) + 360.0) % 360.0
-
+        assert (front == 1 or front == -1)
         # forward unit vector in IMAGE coords
         theta = np.radians(orientation)
         forward_img = np.array([np.cos(theta), -np.sin(theta)], dtype=float)
@@ -311,13 +322,19 @@ class Ram():
         ux, uy = float(forward_img[0]), float(forward_img[1])
         tx = half_w / max(abs(ux), eps)
         ty = half_h / max(abs(uy), eps)
-        t = min(tx, ty)
+        t = min(tx, ty) * front
 
-        return orientation, forward_img, t
-    """
+        return forward_img, t
     
     """
+    UPDATAES ENEMY_ORIENTATION TOO
+    """
     def get_enemy_orientation(self, bots):
+        if self.targeting_method == 1 or self.targeting_method == 2:
+            front = 1
+        elif self.targeting_method == 3:
+            front = -1
+
         self.enemy_future_position = self.enemy_position
         last_good = self.enemy_old_orientation
         if not (bots and bots.get("enemy") and bots["enemy"].get("bbox") is not None):
@@ -325,20 +342,6 @@ class Ram():
         
         if len(self.enemy_previous_positions) == 0:
             return last_good
-        
-        # If bbox missing, we can still do a velocity-based future estimate
-        # SLOP: THIS IS PURELY TESTING CODE, AHJSDAKSJHJDLKASJd
-        if len(self.enemy_previous_positions) > 0:
-            prev = self.enemy_previous_positions[-1]
-            cur = self.enemy_position
-            if prev is not None and cur is not None:
-                v = cur - prev
-                if np.isfinite(v).all() and np.linalg.norm(v) < 250:  # reject teleports
-                    lookahead_frames = 4  # tune (or use fps)
-                    cand = cur + v * lookahead_frames
-                    cand = np.array(cand, dtype=float)
-                    check_wall(cand)
-                    self.enemy_future_position = cand
         
         prev_pos = self.enemy_previous_positions[-1]
         cur_pos = self.enemy_position
@@ -349,14 +352,31 @@ class Ram():
         delta_img = cur_pos - prev_pos
         dist = np.linalg.norm(delta_img)
 
-        if dist <= 5:
+        # This is what controls whether we use a side of a bbox or velocity based
+        if dist <= 2:
+            # If bbox missing, we can still do a velocity-based future estimate
+            # SLOP: THIS IS PURELY TESTING CODE, AHJSDAKSJHJDLKASJd
+            if len(self.enemy_previous_positions) > 0:
+                prev = self.enemy_previous_positions[-1]
+                cur = self.enemy_position
+                if prev is not None and cur is not None:
+                    v = cur - prev
+                    if np.isfinite(v).all() and np.linalg.norm(v) < 250:  # reject teleports
+                        # TODO: LOOK AT THIS 4, IDK
+                        lookahead_frames = 4
+                        cand = cur + v * lookahead_frames * front
+                        cand = np.array(cand, dtype=float)
+                        check_wall(cand)
+                        self.enemy_future_position = cand
+            
             return last_good
         
         dx = float(delta_img[0])
         dy_img = float(delta_img[1])
+        orientation = (np.degrees(np.arctan2(-dy_img, dx)) + 360.0) % 360.0
 
-        orientation, forward_img, t = self.orientation_and_front_intersection_t(
-            dx, dy_img, bots["enemy"]["bbox"]
+        forward_img, t = self.bbox_intersection(
+            orientation, bots["enemy"]["bbox"], front = front
         )
 
         self.enemy_future_position = cur_pos + t * forward_img
@@ -475,7 +495,9 @@ class Ram():
             # PID Shenanigans. Only use PID for the turn values
             if self.USE_PID and self.delta_t != 0:
                 if self.delta_t > 0:
-                    derivative = (((self.huey_orientation - self.huey_previous_orientations[-1] + 180) % 360 ) -180) / (self.delta_t * 180.0)
+                    d_orientation = ((self.huey_orientation - self.huey_previous_orientations[-1] + 180) % 360 ) - 180
+                    d_time = self.delta_t * 180.0
+                    derivative = d_orientation / d_time
                 else:
                     derivative = 0
                 
