@@ -269,7 +269,8 @@ class Ram():
             self.huey_previous_positions.append(self.huey_position)
             self.huey_previous_orientations.append(self.huey_orientation)
 
-        if self.huey_pos_count % 5 == 0:
+        # Changed from 5 to 1, TODO: recovery values need adjusted
+        if self.huey_pos_count % 1 == 0:
             self.huey_previous_positions.append(self.huey_position)
             self.huey_previous_orientations.append(self.huey_orientation)
 
