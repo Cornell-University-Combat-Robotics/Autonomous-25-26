@@ -35,7 +35,7 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
-WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
 DISPLAY_SCALE = 1.0             # Display frame smaller for selection with 1080p video, 1.0 default
 IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
 WEAPON_ON = False               # True if weapon motor should be on
@@ -46,7 +46,7 @@ FRAME_RATE = 60                # FPS used for algo stuff, update to expected FPS
 SHOW_HUD = True                 # Show heads-up display with FPS, speed, turn, frame number
 SHOW_QUANTIZED_HUEY = True     # Display the quantized bounding box of Huey in separate window
 COLOR_QUANTIZATION = True       # True to use color quantization, should always be True
-CAN_RECOVER = True              # True to use recovery
+CAN_RECOVER = False              # True to use recovery
 CAMERA_STREAM = False           # True if using live camera stream, False if using a video file
 SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
@@ -64,9 +64,9 @@ OD_IMG_SIZE = 320
 
 folder = os.getcwd() + "/main_files"
 
-camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-# camera_number = folder + "/test_videos/orbital_huey.mp4"
+camera_number = folder + "/test_videos/orbital_huey.mp4"
 # camera_number = 1
 # camera_number = 0
 
