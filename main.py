@@ -140,8 +140,8 @@ def main():
         if IS_TRANSMITTING:
             ser, motor_group, weapon_motor_group = get_motor_groups(
                 JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
-            if WEAPON_ON:
-                weapon_motor_group.move(1)
+            # if WEAPON_ON:
+            #     weapon_motor_group.move(1)
 
         cv2.destroyAllWindows()
 
@@ -295,8 +295,9 @@ def main():
                             speed = move_dictionary["speed"]
                             turn = move_dictionary["turn"]
                             motor_group.move(speed*is_flipped, turn * -1)
-                            weapon_motor_group.move(
-                                1 if weapon_on_this_frame else 0)
+                            if WEAPON_ON:
+                                weapon_motor_group.move(
+                                    1 if weapon_on_this_frame else 0)
 
                     # Prepare Main Display Image
                     main_display_img = None
