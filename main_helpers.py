@@ -133,7 +133,8 @@ def get_predictor(MODEL_NAME, OD_IMG_SIZE):
 
 def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel):
     # 5.1: Defining Transmission Object if we're using a live video
-    ser = OurSerial(baudrate=115200) # Updated from 9600 to handle higher fps, push new arduino code
+    # Updated from 9600 to handle higher fps, push new arduino code 115200
+    ser = OurSerial(baudrate=115200)
     motor_group = Motor(ser=ser, channel=speed_motor_channel,
                         channel2=turn_motor_channel)
     if JANK_CONTROLLER:
@@ -180,7 +181,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
     return algorithm
 
 
-def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False,  centroids=[], show=True):
+def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False, weapon_on=False, centroids=[], show=True):
     if is_recovering:
         cv2.putText(image, "RECOVERING", (550, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
@@ -194,6 +195,13 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
         else:
             cv2.putText(image, "BACKWARD: " + against_wall, (450, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.67, (150, 67, 255), 2)
+
+    if weapon_on:
+        cv2.putText(image, "WEAPON ON", (image.shape[1] - 150, image.shape[0] - 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 255, 0), 2)
+    else:
+        cv2.putText(image, "WEAPON OFF", (image.shape[1] - 150, image.shape[0] - 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
 
     # BLUE line: Huey's Current Orientation according to Corner Detection
 
@@ -266,8 +274,8 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False):
     # else:
     #     threshold = 22
 
-    #RYAN GOD SETTINGS (optimized for green huey based on prince video):
-    threshold = 24.725 
+    # RYAN GOD SETTINGS (optimized for green huey based on prince video):
+    threshold = 24.725
     custom_weights = [0.171, 0.377, 0.669]
 
     colors_hsv_1x = np.array(selected_colors).reshape(1, -1, 3)

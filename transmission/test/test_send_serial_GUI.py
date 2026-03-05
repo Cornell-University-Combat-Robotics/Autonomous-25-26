@@ -6,7 +6,7 @@ import serial.tools.list_ports
 
 
 # Initialize the serial connection
-def init_serial(port, baudrate=9600, timeout=1):
+def init_serial(port, baudrate=115200, timeout=1):
     ser = serial.Serial(port, baudrate, timeout=timeout)
     time.sleep(2)  # Wait for the serial connection to initialize
     return ser
