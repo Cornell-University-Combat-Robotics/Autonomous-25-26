@@ -90,8 +90,8 @@ def read_prev_colors(file_path):
             for line in file:
                 hsv = list(map(int, line.strip().split(", ")))
                 selected_colors.append(hsv)
-        if len(selected_colors) != 3:
-            raise ValueError("The file must contain exactly 3 HSV values.")
+        if len(selected_colors) < 3:
+            print(f"Warning: Only {len(selected_colors)} colors found (expected at least 3).")
     except Exception as e:
         print(f"Error reading selected_colors.txt: {e}" + "\n")
         exit(1)
@@ -99,7 +99,31 @@ def read_prev_colors(file_path):
 
 
 def make_new_colors(output_file_path, warped_frame):
-    selected_colors = ColorPicker.pick_colors(warped_frame)
+    selected_colors = list(ColorPicker.pick_colors(warped_frame))
+
+    # Allow selecting additional colors
+    hsv_frame = cv2.cvtColor(warped_frame, cv2.COLOR_BGR2HSV)
+    display_frame = warped_frame.copy()
+    window_name = "Select Additional Colors (q to quit)"
+
+    def click_event(event, x, y, flags, param):
+        if event == cv2.EVENT_LBUTTONDOWN:
+            color = hsv_frame[y, x]
+            selected_colors.append(color)
+            print(f"Added color: {color}")
+            cv2.circle(display_frame, (x, y), 5, (0, 0, 255), -1)
+            cv2.imshow(window_name, display_frame)
+
+    cv2.imshow(window_name, display_frame)
+    cv2.setMouseCallback(window_name, click_event)
+    print("Press 'q' to finish selecting colors.")
+
+    while True:
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
+            break
+    cv2.destroyWindow(window_name)
+
     with open(output_file_path, "w") as file:
         for color in selected_colors:
             file.write(f"{color[0]}, {color[1]}, {color[2]}\n")
