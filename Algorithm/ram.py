@@ -350,7 +350,7 @@ class Ram():
             # PID Shenanigans. Only use PID for the turn values
             if self.USE_PID and self.delta_t != 0:
                 if self.delta_t > 0:
-                    derivative = (self.huey_orientation - self.huey_previous_orientations[-1]) / (self.delta_t * 180.0)
+                    derivative = (((self.huey_orientation - self.huey_previous_orientations[-1] + 180) % 360 ) -180) / (self.delta_t * 180.0)
                 else:
                     derivative = 0
                 
