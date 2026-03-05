@@ -24,6 +24,9 @@ pyserial==3.5                    # import serial
 onnxruntime==1.24.2              # import onnxruntime
 openvino==2026.0               # import openvino
 openpyxl==3.1.2                  # import openpyxl (for Excel files)
+
+# Once this supports python 3.14, update to 3.14. 3.14 removes global interpreter lock, very good for threading
 coremltools>=9.0                # import coremltools (for Core ML models)
+
 plotly>=6.5.2                   # import plotly, better graphs
 cv2_enumerate_cameras           # Used for see_all_cameras.py
