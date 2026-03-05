@@ -33,7 +33,9 @@ def quantize_robot_colors(
     thresh_lab=25.0,
     keep_background=True,
     show = False,
-    custom_weights = None
+    custom_weights = None,
+    offset = (0, 0),
+    min_pixels = 0
 ):
     H, W = img_bgr.shape[:2]
     N = H * W
@@ -91,6 +93,32 @@ def quantize_robot_colors(
 
     # Pixels close enough to some robot color
     mask_robot = min_dist2 < thresh2  # shape (N,)
+
+    # --- Save Stats to CSV ---
+    # Check if we have enough of Color 1 (index 0) to consider this our robot
+    mask_0 = mask_robot & (min_idx == 0)
+    if np.count_nonzero(mask_0) > min_pixels:
+        # Generate grid coordinates for the current image crop
+        y_grid, x_grid = np.indices((H, W))
+        flat_y = y_grid.reshape(-1)
+        flat_x = x_grid.reshape(-1)
+
+        for i in range(len(robot_colors_bgr)):
+            if i >= 3: break # Only tracking first 3 colors
+            
+            # Identify pixels belonging to color i
+            mask_i = mask_robot & (min_idx == i)
+            
+            if np.any(mask_i):
+                avg_lab = np.mean(flat_lab[mask_i], axis=0)
+                avg_x = np.mean(flat_x[mask_i]) + offset[0]
+                avg_y = np.mean(flat_y[mask_i]) + offset[1]
+                
+                try:
+                    with open(f"robot_color_{i+1}.csv", "a") as f:
+                        f.write(f"{avg_lab[0]:.2f}, {avg_lab[1]:.2f}, {avg_lab[2]:.2f}, {avg_x:.2f}, {avg_y:.2f}\n")
+                except Exception as e:
+                    print(f"Error writing to robot_color_{i+1}.csv: {e}")
 
     # Build output image
     if keep_background:

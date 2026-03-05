@@ -258,6 +258,10 @@ def initialize_quantization():
     dummy = np.zeros((8, 8, 3), dtype=np.uint8)
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2LAB)
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2HSV)
+    
+    for i in range(1, 4):
+        with open(f"robot_color_{i}.csv", "w") as f:
+            f.write("L, a, b, x, y\n")
 
 
 def quantize(detected_bots, selected_colors, show, is_flipped=False):
@@ -269,6 +273,7 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False):
     #RYAN GOD SETTINGS (optimized for green huey based on prince video):
     threshold = 24.725 
     custom_weights = [0.171, 0.377, 0.669]
+    min_pixels = 50
 
     colors_hsv_1x = np.array(selected_colors).reshape(1, -1, 3)
 
@@ -280,8 +285,18 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False):
 
     bgr_colors = bgr_colors_1x.reshape(-1, 3)  # (N_colors, 3)
     for bot in detected_bots["bots"]:
+        # Extract offset from bbox (x1, y1) to map back to original image coordinates
+        bbox = bot.get("bbox", [0, 0, 0, 0])
+        
+        # Handle different bbox formats: [x, y, w, h] vs [[x, y], [x, y], ...]
+        if len(bbox) > 0 and isinstance(bbox[0], (list, tuple, np.ndarray)):
+            offset = (int(bbox[0][0]), int(bbox[0][1]))
+        else:
+            offset = (int(bbox[0]), int(bbox[1]))
+        
         bot["img"] = quantize_robot_colors(
-            bot["img"], bgr_colors, thresh_lab=threshold, keep_background=False, show=show, custom_weights=custom_weights)
+            bot["img"], bgr_colors, thresh_lab=threshold, keep_background=False, show=show, custom_weights=custom_weights, offset=offset, min_pixels=min_pixels
+        )
 
     return detected_bots
 
