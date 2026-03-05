@@ -34,21 +34,16 @@ class RobotCornerDetection:
         self.huey_color_percentage_threshold = -1
         self.color_percentage_rows = color_percentage_rows
         self.centroids = []
-        self.diagonals = deque(maxlen=RobotCornerDetection.LENGTH_BUFFER)
-        self.sides = deque(maxlen=RobotCornerDetection.LENGTH_BUFFER)
+        
+        # Note: These are actually floats/int but we need them to be mutable
+        self.diag_len = []
+        self.side_len = []
+        self.num_lens = [0]
+
         self.left_diff = []
         self.right_diff = []
         self.ratio = []
 
-        # plt.ion()
-        # # fig, ax = plt.subplots()
-        # # plt.plot(self.left_diff, label="Left Difference")
-        # # plt.plot(self.right_diff, label="Right Difference")
-        # plt.plot(self.diagonals, label = "Diagonals")
-        # plt.plot(self.sides, label = "Sides")
-        # plt.grid(True)
-        # plt.legend()
-        # plt.show()
 
     def set_bots(self, bots: dict):
         self.bots = bots
@@ -143,15 +138,16 @@ class RobotCornerDetection:
                 print(self.centroids)
                 
                 # Every time we calculate 4 points, calculate diagonal and side length in the case of 1 front 1 back corner in the future
-                calc_diagonal_and_side_length(self.centroids, self.diagonals, self.sides)
+                calc_diagonal_and_side_length(self.centroids, self.diag_len, self.side_len, self.num_lens)
                         
                 # print(f"🇬🇧🛌🇰🇷DIALGA: {self.diagonals}, 🇬🇧SYDNEY: {self.sides}")
                 print("🚗")
                 if (len(centroid_points[0]) + len(centroid_points[1]) == 2):
                     if previous_orientations is not None and len(previous_orientations) > 0:
                         previous_orientation = previous_orientations[-1] # why index 0...
-                        huey["orientation"] = two_corners(centroid_points, previous_orientation, self.diagonals, self.sides)
+                        huey["orientation"] = two_corners(centroid_points, previous_orientation, self.diag_len, self.side_len)
                         print(f"PREV ORIENT: 🌸🐋💛 {previous_orientation}")
+                        print(f"Current ORIENT: 💛🐋🌸 { huey["orientation"]}")
                     else:
                         huey["orientation"] = None
                     return {"huey": huey, "enemy": enemy_bots}

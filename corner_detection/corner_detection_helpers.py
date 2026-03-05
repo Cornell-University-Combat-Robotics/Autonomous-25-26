@@ -223,7 +223,7 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
 
     return np.array([front_array, back_array], dtype=object)
 
-def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagonals: deque, sides: deque) -> float:
+def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagonals: list, sides: list) -> float:
     """
     Handles orientation calculation when only 2 points are detected.
     """
@@ -255,15 +255,15 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
     elif len(front_points) == 1 and len(back_points) == 1:
         if len(diagonals) > 0:
             print("🦧")
-            diagonal_avg = sum(diagonals)/len(diagonals)
-            sides_avg = sum(sides)/len(sides)
+            diagonal_avg = diagonals[0]
+            sides_avg = sides[0]
             cutoff = (diagonal_avg + sides_avg)/2
             corner_distance = distance(front_points[0], back_points[0])
             print("💛💛💛")
             dx = front_points[0][0] - back_points[0][0]
-            dy = front_points[0][1] - back_points[0][1]
+            dy = -(front_points[0][1] - back_points[0][1])
             print("💛")
-            angle = math.atan2(dy,dx)
+            angle = math.atan2(dy,dx) * (180/math.pi)
             
             # CASE 2.1: Both corners are on the same side
             if (corner_distance < cutoff):
@@ -280,13 +280,14 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
 
     raise ValueError(f"Invalid point configuration: Front={len(front_points)}, Back={len(back_points)}")
 
-def calc_diagonal_and_side_length(centroids, diagonals, sides):
+def calc_diagonal_and_side_length(centroids, diagonal_len, side_len, len_nums):
     """
     Helper to calculate the diagonal and side length if we have 4 corners
     We use the average of the last 20 diagonal and side lenghts (1.5d and d) in the case of 1 front 1 back corner
     """
     
     if len(centroids) == 2 and len(centroids[0]) == len(centroids[1]) == 2:
+        len_nums[0] += 1 
         # Left distances
         hypo_l = (np.linalg.norm(centroids[0][0] - centroids[1][1]))
         side_l = (np.linalg.norm(centroids[0][0] - centroids[1][0]))
@@ -305,28 +306,14 @@ def calc_diagonal_and_side_length(centroids, diagonals, sides):
             hypo_r = side_r
             side_r = temp
 
-        diagonals.append(hypo_l)
-        diagonals.append(hypo_r)
-        sides.append(side_l)
-        sides.append(side_r)
 
-        # left_diff = abs(diagonals[-2] - sides[-2])
-        # right_diff = abs(diagonals[-1] - sides[-1])
-        # # ratio.append((diagonals[-2]+ diagonals[-1])/(sides[-2]+sides[-1]))
-        # left_diff.append(left_diff)
-        # right_diff.append(right_diff)
-        # print(f"LEFT diff: {left_diff}, RIGHT diff: {right_diff}")
-    
-        # ax = plt.gca()
-        # ax.relim()
-        # ax.autoscale_view()
-        # plt.plot(left_diff, label="Left Difference", color = 'blue')
-        # plt.plot(right_diff, label="Right Difference", color='coral')
-        # plt.plot(diagonals, label = "Diagonals", color = 'mediumpurple')
-        # plt.plot(sides, label = "Sides", color = "xkcd:browny orange")
-        # plt.plot(ratio, label = "Ratio of Diagonals/Sides", color = "xkcd:blue with a hint of purple")
-        # plt.draw()
-        # plt.pause(0.1)
+        if len(diagonal_len) == 0 :
+            diagonal_len.append((hypo_l + hypo_r)/2)
+            side_len.append((side_l + side_r)/2)
+        else:
+            # take a waited average so that the average is resistent to changes
+            diagonal_len[0] = (diagonal_len[0]*((len_nums[0]-1)/len_nums[0]) + hypo_l*((.5)/len_nums[0]) + hypo_r*((.5)/len_nums[0]))
+            side_len[0] = (side_len[0]*((len_nums[0]-1)/len_nums[0]) + side_l*((.5)/len_nums[0]) + side_r*((.5)/len_nums[0]))
 
 def pick_closest_angle(angle1: float, angle2: float, target: float) -> float:
     """Helper to find which candidate is closer to the previous orientation."""
