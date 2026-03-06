@@ -2,6 +2,7 @@ import cv2
 import threading
 import time
 import platform
+from collections import deque
 
 
 class CameraStream:
@@ -38,12 +39,15 @@ class CameraStream:
 
         self.ret, self.frame = self.cap.read()
         self.frame_count = 0
+        self.buffer = deque()
         self.stopped = False
+        self.t0 = time.perf_counter()
 
         # Print FPS, frame width, frame height of self.cap object
         print(f"Capture FPS: {self.cap.get(cv2.CAP_PROP_FPS)}")
         print(f"Capture Frame Width: {self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)}")
-        print(f"Capture Frame Height: {self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}")
+        print(
+            f"Capture Frame Height: {self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}")
 
     def start(self):
         # Using daemon=True so the thread stops when main.py exits
@@ -60,6 +64,7 @@ class CameraStream:
             ret, frame = self.cap.read()
             if ret:
                 self.ret, self.frame = ret, frame
+                self.buffer.append(frame)
                 self.frame_count = self.frame_count + 1
 
     def read(self):
@@ -85,16 +90,30 @@ if __name__ == "__main__":
 
     cam = CameraStream(src=camera_number).start()
 
+    # Define the codec and create VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+    width = int(cam.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cam.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    out = cv2.VideoWriter('output_2.avi', fourcc, 120.0, (width, height))
+
     print("Camera Stream Started. Press 'q' to quit.")
 
     try:
         while True:
-            # 1. Grab the most recent frame
-            ret, frame = cam.read()
+            # 1. Drain the buffer to ensure every single frame is written to disk
+            while len(cam.buffer) > 0:
+                frame = cam.buffer.popleft()
 
-            # 2. Display if the frame is valid
-            if ret and frame is not None:
-                cv2.imshow("120FPS Camera Stream", frame)
+                # 2. Write the frame to the video file
+                out.write(frame)
+
+                # 3. Display only the most recent frame in the buffer to keep UI responsive
+                # if len(cam.buffer) == 0:
+                    # cv2.imshow("120FPS Camera Stream", frame)
+
+                if (cam.frame_count % 120 == 0 and len(cam.buffer) == 0) or True:
+                    print(
+                        f"Frame: {cam.frame_count} | Buffer: {len(cam.buffer)} | Time: {time.perf_counter()-cam.t0:.2f}s")
 
             # 3. Use pollKey() for non-blocking input check
             # pollKey() returns -1 if no key is pressed
@@ -108,5 +127,6 @@ if __name__ == "__main__":
     finally:
         # 4. Clean up resources
         print("Cleaning up...")
+        out.release()
         cam.stop()
         cv2.destroyAllWindows()
