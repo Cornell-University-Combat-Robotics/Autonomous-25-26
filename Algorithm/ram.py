@@ -392,6 +392,7 @@ class Ram():
             orientation, bots["enemy"]["bbox"], front = front
         )
 
+        # TODO: Could add a weight like 0.8 or 1.2 times t for targeting
         self.enemy_future_position = cur_pos + t * forward_img
         self.enemy_old_orientation = orientation      
         if True:
