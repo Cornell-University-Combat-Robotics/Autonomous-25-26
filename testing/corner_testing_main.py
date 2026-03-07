@@ -102,22 +102,34 @@ def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, DISPLAY_IMAGE
             
             true_angle = angle_lookup.get(filename)
 
-            total_frames += 1
-            if detected_bots_with_data['huey']['orientation'] != None:
-                frames_with_orientation += 1
-                if true_angle: #If there exists a true angle in the csv (should always be true if data is labeled correctly)
+            if true_angle:
+                total_frames += 1
+
+                if detected_bots_with_data['huey']['orientation'] != None:
+                    frames_with_orientation += 1
                     current_angle_difference = angle_difference(true_angle, detected_bots_with_data['huey']['orientation'])
                     total_theta += current_angle_difference
                     total_score += current_angle_difference
-            else:
-                total_score += NO_ORIENTATION_SCORE
+                else:
+                    total_score += NO_ORIENTATION_SCORE
+                
+            # total_frames += 1
+
+            # if detected_bots_with_data['huey']['orientation'] != None:
+            #     frames_with_orientation += 1
+            #     if true_angle: #If there exists a true angle in the csv (should always be true if data is labeled correctly)
+            #         current_angle_difference = angle_difference(true_angle, detected_bots_with_data['huey']['orientation'])
+            #         total_theta += current_angle_difference
+            #         total_score += current_angle_difference
+            # else:
+            #     total_score += NO_ORIENTATION_SCORE
 
             if DISPLAY_IMAGES:
                 print(f"Correct Angle: {angle_lookup.get(filename)}")
                 print(f"Calculated Angle: {detected_bots_with_data['huey']['orientation']}")
+                draw_manual_arrow(quantized_img, cx, cy, true_angle)
                 if detected_bots_with_data['huey']['orientation'] != None:
                     draw_orientation_arrow(quantized_img, detected_bots_with_data)
-                    draw_manual_arrow(quantized_img, cx, cy, true_angle)
 
                     if true_angle:
                         print(f"Angle difference: {current_angle_difference}")
@@ -144,7 +156,7 @@ if __name__ == "__main__":
 
     orientation_scores = {}
 
-    for i in range(20, 45, 3):
-        orientation_scores[i] = test_detect_corners(i, 0.1, 1.0, 1.0, 1.0)
+    for i in range(80, 90, 3):
+        orientation_scores[i] = test_detect_corners(i, 0.1, 1.0, 1.0)
 
     print(str(orientation_scores))
