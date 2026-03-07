@@ -71,7 +71,7 @@ class RobotCornerDetection:
 
                 return our_bot
             else:
-                print("No valid bot images found.")
+                # print("No valid bot images found.")
                 return None
         
         except Exception as e:
@@ -121,7 +121,7 @@ class RobotCornerDetection:
                 # left_front, right_front = get_left_and_right_front_points(centroid_points)
 
                 if (len(centroid_points[0]) + len(centroid_points[1]) < 3):
-                    print("Less than 3 corners found")
+                    # print("Less than 3 corners found")
                     return {"huey": huey, "enemy": enemy_bots}
 
                 front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5
@@ -132,7 +132,7 @@ class RobotCornerDetection:
 
                 return result
             else:
-                print("Image doesn't exist")
+                # print("Image doesn't exist")
                 return {"huey": {}, "enemy": {}}
 
         except Exception as e:

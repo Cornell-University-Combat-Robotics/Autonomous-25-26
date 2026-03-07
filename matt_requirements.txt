@@ -26,8 +26,8 @@ torch==2.10.0+cu130
 tensorrt==10.15.1.29
 tensorrt-cu13>=10.15.1
 
-ultralytics==8.3.194             # import ultralytics (YOLO)
+ultralytics==8.4.14            # import ultralytics (YOLO)
 pyserial==3.5                    # import serial
 onnxruntime==1.22.1              # import onnxruntime
-openvino==2025.3.0               # import openvino
+openvino==2025.4.1               # import openvino
 

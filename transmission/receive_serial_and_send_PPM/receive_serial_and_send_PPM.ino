@@ -15,7 +15,7 @@ int ppm[chanel_number];
 
 void setup()
 {
-  Serial.begin(9600); // Initialize serial communication at 9600 baud rate
+  Serial.begin(115200); // Initialize serial communication at 115200 baud rate
 
   // TODO: set to default
   ppm[0] = default_servo_value;
@@ -40,14 +40,13 @@ void setup()
   sei();
 }
 
-
 void loop()
 {
 
   if (Serial.available() > 0)
   {
     String input = Serial.readStringUntil('\n');
-    input.trim();  // remove stray whitespace
+    input.trim(); // remove stray whitespace
 
     int idx = 0;
 
@@ -55,7 +54,8 @@ void loop()
     {
       // Find end of channel token
       int space1 = input.indexOf(' ', idx);
-      if (space1 == -1) break;
+      if (space1 == -1)
+        break;
 
       int channel = input.substring(idx, space1).toInt();
 
@@ -75,12 +75,9 @@ void loop()
         idx = space2 + 1;
       }
 
-
       ppm[channel] = default_servo_value + (val * 500);
-
     }
   }
-
 }
 
 ISR(TIMER1_COMPA_vect)

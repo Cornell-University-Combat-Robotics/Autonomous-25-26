@@ -24,5 +24,6 @@ auto/
 auto26/
 matt_env/
 color_output.csv
-runtimesheet.csv
 runtimesheet/
+13venv/
+*.lprof
