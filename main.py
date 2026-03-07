@@ -30,18 +30,19 @@ from warp_main import warp
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller
-WARP_AND_COLOR_PICKING = False  # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = True  # Re-do warp & color selection
 IS_TRANSMITTING = False         # True if connected to live Huey
 WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
 IS_ORIGINAL_FPS = True          # Process every captured frame
 DISPLAY_ANGLES = True           # Only show angles if SHOW_FRAME is True
 COLOR_QUANTIZATION = True       # True if color quantization is on
-CAN_RECOVER = False              # True if want recovery
+CAN_RECOVER = True              # True if want recovery
 CAMERA_STREAM = False           # True if using live camera stream, False if using pre-recorded video
 SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
 BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
+TARGETING_METHOD = 3            # How we target the enemy (1,2 or 3 for now)
 
 # MODEL_NAME = "SmallComp"        # Used for comp, best accuracy if you have the compute for it.
 MODEL_NAME = "NanoSizeVariant"  # Use with lower image size for faster performance, not much worse accuracy.
@@ -111,9 +112,9 @@ def main():
         cv2.destroyAllWindows()
 
         if WARP_AND_COLOR_PICKING:
-            algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors)
+            algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors, targeting_method = TARGETING_METHOD)
         else:
-            algorithm = Ram()
+            algorithm = Ram(targeting_method=TARGETING_METHOD)
 
         if SAVE_BBOXES:
             if not os.path.exists("bbox_output"):
@@ -251,7 +252,7 @@ def main():
                     warped_frame = predictor.show_predictions(warped_frame, detected_bots)
 
                     t = ptime()
-                    final_image = display_angles(detected_bots_with_data, move_dictionary, warped_frame, enemy_orientation, enemy_future_position, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing, against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped = is_flipped, centroids=corner_detection.centroids)
+                    final_image = display_angles(detected_bots_with_data, move_dictionary, warped_frame, enemy_orientation, enemy_future_position, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing, against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped = is_flipped, centroids=corner_detection.centroids, targeting_method= TARGETING_METHOD)
                     rs.log("Display Angles", ptime() - t)
 
                     if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
@@ -273,7 +274,7 @@ def main():
                 rs.dump()
 
             elif DISPLAY_ANGLES:
-                display_angles(None, None, warped_frame)
+                display_angles(None, None, warped_frame, targeting_method=TARGETING_METHOD)
 
             if SHOW_FRAME and not DISPLAY_ANGLES:
                 cv2.imshow("Bounding boxes (no angles)", warped_frame)

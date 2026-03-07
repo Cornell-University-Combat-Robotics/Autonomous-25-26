@@ -143,7 +143,7 @@ def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, w
         weapon_motor_group = Motor(ser=ser, channel=weapon_motor_channel)
     return ser, motor_group, weapon_motor_group
 
-def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors):
+def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors, targeting_method):
     # 6. Do an initial run of ML and Corner. Initialize Algo
     first_run_ml = predictor.predict(warped_frame, show=SHOW_FRAME)
     first_run_ml = quantize(first_run_ml, selected_colors, show=False, is_flipped=False)
@@ -153,7 +153,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
     if first_run_orientation and first_run_orientation["huey"] and first_run_orientation["enemy"]:
         # Ensure single enemy
         # first_run_orientation["enemy"] = first_run_orientation["enemy"][0] # we just take the first enemy in the list
-        algorithm = Ram(bots=first_run_orientation)
+        algorithm = Ram(bots=first_run_orientation, targeting_method=targeting_method)
         first_move_dictionary = algorithm.ram_ram(first_run_orientation)
 
         num_housebots = len(first_run_ml["housebot"])
@@ -166,7 +166,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
         cv2.waitKey(0)
         cv2.destroyAllWindows()
     else:
-        algorithm = Ram()
+        algorithm = Ram(targeting_method=targeting_method)
         cv2.imshow("", warped_frame)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
@@ -174,7 +174,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
     
     return algorithm
 
-def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orientation=315, enemy_future_position=np.array([0,0]),initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped = False,  centroids=[]):
+def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orientation=315, enemy_future_position=np.array([0,0]),initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped = False,  centroids=[], targeting_method = 1):
     if is_recovering:
         cv2.putText(image, "RECOVERING", (550, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
     if is_flipped == -1:
@@ -238,8 +238,12 @@ def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orient
             start_y_enemy = int(detected_bots_with_data["enemy"]["center"][1]) #TODO: not negative...
 
             # Enemy's future position
-            start_x_enemy_fut = int(enemy_future_position[0])
-            start_y_enemy_fut = int(enemy_future_position[1])
+            if targeting_method == 1:
+                start_x_enemy_fut = start_x_enemy
+                start_y_enemy_fut = start_y_enemy
+            elif targeting_method == 2 or targeting_method == 3:
+                start_x_enemy_fut = int(enemy_future_position[0])
+                start_y_enemy_fut = int(enemy_future_position[1])
 
             end_point_enemy = (int(start_x_enemy + 300 * dx), int(start_y_enemy + 300 * dy))
             cv2.arrowedLine(image, (start_x_enemy, start_y_enemy), end_point_enemy, (67, 255, 0), 2)

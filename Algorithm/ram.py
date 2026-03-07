@@ -44,7 +44,7 @@ class Ram():
     moving_forward = -1
 
     def __init__(self, bots=None, huey_position=(np.array([ARENA_WIDTH, ARENA_WIDTH])), huey_old_position=(np.array([ARENA_WIDTH, ARENA_WIDTH])),
-                 huey_orientation=45, enemy_position=np.array([0, 0]), enemy_orientation=0, huey_old_turn=0, huey_old_speed=0, is_recovering=False) -> None:
+                 huey_orientation=45, enemy_position=np.array([0, 0]), enemy_orientation=0, huey_old_turn=0, huey_old_speed=0, is_recovering=False, targeting_method = 1) -> None:
         # ----------------------------- INIT -----------------------------
         if bots is None:
             # initialize the position and orientation of huey
@@ -113,7 +113,7 @@ class Ram():
         self.is_recovering = False
         self.is_backing = False
         # TODO: add this as an initializer
-        self.targeting_method = 3
+        self.targeting_method = targeting_method
     # ----------------------------- HELPER METHODS -----------------------------
 
     ''' use a PID controller to move the bot to the desired position '''
@@ -294,11 +294,11 @@ class Ram():
         angle_rad = math.atan2(cross, dot)                           # signed, continuous [-pi, pi]
         angle_deg = math.degrees(angle_rad)
 
-        turn = clamp(angle_deg / 180.0, -1.0, 1.0)
-        speed = 1.0 - min(1.0, abs(angle_deg) / 180.0)
+        turn = clamp(angle_deg * Ram.MAX_TURN / 180.0, -1.0, 1.0)
+        speed = 1.0 - min(1.0, abs(angle_deg) * Ram.MAX_TURN / 180.0)
         return turn, speed
 
-    def bbox_intersection(self, orientation: float, bbox, eps: float = 1e-6, front=1):
+    def bbox_intersection(self, orientation: float, bbox, front=1):
         """
         Given motion components in IMAGE coords (dx, dy_img) and an axis-aligned bbox (two corners),
         compute:
@@ -320,17 +320,30 @@ class Ram():
 
         # distance to first rectangle boundary along forward direction
         ux, uy = float(forward_img[0]), float(forward_img[1])
-        tx = half_w / max(abs(ux), eps)
-        ty = half_h / max(abs(uy), eps)
+        if (abs(ux) != 0):
+            tx = half_w / abs(ux)
+        else:
+            tx = float('inf')
+
+        if (abs(uy) != 0):
+            ty = half_h / abs(uy)
+        else:
+            ty = float('inf')
+
         t = min(tx, ty) * front
 
         return forward_img, t
     
     """
-    UPDATAES ENEMY_ORIENTATION TOO
+    Returns enemy orientation and updates self.enemy_future_position as well. Returns the last 
+    known good orientation in a few cases: bots or bots[enemy] doesnt exits, no previous enemy positions, 
+    or if it is a bad value. If the distance between the last two positions is low enough, then we revert
+    to using the center of the bbox as enemy_future_position. 
     """
     def get_enemy_orientation(self, bots):
-        if self.targeting_method == 1 or self.targeting_method == 2:
+        if self.targeting_method == 1:
+            front = 1
+        elif self.targeting_method == 2:
             front = 1
         elif self.targeting_method == 3:
             front = -1
@@ -395,9 +408,9 @@ class Ram():
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
     def ram_ram(self, bots: dict[str, any] = None, can_recover: bool = True, fps = 50, key=None):
         if self.is_recovering or self.is_backing:
-            self.HISTORY_BUFFER = fps/2
+            self.HISTORY_BUFFER = fps*5/2
         else:
-            self.HISTORY_BUFFER = fps
+            self.HISTORY_BUFFER = fps*5
         self.BACK_UP_THRESHOLD = 0.75*self.HISTORY_BUFFER
         self.EDGE_THRESHOLD = 0.25*self.HISTORY_BUFFER
         
