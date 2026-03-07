@@ -22,14 +22,14 @@ DISPLAY_IMAGES = True #Displays each image in window
 NO_ORIENTATION_SCORE = 35 #Angle that is equivelently bad to no orientation
 
 # Folder paths
-ALL_TRAINING_DATA_PATH = "testing/testing_data/"
+ALL_TRAINING_DATA_PATH = "testing_data/"
 
 #--- CHANGE THESE ---
 FOLDER_PATH = os.path.join(ALL_TRAINING_DATA_PATH, "huey_unquantized")
 FIRST_HUEY_PATH = os.path.join(FOLDER_PATH, "1061.png")
 
 LABELED_DATA_PATH = os.path.join(FOLDER_PATH, "angles_output.csv")
-TESTING_DIR = os.getcwd() + "/testing"
+TESTING_DIR = os.getcwd()
 
 #Set up angle lookup
 df = pd.read_csv(LABELED_DATA_PATH)
