@@ -354,8 +354,11 @@ class Ram():
                 else:
                     derivative = 0
                 
-                pid_output = (turn * 0.8) + (derivative * 0.04 * -1)
-                turn = clamp(pid_output, -1, 1)
+                target_derivative = turn * secs_to_speed # Initialize these variables!
+                target_acceleration = (target_derivative - derivative) * secs_to_acceleration
+                power = target_acceleration * (prev_power / acceleration)
+                
+                turn = clamp(power, -1, 1)
 
             return self.huey_move(speed, turn)
         else:
