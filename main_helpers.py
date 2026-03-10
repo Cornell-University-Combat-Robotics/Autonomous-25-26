@@ -228,7 +228,7 @@ def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orient
                             end_point, (255, 0, 0), 2)
 
             # RED line: Huey's Desired Orientation according to Algorithm
-            if move_dictionary and (move_dictionary["turn"]):
+            if move_dictionary and (move_dictionary["turn"] is not None):
                 print("🧑‍🎤MOVE DICTIONARY: DISPLAY ANGLES: 🧑‍🎤" + str(move_dictionary))
                 turn = move_dictionary["turn"] # angle in degrees / 180
                 new_orientation_degrees = orientation_degrees + (turn * 180)

@@ -35,7 +35,7 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
 DISPLAY_SCALE = 0.8             # Display frame smaller for selection with 1080p video, 1.0 default
 IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
 WEAPON_ON = False               # True if weapon motor should be on
@@ -47,11 +47,11 @@ SHOW_HUD = True                 # Show heads-up display with FPS, speed, turn, f
 SHOW_QUANTIZED_HUEY = True     # Display the quantized bounding box of Huey in separate window
 COLOR_QUANTIZATION = True       # True to use color quantization, should always be True
 CAN_RECOVER = True              # True to use recovery
-CAMERA_STREAM = False           # True if using live camera stream, False if using a video file
+CAMERA_STREAM = True           # True if using live camera stream, False if using a video file
 SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
 BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
-TARGETING_METHOD = 3            # How we target the enemy (1,2 or 3 for now)
+TARGETING_METHOD = 1            # How we target the enemy (1,2 or 3 for now)
 
 # MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
 # MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
@@ -66,10 +66,10 @@ OD_IMG_SIZE = 320
 folder = os.getcwd() + "/main_files"
 
 # camera_number = folder + "/test_videos/huey_vs_prince.mp4"
-camera_number = folder + "/test_videos/huey_hell.mp4"
+# camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/orbital_huey.mp4"
 # camera_number = 1
-# camera_number = 0
+camera_number = 0
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
@@ -298,8 +298,8 @@ def main():
                                     warped_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
 
                             # Call display_angles with show=False to get the image without displaying
-                            main_display_img = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing,
-                                                              against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped=is_flipped, centroids=corner_detection.centroids, show=False)
+                            main_display_img = display_angles(detected_bots_with_data, move_dictionary, warped_frame, enemy_orientation= algorithm.enemy_orientation,enemy_future_position=algorithm.enemy_future_position,is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing,
+                                                              against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped=is_flipped, centroids=corner_detection.centroids, show=False, targeting_method=TARGETING_METHOD)
 
                             if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                                 cv2.imwrite(

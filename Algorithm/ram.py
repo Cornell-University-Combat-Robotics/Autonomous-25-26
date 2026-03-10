@@ -350,6 +350,7 @@ class Ram():
 
         self.enemy_future_position = self.enemy_position
         last_good = self.enemy_old_orientation
+        # TODO: Think about adding better logic here.
         if not (bots and bots.get("enemy") and bots["enemy"].get("bbox") is not None):
             return last_good
         
@@ -377,13 +378,14 @@ class Ram():
                     if np.isfinite(v).all() and np.linalg.norm(v) < 250:  # reject teleports
                         # TODO: LOOK AT THIS 4, IDK
                         lookahead_frames = 4
-                        cand = cur + v * lookahead_frames * front
-                        cand = np.array(cand, dtype=float)
-                        check_wall(cand)
-                        self.enemy_future_position = cand
+                        next = cur + v * lookahead_frames * front
+                        next = np.array(next, dtype=float)
+                        check_wall(next)
+                        self.enemy_future_position = next
             
             return last_good
         
+        # The only thing that actuallu calculates orientation
         dx = float(delta_img[0])
         dy_img = float(delta_img[1])
         orientation = (np.degrees(np.arctan2(-dy_img, dx)) + 360.0) % 360.0
