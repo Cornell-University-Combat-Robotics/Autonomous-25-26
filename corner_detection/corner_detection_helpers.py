@@ -2,13 +2,26 @@ import math
 import cv2
 import numpy as np
 import csv
+import matplotlib.pyplot as plt
 import pandas as pd
 from collections import deque
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 MIN_THRESHOLD = 0.035
+CORNER_THRESHOLD = 10.0
 
+#GRAPH CODE
+filename = "corner_percentage.csv"
+areafile = "area.csv"
 
+# create CSV file once with header
+with open(filename, "w", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerow(["corner_percentage"])
+
+with open(areafile, "w", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerow(["area"])
 @staticmethod
 def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
     """
@@ -78,6 +91,7 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
         our_bot_image = None 
 
         bot_color_percentages = []
+        max_bot_area = 0.0
 
         for image in images: # this for loop handles whether the image is the huey bot
             if image is None:
@@ -85,7 +99,10 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
                 continue
             
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
+            # print(f"🎎bot colors {color_pixel_count}")
+
             image_area = image.size/3
+
             color_percentage = color_pixel_count/image_area
 
             bot_color_percentages.append(color_percentage)
@@ -96,6 +113,7 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
             if color_percentage > max_color_percentage:
                 our_bot_image = image
                 max_color_percentage = color_percentage
+                max_bot_area = color_pixel_count
 
         bot_color_percentages.sort()
         # self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2]))
@@ -150,13 +168,23 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
 
     # 1. Get image dimensions and center point
     img_h, img_w = hsv_image.shape[:2]
+    
     center_x, center_y = img_w // 2, img_h // 2
 
     # 2. Get contours from your helper function
     contours = get_contours_per_color(side, hsv_image, selected_colors)
     
+    # Calculate bbox area:
+    bbArea = img_h * img_w
     # 3. Define the sorting key (Distance is primary, Area is secondary)
     def sorting_criteria(c):
+        area = cv2.contourArea(c)
+        corner_percentage = area / (bbArea)
+        # log area value
+        with open(filename, "a", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([corner_percentage])
+
         M = cv2.moments(c)
         if M["m00"] == 0:
             # Handle lines/points: assume the first point is the location
@@ -169,13 +197,15 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
         
         # Euclidean distance squared from center
         dist_sq = (cx - center_x)**2 + (cy - center_y)**2
-        area = cv2.contourArea(c)
         
         # Sort by distance (ascending) then area (descending)
         return (dist_sq, -area)
 
     # 4. Sort the entire list
     sorted_contours = sorted(contours, key=sorting_criteria)
+    sorted_contours = [c for c in sorted_contours if cv2.contourArea(c) >= CORNER_THRESHOLD]
+    print(f"🧏‍♂️ sorted areas: {[cv2.contourArea(c) for c in sorted_contours]}")
+    print(f"🧏‍♂️ sorted percentages: {[(cv2.contourArea(c)/(image.size / 3)) for c in sorted_contours]}")
 
     # 5. Extract top 2 centroids
     centroids = []

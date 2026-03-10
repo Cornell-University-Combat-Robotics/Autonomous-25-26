@@ -1,7 +1,6 @@
 import os
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 from .corner_detection_helpers import find_our_bot, find_centroids, compute_angle_between_midpoints, two_corners, math, deque, calc_diagonal_and_side_length
 
 class RobotCornerDetection:
@@ -211,6 +210,9 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error reading selected_colors.txt: {e}")
         exit(1)
+
+        filename = 'area.csv'
+
     
     corner_detection = RobotCornerDetection(selected_colors, True, False)
     corner_detection.set_bots(all_bots)
