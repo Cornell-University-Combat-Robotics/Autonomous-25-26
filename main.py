@@ -173,6 +173,8 @@ def main():
 
         # ----------------------------------------------------------------------
         # Define the Perception Pipeline (Runs in Background Thread)
+        # This is all of our processing code minus the display of the images.
+        # Any image displays should modify the frame that is returned at the end of the loop.
         def perception_pipeline():
             prev = ptime()
             last_frame = 0
