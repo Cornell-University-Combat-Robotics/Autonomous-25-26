@@ -332,7 +332,7 @@ def draw_hud(image, fps10=None, move_dictionary=None, iteration=None, playback_s
     # Optimization: Only process the ROI (Region of Interest) instead of the full image
     h, w = image.shape[:2]
     y2 = min(hud_height, h)
-    x2 = min(250, w)
+    x2 = min(350, w)
 
     if y2 > 5 and x2 > 5:
         roi = image[5:y2, 5:x2]
@@ -350,18 +350,51 @@ def draw_hud(image, fps10=None, move_dictionary=None, iteration=None, playback_s
                     line_height), font, font_scale, text_color, thickness)
         line_num += 1
 
+    # Helper to draw bar
+    def draw_bar_graphic(val, x_start, y_baseline):
+        bar_width = 120
+        bar_height = 14
+        bar_y = y_baseline - bar_height + 3  # Shift up slightly from baseline
+
+        # Background
+        cv2.rectangle(image, (x_start, bar_y), (x_start + bar_width, bar_y + bar_height), (50, 50, 50), -1)
+        cv2.rectangle(image, (x_start, bar_y), (x_start + bar_width, bar_y + bar_height), (150, 150, 150), 1)
+
+        # Center line
+        center_x = x_start + bar_width // 2
+        cv2.line(image, (center_x, bar_y), (center_x, bar_y + bar_height), (200, 200, 200), 1)
+
+        # Value bar
+        max_val = 1.0
+        val_clamped = max(min(val, max_val), -max_val)
+        length = int((val_clamped / max_val) * (bar_width / 2))
+
+        if length > 0:
+            cv2.rectangle(image, (center_x, bar_y + 1), (center_x + length, bar_y + bar_height - 1), (0, 255, 0), -1)
+        elif length < 0:
+            # length is negative here, so center_x + length is to the left
+            cv2.rectangle(image, (center_x + length, bar_y + 1), (center_x, bar_y + bar_height - 1), (0, 0, 255), -1)
+
+        return x_start + bar_width + 10  # Return x position for next element
+
     # Display Speed
     if move_dictionary is not None and "speed" in move_dictionary:
-        speed_text = f"Speed: {move_dictionary['speed']:.2f}"
-        cv2.putText(image, speed_text, (x_offset, y_offset + line_num *
-                    line_height), font, font_scale, text_color, thickness)
+        val = move_dictionary['speed']
+        label = "Speed: "
+        cv2.putText(image, label, (x_offset, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
+        
+        next_x = draw_bar_graphic(val, x_offset + 90, y_offset + line_num * line_height)
+        cv2.putText(image, f"{val:.2f}", (next_x, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
         line_num += 1
 
     # Display Turn
     if move_dictionary is not None and "turn" in move_dictionary:
-        turn_text = f"Turn: {move_dictionary['turn']:.2f}"
-        cv2.putText(image, turn_text, (x_offset, y_offset + line_num *
-                    line_height), font, font_scale, text_color, thickness)
+        val = move_dictionary['turn']
+        label = "Turn: "
+        cv2.putText(image, label, (x_offset, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
+        
+        next_x = draw_bar_graphic(val, x_offset + 90, y_offset + line_num * line_height)
+        cv2.putText(image, f"{val:.2f}", (next_x, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
         line_num += 1
 
     # Display Iteration (frame number)
