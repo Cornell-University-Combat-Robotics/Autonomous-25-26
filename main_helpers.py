@@ -121,9 +121,13 @@ def get_predictor(MODEL_NAME, OD_IMG_SIZE):
     #     print(f"Using {MODEL_NAME} on MPS for object detection.")
     #     predictor = YoloModel(MODEL_NAME, "PT", OD_IMG_SIZE, device="mps")
 
+    elif ov.Core().get_available_devices() and "GPU" in ov.Core().get_available_devices():
+        print(f"Using {MODEL_NAME} with OpenVINO on GPU for object detection.")
+        predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE, device="gpu")
+
     elif ov.Core().get_available_devices() and "CPU" in ov.Core().get_available_devices():
         print(f"Using {MODEL_NAME} with OpenVINO on CPU for object detection.")
-        predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE)
+        predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE, device="cpu")
 
     else:
         print(f"Using {MODEL_NAME} with ONNX on CPU for object detection.")
