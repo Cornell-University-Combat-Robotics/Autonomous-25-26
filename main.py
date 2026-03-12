@@ -12,10 +12,10 @@ from camera_stream import CameraStream
 from runtimesheet.runtimesheet import RuntimeSheet
 import matplotlib.pyplot as plt
 from algorithm.ram import Ram
+import dearpygui.dearpygui as dpg
 from corner_detection.corner_detection import RobotCornerDetection
 from main_helpers import (
     display_angles,
-    draw_hud,
     first_run,
     get_motor_groups,
     get_predictor,
@@ -35,7 +35,7 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
 # Display frame smaller for selection with 1080p video, 1.0 default
 DISPLAY_SCALE = 0.5
 IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
@@ -88,6 +88,28 @@ if IS_TRANSMITTING:
     weapon_motor_channel = 4
 
 rs = RuntimeSheet(use=SHEET_RUNTIME)
+
+if SHOW_HUD:
+    # Initialize DearPyGUI
+    dpg.create_context()
+    dpg.create_viewport(title='Autonomous HUD', width=400, height=350)
+    dpg.setup_dearpygui()
+
+    with dpg.window(label="HUD Stats", width=400, height=350):
+        dpg.add_text("FPS: -", tag="hud_fps")
+        dpg.add_text("Frame: -", tag="hud_frame")
+        dpg.add_separator()
+        dpg.add_text("Speed")
+        dpg.add_slider_float(tag="hud_speed", min_value=-1.0, max_value=1.0, enabled=False, width=-1)
+        dpg.add_text("Turn")
+        dpg.add_slider_float(tag="hud_turn", min_value=-1.0, max_value=1.0, enabled=False, width=-1)
+        dpg.add_separator()
+        dpg.add_text("Recovering: -", tag="hud_recovering")
+        dpg.add_text("Weapon: -", tag="hud_weapon")
+        dpg.add_text("Flipped: -", tag="hud_flipped")
+
+    dpg.show_viewport()
+
 # ------------------------------ BEFORE THE MATCH ------------------------------
 
 # Threading globals
@@ -305,12 +327,19 @@ def main():
                     # Prepare Main Display Image
                     main_display_img = None
                     with rs.log_timing("Display"):
+                        if dpg.is_dearpygui_running():
+                            dpg.set_value("hud_fps", f"FPS: {fps10:.1f}" if fps10 else "FPS: -")
+                            dpg.set_value("hud_frame", f"Frame: {iteration}")
+                            if 'move_dictionary' in locals() and move_dictionary:
+                                dpg.set_value("hud_speed", move_dictionary.get("speed", 0.0))
+                                dpg.set_value("hud_turn", move_dictionary.get("turn", 0.0))
+                            dpg.set_value("hud_recovering", f"Recovering: {algorithm.is_recovering}")
+                            dpg.set_value("hud_weapon", f"Weapon: {'ON' if shared_state['weapon_on'] else 'OFF'}")
+                            dpg.set_value("hud_flipped", f"Flipped: {'YES' if is_flipped == -1 else 'NO'}")
+
                         if DISPLAY_ANGLES:
                             warped_frame = predictor.show_predictions(
                                 warped_frame, detected_bots)
-                            if SHOW_HUD:
-                                warped_frame = draw_hud(
-                                    warped_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
 
                             # Call display_angles with show=False to get the image without displaying
                             main_display_img = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing,
@@ -322,9 +351,6 @@ def main():
 
                         elif SHOW_FRAME:
                             display_frame = warped_frame
-                            if SHOW_HUD:
-                                display_frame = draw_hud(
-                                    display_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
                             main_display_img = display_frame
 
                     # Update Frame Buffer
@@ -343,6 +369,8 @@ def main():
         # ----------------------------------------------------------------------
         # Display UI Loop (Runs in Main Thread)
         while not stop_event.is_set():
+            dpg.render_dearpygui_frame()
+
             if frame_buffer:
                 frames = frame_buffer[0]
 
@@ -436,6 +464,8 @@ def main():
         elif cap != None:
             cap.release()
             cv2.destroyAllWindows()
+
+        dpg.destroy_context()
 
         rs.save("itertimes")
 
