@@ -10,18 +10,7 @@ FONT = cv2.FONT_HERSHEY_SIMPLEX
 MIN_THRESHOLD = 0.035
 CORNER_THRESHOLD = 10.0
 
-#GRAPH CODE
-filename = "corner_percentage.csv"
-areafile = "area.csv"
 
-# create CSV file once with header
-with open(filename, "w", newline="") as f:
-    writer = csv.writer(f)
-    writer.writerow(["corner_percentage"])
-
-with open(areafile, "w", newline="") as f:
-    writer = csv.writer(f)
-    writer.writerow(["area"])
 @staticmethod
 def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
     """
@@ -91,7 +80,6 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
         our_bot_image = None 
 
         bot_color_percentages = []
-        max_bot_area = 0.0
 
         for image in images: # this for loop handles whether the image is the huey bot
             if image is None:
@@ -99,7 +87,6 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
                 continue
             
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
-            # print(f"🎎bot colors {color_pixel_count}")
 
             image_area = image.size/3
 
@@ -113,10 +100,8 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
             if color_percentage > max_color_percentage:
                 our_bot_image = image
                 max_color_percentage = color_percentage
-                max_bot_area = color_pixel_count
 
         bot_color_percentages.sort()
-        # self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2]))
         
         if threshold_set: # Set initial threshold
             if len(bot_color_percentages) > 1 and bot_color_percentages[-1] > 0:
@@ -175,15 +160,9 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
     contours = get_contours_per_color(side, hsv_image, selected_colors)
     
     # Calculate bbox area:
-    bbArea = img_h * img_w
     # 3. Define the sorting key (Distance is primary, Area is secondary)
     def sorting_criteria(c):
         area = cv2.contourArea(c)
-        corner_percentage = area / (bbArea)
-        # log area value
-        with open(filename, "a", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow([corner_percentage])
 
         M = cv2.moments(c)
         if M["m00"] == 0:
@@ -204,8 +183,9 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
     # 4. Sort the entire list
     sorted_contours = sorted(contours, key=sorting_criteria)
     sorted_contours = [c for c in sorted_contours if cv2.contourArea(c) >= CORNER_THRESHOLD]
-    print(f"🧏‍♂️ sorted areas: {[cv2.contourArea(c) for c in sorted_contours]}")
-    print(f"🧏‍♂️ sorted percentages: {[(cv2.contourArea(c)/(image.size / 3)) for c in sorted_contours]}")
+    # print(f"🧏‍♂️ sorted areas: {[cv2.contourArea(c) for c in sorted_contours]}")
+    # print(f"🧏‍♂️ sorted percentages: {[(cv2.contourArea(c)/(img_h * img_w)) for c in sorted_contours]}")
+    # print(f"🚔🚔image area: {img_h * img_w}")
 
     # 5. Extract top 2 centroids
     centroids = []
@@ -257,54 +237,49 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
     """
     Handles orientation calculation when only 2 points are detected.
     """
-    print("🐼")
+
     front_points = centroid_points[0]
     back_points = centroid_points[1]
 
     # CASE 1: Only 2 Front Corners detected OR Only 2 Back Corners detected
-    print("🐒")
+
     if len(front_points) == 2 or len(back_points) == 2:
         # Correctly pick the points based on which list has 2
         points = front_points if len(front_points) == 2 else back_points
-        print("🙊🙊🙊")
+
         point1, point2 = points[0], points[1]
         dx = point2[0] - point1[0]
         dy = -(point2[1] - point1[1]) # Flip Y for image coordinates
-        print("🙈🙈🙈")
         
         line_angle = math.degrees(math.atan2(dy, dx))
 
         angle1 = (line_angle + 90) % 360 # Perpendicular possibilities
         angle2 = (line_angle - 90) % 360
-
-        
         
         return pick_closest_angle(angle1, angle2, previous_orientation)
 
     # CASE 2: 1 Front and 1 Back Corner detected.
     elif len(front_points) == 1 and len(back_points) == 1:
         if len(diagonals) > 0:
-            print("🦧")
             diagonal_avg = diagonals[0]
             sides_avg = sides[0]
+
             cutoff = (diagonal_avg + sides_avg)/2
             corner_distance = distance(front_points[0], back_points[0])
-            print("💛💛💛")
             dx = front_points[0][0] - back_points[0][0]
             dy = -(front_points[0][1] - back_points[0][1])
-            print("💛")
             angle = math.atan2(dy,dx) * (180/math.pi)
             
             # CASE 2.1: Both corners are on the same side
             if (corner_distance < cutoff):
-                print(f"🌫️🌫️🌫️🌫️🌫️CORNERS ON SAME SIDE: {angle} degrees")
+                # print(f"🌫️🌫️🌫️🌫️🌫️CORNERS ON SAME SIDE: {angle} degrees")
                 return angle
             
             # CASE 2.2: The corners are diagonal
             else:
                 p1 = (angle + 45) % 360
                 p2 = (angle - 45) % 360
-                print(f"🌈🌈🌈CORNERS ON DIFFERENT SIDE: {p1} or {p2} degrees🌈🌈🌈")
+                # print(f"🌈🌈🌈CORNERS ON DIFFERENT SIDE: {p1} or {p2} degrees🌈🌈🌈")
                 
                 return pick_closest_angle(p1, p2, previous_orientation)
 
@@ -335,7 +310,6 @@ def calc_diagonal_and_side_length(centroids, diagonal_len, side_len, len_nums):
             temp = hypo_r
             hypo_r = side_r
             side_r = temp
-
 
         if len(diagonal_len) == 0 :
             diagonal_len.append((hypo_l + hypo_r)/2)

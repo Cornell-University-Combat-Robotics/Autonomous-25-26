@@ -109,14 +109,12 @@ class RobotCornerDetection:
                     if bot_data["img"] is image:
                         huey_bbox = bot_data["bbox"]
                         break
-                print("🏇")
 
                 huey = {
                     "bbox": huey_bbox,
                     "center": np.mean(huey_bbox, axis=0), # center of the bot with respect to the entire arena
                     "orientation": None,
                 }
-                print("🐺")
 
                 # Enemy bots are all except the identified bot
                 enemy_bots = {}
@@ -129,24 +127,18 @@ class RobotCornerDetection:
                             }
                             break
 
-                print("🐋")
                 centroid_points = find_centroids(image, self.selected_colors)
-                print("😬")
                 self.centroids = centroid_points
-
-                print(self.centroids)
                 
                 # Every time we calculate 4 points, calculate diagonal and side length in the case of 1 front 1 back corner in the future
                 calc_diagonal_and_side_length(self.centroids, self.diag_len, self.side_len, self.num_lens)
                         
-                # print(f"🇬🇧🛌🇰🇷DIALGA: {self.diagonals}, 🇬🇧SYDNEY: {self.sides}")
-                print("🚗")
                 if (len(centroid_points[0]) + len(centroid_points[1]) == 2):
                     if previous_orientations is not None and len(previous_orientations) > 0:
                         previous_orientation = previous_orientations[-1] # why index 0...
                         huey["orientation"] = two_corners(centroid_points, previous_orientation, self.diag_len, self.side_len)
-                        print(f"PREV ORIENT: 🌸🐋💛 {previous_orientation}")
-                        print(f"Current ORIENT: 💛🐋🌸 { huey["orientation"]}")
+                        # print(f"PREV ORIENT: 🌸🐋💛 {previous_orientation}")
+                        # print(f"Current ORIENT: 💛🐋🌸 { huey["orientation"]}")
                     else:
                         huey["orientation"] = None
                     return {"huey": huey, "enemy": enemy_bots}
