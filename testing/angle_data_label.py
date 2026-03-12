@@ -5,7 +5,7 @@ import math
 import numpy as np
 
 # Change this to your folder path
-FOLDER_PATH = "testing/testing_data/huey_unquantized"
+FOLDER_PATH = "testing_data/huey_unquantized"
 
 # Output CSV path
 CSV_OUTPUT = os.path.join(FOLDER_PATH, "angles_output.csv")
@@ -16,42 +16,45 @@ IMAGE_EXTENSIONS = (".png",)
 # --- Global state for mouse callback ---
 state = {
     "angle": None,
-    "center": (0, 0),
+    "tail": None,       # First click: tail of the vector
     "base_image": None,
     "window_name": "Image Viewer",
 }
 
-def draw_overlay(img, center, angle=None):
-    """Draw center marker and angle line on a copy of the image."""
+def draw_overlay(img, tail=None, angle=None):
+    """Draw tail marker and angle line on a copy of the image."""
     overlay = img.copy()
-    cx, cy = center
 
-    # Draw crosshair at center
-    cross_size = 20
-    color_cross = (0, 255, 0)
-    cv2.line(overlay, (cx - cross_size, cy), (cx + cross_size, cy), color_cross, 2)
-    cv2.line(overlay, (cx, cy - cross_size), (cx, cy + cross_size), color_cross, 2)
-    cv2.circle(overlay, center, 5, color_cross, -1)
+    if tail is not None:
+        cx, cy = tail
 
-    if angle is not None:
-        # Draw angle line from center outward
-        length = min(img.shape[0], img.shape[1]) // 3
-        rad = math.radians(angle)
-        ex = int(cx + length * math.cos(rad))
-        ey = int(cy - length * math.sin(rad))  # y-axis inverted in image coords
-        cv2.line(overlay, center, (ex, ey), (0, 100, 255), 2)
-        cv2.circle(overlay, (ex, ey), 6, (0, 100, 255), -1)
+        # Draw crosshair at tail
+        cross_size = 20
+        color_cross = (0, 255, 0)
+        cv2.line(overlay, (cx - cross_size, cy), (cx + cross_size, cy), color_cross, 2)
+        cv2.line(overlay, (cx, cy - cross_size), (cx, cy + cross_size), color_cross, 2)
+        cv2.circle(overlay, tail, 5, color_cross, -1)
 
-        # Display angle text
-        label = f"Angle: {angle:.1f} deg"
-        cv2.putText(overlay, label, (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
-                    0.8, (255, 255, 255), 2, cv2.LINE_AA)
-        cv2.putText(overlay, label, (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
-                    0.8, (0, 100, 255), 1, cv2.LINE_AA)
+        if angle is not None:
+            # Draw angle line from tail outward toward head
+            length = min(img.shape[0], img.shape[1]) // 3
+            rad = math.radians(angle)
+            ex = int(cx + length * math.cos(rad))
+            ey = int(cy - length * math.sin(rad))  # y-axis inverted in image coords
+            cv2.line(overlay, tail, (ex, ey), (0, 100, 255), 2)
+            cv2.circle(overlay, (ex, ey), 6, (0, 100, 255), -1)
+
+            # Display angle text
+            label = f"Angle: {angle:.1f} deg"
+            cv2.putText(overlay, label, (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.8, (255, 255, 255), 2, cv2.LINE_AA)
+            cv2.putText(overlay, label, (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.8, (0, 100, 255), 1, cv2.LINE_AA)
 
     # Instructions
     instructions = [
-        "Click to set angle",
+        "Click 1: set the tail",
+        "Click 2: set the head",
         "ENTER: confirm & next",
         "S: skip image",
         "Q: quit",
@@ -66,15 +69,32 @@ def draw_overlay(img, center, angle=None):
     return overlay
 
 
+# def mouse_callback(event, x, y, flags, param):
+#     if event == cv2.EVENT_LBUTTONDOWN:
+#         cx, cy = state["center"]
+#         dx = x - cx
+#         dy = cy - y  # flip y for standard angle convention (up = positive)
+#         angle = math.degrees(math.atan2(dy, dx)) % 360
+#         state["angle"] = angle
+#         updated = draw_overlay(state["base_image"], state["center"], state["angle"])
+#         cv2.imshow(state["window_name"], updated)
+
 def mouse_callback(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
-        cx, cy = state["center"]
-        dx = x - cx
-        dy = cy - y  # flip y for standard angle convention (up = positive)
-        angle = math.degrees(math.atan2(dy, dx)) % 360
-        state["angle"] = angle
-        updated = draw_overlay(state["base_image"], state["center"], state["angle"])
-        cv2.imshow(state["window_name"], updated)
+        if state["tail"] is None:
+            # First click: set the tail point
+            state["tail"] = (x, y)
+            updated = draw_overlay(state["base_image"], state["tail"], None)
+            cv2.imshow(state["window_name"], updated)
+        else:
+            # Second click: set the head point and compute angle
+            tx, ty = state["tail"]
+            dx = x - tx
+            dy = ty - y  # flip y for standard angle convention (up = positive)
+            angle = math.degrees(math.atan2(dy, dx)) % 360
+            state["angle"] = angle
+            updated = draw_overlay(state["base_image"], state["tail"], state["angle"])
+            cv2.imshow(state["window_name"], updated)
 
 
 def main():
@@ -109,16 +129,18 @@ def main():
         if scale > 1.0:
             image = cv2.resize(image, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_CUBIC)
 
-        h, w = image.shape[:2]
-        center = (w // 2, h // 2)
+        # #this is the center of the screen and 
+        # h, w = image.shape[:2]
+        # center = (w // 2, h // 2)
+        #this code replaces the angle underneath 
 
         # Reset state for this image
         state["angle"] = None
-        state["center"] = center
+        state["tail"] = None
         state["base_image"] = image.copy()
 
         # Show initial overlay (no angle yet)
-        display = draw_overlay(image, center, None)
+        display = draw_overlay(image, None, None)
         cv2.imshow(state["window_name"], display)
 
         print(f"Showing: {filename}  |  Click to select angle, ENTER to confirm, S to skip, Q to quit.")
