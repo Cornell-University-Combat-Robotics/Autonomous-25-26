@@ -18,15 +18,15 @@ from main_helpers import (
 )
 
 #Settings
-DISPLAY_IMAGES = True #Displays each image in window
-NO_ORIENTATION_SCORE = 35 #Angle that is equivelently bad to no orientation
+DISPLAY_IMAGES = True           # Displays each image in window
+NO_ORIENTATION_SCORE = 35       # Angle that is equivelently bad to no orientation
+DATA_SET_NAME = "prince_full"   # Name of your dataset folder in "testing_data"
+COLOR_SELECT_IMG = "900.png"    # This should be the name of your image you want to do color selection on
 
 # Folder paths
-ALL_TRAINING_DATA_PATH = "testing_data/"
-
-#--- CHANGE THESE ---
-FOLDER_PATH = os.path.join(ALL_TRAINING_DATA_PATH, "huey_unquantized")
-FIRST_HUEY_PATH = os.path.join(FOLDER_PATH, "1061.png")
+ALL_TRAINING_DATA_PATH = "testing_data/" 
+FOLDER_PATH = os.path.join(ALL_TRAINING_DATA_PATH, DATA_SET_NAME)
+FIRST_HUEY_PATH = os.path.join(FOLDER_PATH, COLOR_SELECT_IMG)
 
 LABELED_DATA_PATH = os.path.join(FOLDER_PATH, "angles_output.csv")
 TESTING_DIR = os.getcwd()
@@ -67,6 +67,11 @@ def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, DISPLAY_IMAGE
         if filename.lower().endswith(IMAGE_EXTENSIONS):
             image_path = os.path.join(FOLDER_PATH, filename)
             
+            #Skip un-labeld images
+            true_angle = angle_lookup.get(filename)
+            if not true_angle:
+                continue
+
             if DISPLAY_IMAGES:
                 print(f"Processing: {image_path}")
             
@@ -77,7 +82,6 @@ def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, DISPLAY_IMAGE
                 continue
             
             height, width = image.shape[:2]
-
             
             bbox = (0, 0, width, height) # Fake bounding box for corner detection (the whole image)
             formated_image = {
@@ -100,29 +104,15 @@ def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, DISPLAY_IMAGE
             cx = int(x + w / 2)
             cy = int(y + h / 2)
             
-            true_angle = angle_lookup.get(filename)
+            total_frames += 1
 
-            if true_angle:
-                total_frames += 1
-
-                if detected_bots_with_data['huey']['orientation'] != None:
-                    frames_with_orientation += 1
-                    current_angle_difference = angle_difference(true_angle, detected_bots_with_data['huey']['orientation'])
-                    total_theta += current_angle_difference
-                    total_score += current_angle_difference
-                else:
-                    total_score += NO_ORIENTATION_SCORE
-                
-            # total_frames += 1
-
-            # if detected_bots_with_data['huey']['orientation'] != None:
-            #     frames_with_orientation += 1
-            #     if true_angle: #If there exists a true angle in the csv (should always be true if data is labeled correctly)
-            #         current_angle_difference = angle_difference(true_angle, detected_bots_with_data['huey']['orientation'])
-            #         total_theta += current_angle_difference
-            #         total_score += current_angle_difference
-            # else:
-            #     total_score += NO_ORIENTATION_SCORE
+            if detected_bots_with_data['huey']['orientation'] != None:
+                frames_with_orientation += 1
+                current_angle_difference = angle_difference(true_angle, detected_bots_with_data['huey']['orientation'])
+                total_theta += current_angle_difference
+                total_score += current_angle_difference
+            else:
+                total_score += NO_ORIENTATION_SCORE
 
             if DISPLAY_IMAGES:
                 print(f"Correct Angle: {angle_lookup.get(filename)}")
@@ -156,7 +146,7 @@ if __name__ == "__main__":
 
     orientation_scores = {}
 
-    for i in range(80, 90, 3):
+    for i in range(10, 80, 15):
         orientation_scores[i] = test_detect_corners(i, 0.1, 1.0, 1.0)
 
     print(str(orientation_scores))

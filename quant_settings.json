@@ -6,7 +6,18 @@
     },
     "Testing":
     {
-        "threshold": 15.6,
-        "quantization_weights": [-0.17, -0.5,0.811]
+        "threshold": 41.12,
+        "quantization_weights": [0.342, 0.550, 1.000]
+    },
+    "Testing2":
+    {
+        "threshold": 37.12,
+        "quantization_weights": [0.103, 0.365, 0.943]
+    },
+    "Testing3":
+    {
+        "threshold": 36.14,
+        "quantization_weights": [0, -0.387, -0.957]
     }
+    
 }
