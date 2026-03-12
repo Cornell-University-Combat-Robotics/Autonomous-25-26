@@ -57,23 +57,6 @@ def draw_overlay(img, tail=None, angle=None):
                         0.8, (0, 100, 255), 1, cv2.LINE_AA)
 
     # Instructions
-    # instructions = []
-    # if MANUAL_CENTER:
-    #     instructions = [
-    #         "Click 1: set the tail",
-    #         "Click 2: set the head",
-    #     ]
-    # else:
-    #     instructions = [
-    #         "Click: set angle",
-    #     ]
-    
-    # instructions += [
-    #     "ENTER: confirm & next",
-    #     "S: skip image",
-    #     "Q: quit"
-    # ]
-
     instructions = [
         "Click 1: set the tail" if MANUAL_CENTER else None,
         "Click 2: set the head" if MANUAL_CENTER else "Click: set angle",
