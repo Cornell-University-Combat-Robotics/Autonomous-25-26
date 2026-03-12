@@ -4,8 +4,12 @@ import csv
 import math
 import numpy as np
 
-# Change this to your folder path
-FOLDER_PATH = "testing_data/huey_unquantized"
+# Settings
+DATA_SET_NAME = "prince_full"   # Name of your dataset folder in "testing_data"
+
+# --- Change this to your folder path ---
+ALL_TRAINING_DATA_PATH = "testing_data/"
+FOLDER_PATH = os.path.join(ALL_TRAINING_DATA_PATH, DATA_SET_NAME)
 
 # Output CSV path
 CSV_OUTPUT = os.path.join(FOLDER_PATH, "angles_output.csv")
@@ -13,7 +17,7 @@ CSV_OUTPUT = os.path.join(FOLDER_PATH, "angles_output.csv")
 # Valid image file extensions
 IMAGE_EXTENSIONS = (".png",)
 
-# --- Global state for mouse callback ---
+# Global state for mouse callback
 state = {
     "angle": None,
     "tail": None,       # First click: tail of the vector

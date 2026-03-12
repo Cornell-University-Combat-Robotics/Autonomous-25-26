@@ -18,6 +18,13 @@ def draw_orientation_arrow(frame, detected_bots_with_data, arrow_length=50, thic
         cv2.arrowedLine(frame, (cx, cy), (ex, ey), (0, 255, 255), thickness, tipLength=0.3)
         cv2.putText(frame, f"{bot_name}: {data['orientation']:.1f}°",
                     (cx + 5, cy - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+        
+def draw_manual_arrow(frame, cx, cy, theta, arrow_length = 50, thickness = 2):
+    angle_rad = math.radians(theta)
+    ex = int(cx + arrow_length * math.cos(angle_rad))
+    ey = int(cy - arrow_length * math.sin(angle_rad))
+    cv2.arrowedLine(frame, (cx, cy), (ex, ey), (255, 0, 255), thickness, tipLength=0.3)
+
 
 def get_darkness_score(image, selected_colors):
     '''NOT IN USE -- BROKEN'''
@@ -52,3 +59,5 @@ def angle_difference(a1, a2):
     if diff > 180:
         diff = 360 - diff
     return abs(diff)
+
+

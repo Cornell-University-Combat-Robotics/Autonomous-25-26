@@ -1,53 +1,54 @@
 import cv2
 import os
 import numpy as np
+from warp_main import get_homography_mat
 
-def get_homography_mat(frame, output_w, output_h):
-    corners = []
+# def get_homography_mat(frame, output_w, output_h):
+#     corners = []
 
-    def click_event(event, x, y, flags, param):
-        if event == cv2.EVENT_LBUTTONDOWN:
-            # Left button clicked, store the point
-            corners.append([x, y])
-            print(f"Point added: {x}, {y}")
-            draw_corners()  # Redraw the points on the image
+#     def click_event(event, x, y, flags, param):
+#         if event == cv2.EVENT_LBUTTONDOWN:
+#             # Left button clicked, store the point
+#             corners.append([x, y])
+#             print(f"Point added: {x}, {y}")
+#             draw_corners()  # Redraw the points on the image
 
-    def draw_corners():
-        # Make a copy of the original image to redraw the points
-        frame_copy = frame.copy()
+#     def draw_corners():
+#         # Make a copy of the original image to redraw the points
+#         frame_copy = frame.copy()
 
-        # Loop through the clicked points and display them on the image
-        # Select corners in the following order: top left, top right, bottom right, bottom left
-        for point in corners:
-            cv2.circle(frame_copy, point, 5, (0, 255, 0), -1)
-            cv2.putText(frame_copy, f"{point}", point, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+#         # Loop through the clicked points and display them on the image
+#         # Select corners in the following order: top left, top right, bottom right, bottom left
+#         for point in corners:
+#             cv2.circle(frame_copy, point, 5, (0, 255, 0), -1)
+#             cv2.putText(frame_copy, f"{point}", point, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
 
-        # Display the image with points
-        cv2.imshow("Image", frame_copy)
+#         # Display the image with points
+#         cv2.imshow("Image", frame_copy)
 
-    cv2.imshow("Image", frame)
-    cv2.setMouseCallback("Image", click_event)
+#     cv2.imshow("Image", frame)
+#     cv2.setMouseCallback("Image", click_event)
 
-    key = cv2.waitKey(1) & 0xFF
-    # press 'Esc' to quit
-    while len(corners) < 4 and key != 27:
-        if key == ord('z'):  # If 'z' is pressed
-            if len(corners) > 0:
-                removed_point = corners.pop()  # Remove the last point
-                print(f"Point removed: {removed_point}")
-                draw_corners()  # Redraw the image with remaining points
-            else:
-                print("No points to remove.")
-        key = cv2.waitKey(1) & 0xFF
+#     key = cv2.waitKey(1) & 0xFF
+#     # press 'Esc' to quit
+#     while len(corners) < 4 and key != 27:
+#         if key == ord('z'):  # If 'z' is pressed
+#             if len(corners) > 0:
+#                 removed_point = corners.pop()  # Remove the last point
+#                 print(f"Point removed: {removed_point}")
+#                 draw_corners()  # Redraw the image with remaining points
+#             else:
+#                 print("No points to remove.")
+#         key = cv2.waitKey(1) & 0xFF
 
-    print("Final Selected Points:", corners)
-    dest_pts = [[0, 0], [output_w, 0], [output_w, output_h], [0, output_h]]
-    matrix, _ = cv2.findHomography(np.array(corners), np.array(dest_pts))
-    cv2.destroyAllWindows()
-    return matrix
+#     print("Final Selected Points:", corners)
+#     dest_pts = [[0, 0], [output_w, 0], [output_w, output_h], [0, output_h]]
+#     matrix, _ = cv2.findHomography(np.array(corners), np.array(dest_pts))
+#     cv2.destroyAllWindows()
+#     return matrix
 
 
-def process_video(video_path, output_w=600, output_h=600, target_fps=1):
+def process_video(video_path, output_w=700, output_h=700, target_fps=5):
     # open the video
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -60,8 +61,8 @@ def process_video(video_path, output_w=600, output_h=600, target_fps=1):
         print("Error opening video frame")
         return
 
-    frame = cv2.resize(frame, (output_w, output_h), interpolation=cv2.INTER_AREA)
-    homography_mat = get_homography_mat(frame, output_w, output_h)
+    # frame = cv2.resize(frame, (output_w, output_h), interpolation=cv2.INTER_NEAREST)
+    homography_mat = get_homography_mat(frame, display_scale=1.0)
 
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     if target_fps > 0 and target_fps < fps:
@@ -81,8 +82,8 @@ def process_video(video_path, output_w=600, output_h=600, target_fps=1):
     print("Starting processing")
     while ret:
         if frame_counter % coeff == 0:
-            frame = cv2.resize(frame, (output_w, output_h), interpolation=cv2.INTER_AREA)
-            warped_frame = cv2.warpPerspective(frame, homography_mat, (output_w, output_h))
+            # frame = cv2.resize(frame, (output_w, output_h), interpolation=cv2.INTER_AREA)
+            warped_frame = cv2.warpPerspective(frame, homography_mat, (output_w, output_h), flags=cv2.INTER_NEAREST)
 
             output_img_path = output_img_folder_dir + \
                 "/" + str(frame_counter) + ".png"
@@ -99,5 +100,5 @@ def process_video(video_path, output_w=600, output_h=600, target_fps=1):
 if __name__ == "__main__":
     INPUT_BASE_PATH = "data/input_video/"
     OUTPUT_BASE_PATH = "data/warped_vid_frames/"
-    video_name = "radix.mp4"
+    video_name = "huey_vs_prince.mp4"
     process_video(INPUT_BASE_PATH + video_name)

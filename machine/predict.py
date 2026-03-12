@@ -13,6 +13,7 @@ ROBOFLOW_API_KEY = os.getenv("ROBOFLOW_API_KEY")
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 DEBUG = False
 
+
 class YoloModel(TemplateModel):
     # General template for using YOLO to load model files and use them.
 
@@ -21,35 +22,44 @@ class YoloModel(TemplateModel):
             case "TensorRT":
                 # Works best on NVIDIA GPUs, engine file must be compiled on the PC that it is running on.
                 model_extension = ".engine"
-                self.model = YOLO(f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
+                self.model = YOLO(
+                    f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
             case "ONNX":
                 # Optimal for CPU performance
                 model_extension = ".onnx"
-                self.model = YOLO(f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
+                self.model = YOLO(
+                    f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
             case "PT":
                 # Default kinda
                 model_extension = ".pt"
-                self.model = YOLO(f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
+                self.model = YOLO(
+                    f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
             case "OpenVINO":
                 # Optimal for Intel CPUs, needs a lil work
-                self.model = YOLO(f"./machine/models/{model_name}/{image_size}/{model_name}_openvino_model/")
+                self.model = YOLO(
+                    f"./machine/models/{model_name}/{image_size}/{model_name}_openvino_model/")
             case "CoreML":
                 # Optimal for M-series Macs
                 model_extension = ".mlpackage"
-                self.model = YOLO(f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
+                self.model = YOLO(
+                    f"./machine/models/{model_name}/{image_size}/{model_name}{model_extension}")
             case _:
-                raise ValueError(f"Invalid model type: {model_type}. Must be one of 'TensorRT', 'ONNX', 'PT', 'OpenVINO', or 'CoreML'.")
-                
+                raise ValueError(
+                    f"Invalid model type: {model_type}. Must be one of 'TensorRT', 'ONNX', 'PT', 'OpenVINO', or 'CoreML'.")
+
         self.device = device
         self.img_size = image_size
         # compiled_model = core.compile_model(model=model, device_name=device.value)
-    
-    def predict(self, img, show=False):
+
+    def predict(self, img, show=False, rs=None):
         # Max_det = max number of detections, 3 for housebot + 2 bots. Stops YOLO from hallucinating extra bots when confidence is low. Iou=0.8 to prevent multiple detections on same bot.
-        if self.device != None:
-            results = self.model(img, device=self.device, verbose=True, task='detect', imgsz=self.img_size, max_det=5, iou=0.8)
-        else:
-            results = self.model(img, verbose=True, task='detect', imgsz=self.img_size, max_det=5, iou=0.8)
+        predict_kwargs = {"verbose": False, "task": self.model.task,
+                          "imgsz": self.img_size, "max_det": 3}
+        if self.device is not None:
+            predict_kwargs["device"] = self.device
+
+        results = self.model(img, **predict_kwargs)
+
         result = results[0]
 
         # 1. BATCH EXTRACT EVERYTHING TO CPU ONCE
@@ -74,8 +84,8 @@ class YoloModel(TemplateModel):
             cropped_img = img[int(y1_c): int(y2_c), int(x1_c): int(x2_c)]
 
             data = {
-                "bbox": [[x1_c, y1_c], [x2_c, y2_c]], 
-                "center": [cx, cy], 
+                "bbox": [[x1_c, y1_c], [x2_c, y2_c]],
+                "center": [cx, cy],
                 "img": cropped_img
             }
 
@@ -84,7 +94,8 @@ class YoloModel(TemplateModel):
             else:
                 robots.append(data)
 
-        return {"bots": robots, "housebot": housebots}
+        output = {"bots": robots, "housebot": housebots}
+        return output
 
     def show_predictions(self, img, bots_dict):
         for label, bots in bots_dict.items():
@@ -113,7 +124,7 @@ class RoboflowModel(TemplateModel):
         self.model = get_model(model_id="nhrl-robots/14",
                                api_key=ROBOFLOW_API_KEY)  # TODO
 
-    def predict(self, img, confidence_threshold=0.5, show=False, track=False):
+    def predict(self, img, confidence_threshold=0.5, show=False, track=False, rs=None):
         out = self.model.infer(img)
 
         bots = {}
@@ -255,6 +266,7 @@ class RoboflowModel(TemplateModel):
 
     def evaluate(self, test_path):
         return super().evaluate(test_path)
+
 
 # Main code block
 if __name__ == "__main__":
