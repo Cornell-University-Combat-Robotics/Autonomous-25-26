@@ -5,7 +5,7 @@ import math
 import numpy as np
 
 # Settings
-DATA_SET_NAME = "prince_full"   # Name of your dataset folder in "testing_data"
+DATA_SET_NAME = "test_data"   # Name of your dataset folder in "testing_data"
 
 # --- Change this to your folder path ---
 ALL_TRAINING_DATA_PATH = "testing_data/"
