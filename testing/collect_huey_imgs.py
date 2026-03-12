@@ -44,7 +44,7 @@ CAMERA_STREAM = False               # Keep false when running on video
 DISPLAY_SCALE = 1.0                 # Display frame smaller for selection with 1080p video, 1.0 default
 OD_IMG_SIZE = 320                   # Image size for object detection model, lower number -> faster, slightly worse accuracy.
 MODEL_NAME = "Nano320Temp"          # Model trained with Huey images from matches, trained at 320 image size
-COLLECTION_FREQ = 5                 # Collect image every x frames
+COLLECTION_FREQ = 20                # Collect image every x frames
 VIDEO_NAME = "huey_vs_prince.mp4"   # Name of video being used in main files
 
 # time_string = datetime.now().strftime("%H:%M:%S")

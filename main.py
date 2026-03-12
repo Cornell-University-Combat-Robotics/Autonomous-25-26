@@ -85,7 +85,6 @@ with open(quant_settings_file, "r") as f:
 #Quantization Settings
 # quantization_settings = all_settings["Ryan God Settings"]
 quantization_settings = all_settings["Testing3"]
-# {'threshold': 30.213198666866727, 'L_weight': -0.29982434093319654, 'RG_weight': 0.49404552732945123, 'BY_weight': -0.8362676793917451}
 # quantization_settings = None
 
 # ------------------------------ BEFORE THE MATCH ------------------------------
