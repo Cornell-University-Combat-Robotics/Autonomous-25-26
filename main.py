@@ -7,6 +7,7 @@ import pandas as pd
 import cv2
 import numpy as np
 from time import perf_counter as ptime
+import dearpygui.dearpygui as dpg
 
 from camera_stream import CameraStream
 from runtimesheet.runtimesheet import RuntimeSheet
@@ -97,10 +98,38 @@ stop_event = threading.Event()
 shared_state = {"key": None, "flipped": None,
                 "paused": False, "skip_frame": False, "weapon_on": WEAPON_ON}
 
-
+@profile
 def main():
     stream = None
     try:
+
+        # DPGUI INIT--------------------------
+        # 1. Setup DPG
+        dpg.create_context()
+        dpg.create_viewport(title='Huey Dashboard', width=800, height=800)
+        dpg.set_viewport_vsync(False)
+
+        # 2. Setup Texture Registry
+        # Pre-allocate a 'blank' array of the correct size (e.g., 640x480)
+        width, height = 700, 700
+        # DPG textures are flat arrays of floats (R, G, B, A)
+        init_data = np.zeros((height, width, 4), dtype=np.float32)
+
+        with dpg.texture_registry(show=False):
+            dpg.add_raw_texture(width=width, height=height, 
+                                default_value=init_data.flatten(), 
+                                tag="camera_texture", 
+                                format=dpg.mvFormat_Float_rgba)
+
+        # 3. Setup UI
+        with dpg.window(label="Camera Feed"):
+            dpg.add_image("camera_texture")
+
+        dpg.setup_dearpygui()
+        dpg.show_viewport()
+        # END DPGUI INIT----------------
+
+
         # 1. Start the capturing frame from the camera or pre-recorded video
         # 2. Capture initial frame by pressing '0'
         if CAMERA_STREAM:
@@ -176,239 +205,258 @@ def main():
         # Define the Perception Pipeline (Runs in Background Thread)
         # This is all of our processing code minus the display of the images.
         # Any image displays should modify the frame that is returned at the end of the loop.
-        def perception_pipeline():
-            prev = ptime()
-            last_frame = 0
-            iteration = 0
-            start_time = ptime()
 
-            while not stop_event.is_set():
-                # Check if source is still open
-                if CAMERA_STREAM and (not stream.isOpened() or stream.stopped):
-                    break
-                if not CAMERA_STREAM and not cap.isOpened():
-                    break
+        prev = ptime()
+        last_frame = 0
+        iteration = 0
+        start_time = ptime()
 
-                # Handle Pause (Simple spin wait)
-                if shared_state["paused"]:
-                    if shared_state["skip_frame"]:
-                        shared_state["skip_frame"] = False
-                        # Proceed to process one frame
+        while dpg.is_dearpygui_running():
+            # Check if source is still open
+            if CAMERA_STREAM and (not stream.isOpened() or stream.stopped):
+                break
+            if not CAMERA_STREAM and not cap.isOpened():
+                break
+
+            # Handle Pause (Simple spin wait)
+            if shared_state["paused"]:
+                if shared_state["skip_frame"]:
+                    shared_state["skip_frame"] = False
+                    # Proceed to process one frame
+                else:
+                    time.sleep(0.05)
+                    continue
+
+            time_elapsed = ptime() - prev
+
+            rs.start_iter()
+            if (IS_ORIGINAL_FPS or time_elapsed > 1.0 / FRAME_RATE) and (not CAMERA_STREAM or stream.frameCount() > last_frame):
+                prev = ptime()
+                iteration += 1
+
+                # Save bboxes every BBOX_SAVE_FREQUENCY iterations if SAVE_BBOXES is True
+                if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
+                    os.makedirs(
+                        f"{bb_output_dir}/frame_{iteration}", exist_ok=True)
+                    frame_save_dir = os.path.join(
+                        bb_output_dir, f"frame_{iteration}")
+
+                # Logs average of last 10 FPS
+                if SHEET_RUNTIME:
+                    if iteration > 11:
+                        fps10 = 1.0 / \
+                            ((prev - rs.get_row(-10)["Start Time"]) / 10.0)
                     else:
-                        time.sleep(0.05)
-                        continue
+                        fps10 = 1.0 / ((prev - start_time) / iteration)
+                    rs.log("FPS10", fps10)
+                else:
+                    fps10 = None
 
-                time_elapsed = ptime() - prev
-
-                rs.start_iter()
-                if (IS_ORIGINAL_FPS or time_elapsed > 1.0 / FRAME_RATE) and (not CAMERA_STREAM or stream.frameCount() > last_frame):
-                    prev = ptime()
-                    iteration += 1
-
-                    # Save bboxes every BBOX_SAVE_FREQUENCY iterations if SAVE_BBOXES is True
-                    if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
-                        os.makedirs(
-                            f"{bb_output_dir}/frame_{iteration}", exist_ok=True)
-                        frame_save_dir = os.path.join(
-                            bb_output_dir, f"frame_{iteration}")
-
-                    # Logs average of last 10 FPS
-                    if SHEET_RUNTIME:
-                        if iteration > 11:
-                            fps10 = 1.0 / \
-                                ((prev - rs.get_row(-10)["Start Time"]) / 10.0)
-                        else:
-                            fps10 = 1.0 / ((prev - start_time) / iteration)
-                        rs.log("FPS10", fps10)
+                # Grabs frame from camera thread if using camera stream, otherwise reads from video
+                with rs.log_timing("Frame Read"):
+                    if CAMERA_STREAM:
+                        ret, frame = stream.read()
+                        last_frame = stream.frameCount()
                     else:
-                        fps10 = None
+                        ret, frame = cap.read()
 
-                    # Grabs frame from camera thread if using camera stream, otherwise reads from video
-                    with rs.log_timing("Frame Read"):
-                        if CAMERA_STREAM:
-                            ret, frame = stream.read()
-                            last_frame = stream.frameCount()
-                        else:
-                            ret, frame = cap.read()
+                    if not ret:
+                        print("Failed to capture image" + "\n")
+                        break
 
-                        if not ret:
-                            print("Failed to capture image" + "\n")
-                            break
+                # Get inputs from Shared State
+                key = shared_state["key"]
+                is_flipped = -1 if shared_state["flipped"] else 1
+                weapon_on_this_frame = shared_state["weapon_on"]
 
-                    # Get inputs from Shared State
-                    key = shared_state["key"]
-                    is_flipped = -1 if shared_state["flipped"] else 1
-                    weapon_on_this_frame = shared_state["weapon_on"]
+                # Warp image to homography matrix using maps
+                with rs.log_timing("Warp"):
+                    warped_frame = warp_map(frame, map_x, map_y)
 
-                    # Warp image to homography matrix using maps
-                    with rs.log_timing("Warp"):
-                        warped_frame = warp_map(frame, map_x, map_y)
+                # 11. Run the Warped Image through Object Detection
+                # Internal timings (Preprocess, Inference, etc.) are handled inside predict()
+                with rs.log_timing("Object Detection"):
+                    detected_bots = predictor.predict(warped_frame)
 
-                    # 11. Run the Warped Image through Object Detection
-                    # Internal timings (Preprocess, Inference, etc.) are handled inside predict()
-                    with rs.log_timing("Object Detection"):
-                        detected_bots = predictor.predict(warped_frame)
+                if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
+                    for bot in range(len(detected_bots["bots"])):
+                        if detected_bots["bots"][bot]["img"] is not None:
+                            cv2.imwrite(
+                                f"{frame_save_dir}/detected_bot_{bot}.png", detected_bots["bots"][bot]["img"])
 
-                    if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
-                        for bot in range(len(detected_bots["bots"])):
-                            if detected_bots["bots"][bot]["img"] is not None:
-                                cv2.imwrite(
-                                    f"{frame_save_dir}/detected_bot_{bot}.png", detected_bots["bots"][bot]["img"])
+                # 11.5 Quantize Colors
+                with rs.log_timing("Color Quantization"):
+                    if COLOR_QUANTIZATION:
+                        detected_bots = quantize(
+                            detected_bots, selected_colors, show=False, is_flipped=is_flipped)
 
-                    # 11.5 Quantize Colors
-                    with rs.log_timing("Color Quantization"):
-                        if COLOR_QUANTIZATION:
-                            detected_bots = quantize(
-                                detected_bots, selected_colors, show=False, is_flipped=is_flipped)
+                if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
+                    for bot in range(len(detected_bots["bots"])):
+                        if detected_bots["bots"][bot]["img"] is not None:
+                            cv2.imwrite(
+                                f"{frame_save_dir}/quantized_bot_{bot}.png", detected_bots["bots"][bot]["img"])
 
-                    if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
-                        for bot in range(len(detected_bots["bots"])):
-                            if detected_bots["bots"][bot]["img"] is not None:
-                                cv2.imwrite(
-                                    f"{frame_save_dir}/quantized_bot_{bot}.png", detected_bots["bots"][bot]["img"])
+                # 12. Run Object Detection's results through Corner Detection
+                with rs.log_timing("Corner Detection"):
+                    corner_detection.set_bots(detected_bots)
+                    detected_bots_with_data = corner_detection.corner_detection_main()
 
-                    # 12. Run Object Detection's results through Corner Detection
-                    with rs.log_timing("Corner Detection"):
-                        corner_detection.set_bots(detected_bots)
-                        detected_bots_with_data = corner_detection.corner_detection_main()
+                # Prepare Quantized Huey Image (for display buffer)
+                huey_display_img = None
+                with rs.log_timing("Display Quantized Huey"):
+                    if SHOW_QUANTIZED_HUEY and len(detected_bots["bots"]) > 0:
+                        try:
+                            if detected_bots_with_data and detected_bots_with_data.get("huey") and detected_bots_with_data["huey"].get("bbox") is not None:
+                                huey_bbox = detected_bots_with_data["huey"]["bbox"]
+                                # Find which bot index has this bbox
+                                for i, bot in enumerate(detected_bots["bots"]):
+                                    if bot.get("bbox") is not None and np.array_equal(bot["bbox"], huey_bbox):
+                                        if bot.get("img") is not None:
+                                            huey_display_img = bot["img"]
+                                        break
+                        except Exception as e:
+                            pass
 
-                    # Prepare Quantized Huey Image (for display buffer)
-                    huey_display_img = None
-                    with rs.log_timing("Display Quantized Huey"):
-                        if SHOW_QUANTIZED_HUEY and len(detected_bots["bots"]) > 0:
-                            try:
-                                if detected_bots_with_data and detected_bots_with_data.get("huey") and detected_bots_with_data["huey"].get("bbox") is not None:
-                                    huey_bbox = detected_bots_with_data["huey"]["bbox"]
-                                    # Find which bot index has this bbox
-                                    for i, bot in enumerate(detected_bots["bots"]):
-                                        if bot.get("bbox") is not None and np.array_equal(bot["bbox"], huey_bbox):
-                                            if bot.get("img") is not None:
-                                                huey_display_img = bot["img"]
-                                            break
-                            except Exception as e:
-                                pass
+                with rs.log_timing("Algorithm"):
+                    move_dictionary = algorithm.ram_ram(
+                        detected_bots_with_data, CAN_RECOVER, fps=FRAME_RATE, key=key)
 
-                    with rs.log_timing("Algorithm"):
-                        move_dictionary = algorithm.ram_ram(
-                            detected_bots_with_data, CAN_RECOVER, fps=FRAME_RATE, key=key)
+                # 14. Transmitting the motor values to Huey's if we're using a live video
+                with rs.log_timing("Transmission"):
+                    if IS_TRANSMITTING:
+                        speed = move_dictionary["speed"]
+                        turn = move_dictionary["turn"]
+                        motor_group.move(speed*is_flipped, turn * -1)
+                        if WEAPON_ON:
+                            weapon_motor_group.move(
+                                1 if weapon_on_this_frame else 0)
 
-                    # 14. Transmitting the motor values to Huey's if we're using a live video
-                    with rs.log_timing("Transmission"):
-                        if IS_TRANSMITTING:
-                            speed = move_dictionary["speed"]
-                            turn = move_dictionary["turn"]
-                            motor_group.move(speed*is_flipped, turn * -1)
-                            if WEAPON_ON:
-                                weapon_motor_group.move(
-                                    1 if weapon_on_this_frame else 0)
+                # Prepare Main Display Image
+                main_display_img = None
+                with rs.log_timing("Display"):
+                    if DISPLAY_ANGLES:
+                        warped_frame = predictor.show_predictions(
+                            warped_frame, detected_bots)
+                        if SHOW_HUD:
+                            warped_frame = draw_hud(
+                                warped_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
 
-                    # Prepare Main Display Image
-                    main_display_img = None
-                    with rs.log_timing("Display"):
-                        if DISPLAY_ANGLES:
-                            warped_frame = predictor.show_predictions(
-                                warped_frame, detected_bots)
-                            if SHOW_HUD:
-                                warped_frame = draw_hud(
-                                    warped_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
+                        # Call display_angles with show=False to get the image without displaying
+                        main_display_img = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing,
+                                                            against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped=is_flipped, weapon_on=weapon_on_this_frame, centroids=corner_detection.centroids, show=False)
 
-                            # Call display_angles with show=False to get the image without displaying
-                            main_display_img = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing,
-                                                              against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped=is_flipped, weapon_on=weapon_on_this_frame, centroids=corner_detection.centroids, show=False)
+                        if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
+                            cv2.imwrite(
+                                f"{frame_save_dir}/final_image_{iteration}.png", main_display_img)
 
-                            if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
-                                cv2.imwrite(
-                                    f"{frame_save_dir}/final_image_{iteration}.png", main_display_img)
+                    elif SHOW_FRAME:
+                        display_frame = warped_frame
+                        if SHOW_HUD:
+                            display_frame = draw_hud(
+                                display_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
+                        main_display_img = display_frame
 
-                        elif SHOW_FRAME:
-                            display_frame = warped_frame
-                            if SHOW_HUD:
-                                display_frame = draw_hud(
-                                    display_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
-                            main_display_img = display_frame
 
-                    # Update Frame Buffer
-                    frame_buffer.append({
-                        "main": main_display_img,
-                        "huey": huey_display_img
-                    })
 
-                    rs.dump()
+                # CONVERT: BGR -> RGBA and normalize to 0.0-1.0
+                # Print the color format of main_display_img
+                frame = cv2.cvtColor(main_display_img, cv2.COLOR_BGR2RGBA)
+                frame = cv2.resize(frame, (width, height)) # Ensure it matches texture size
+                data = frame.astype(np.float32) / 255.0
+                print(f"Display size {data.shape}")
+                
+                # BLAST: Update the texture data on the GPU
+                print(f"Display iteration {iteration}")
+                dpg.set_value("camera_texture", data.flatten())
+                dpg.render_dearpygui_frame()
+                print(f"Display rendered {iteration}")
+
+
+
+                # Update Frame Buffer
+                # frame_buffer.append({
+                #     "main": main_display_img,
+                #     "huey": huey_display_img
+                # })
+
+                rs.dump()
 
         # Start the Perception Thread
-        perception_thread = threading.Thread(
-            target=perception_pipeline, daemon=True)
-        perception_thread.start()
+        # perception_thread = threading.Thread(
+        #     target=perception_pipeline, daemon=True)
+        # perception_thread.start()
 
         # ----------------------------------------------------------------------
         # Display UI Loop (Runs in Main Thread)
-        while not stop_event.is_set():
-            if frame_buffer:
-                frames = frame_buffer[0]
+        # while not stop_event.is_set():
+        #     if frame_buffer:
+        #         frames = frame_buffer[0]
 
-                if frames["main"] is not None and SHOW_FRAME:
-                    name = "Battle with Predictions" if DISPLAY_ANGLES else "Bounding boxes (no angles)"
-                    cv2.imshow(name, frames["main"])
+        #         if frames["main"] is not None and SHOW_FRAME:
+        #             name = "Battle with Predictions" if DISPLAY_ANGLES else "Bounding boxes (no angles)"
+        #             cv2.imshow(name, frames["main"])
 
-                if frames["huey"] is not None and SHOW_QUANTIZED_HUEY:
-                    cv2.imshow("Quantized Huey", frames["huey"])
+        #         if frames["huey"] is not None and SHOW_QUANTIZED_HUEY:
+        #             cv2.imshow("Quantized Huey", frames["huey"])
 
-            # pollKey handles the GUI event loop
-            key = cv2.pollKey()
+        #     # pollKey handles the GUI event loop
+        #     key = cv2.pollKey()
 
-            if key != -1:
-                key_8bit = key & 0xFF
-                if key_8bit == ord("q"):
-                    stop_event.set()
-                elif key_8bit == ord("f"):
-                    print("Backup flipped key pressed")
-                    if shared_state["flipped"] is None:
-                        shared_state["flipped"] = True
-                    else:
-                        shared_state["flipped"] = not shared_state["flipped"]
-                    if shared_state["paused"]:
-                        shared_state["skip_frame"] = True
-                elif key_8bit == ord("p"):
-                    shared_state["paused"] = not shared_state["paused"]
-                    shared_state["skip_frame"] = False
-                    print(
-                        f"Playback {'paused' if shared_state['paused'] else 'resumed'}")
-                elif key_8bit == ord("w"):
-                    shared_state["weapon_on"] = not shared_state["weapon_on"]
-                    print(
-                        f"Weapon {'ON' if shared_state['weapon_on'] else 'OFF'}")
-                elif shared_state["paused"]:
-                    # Any other key while paused skips one frame
-                    shared_state["skip_frame"] = True
+        #     if key != -1:
+        #         key_8bit = key & 0xFF
+        #         if key_8bit == ord("q"):
+        #             stop_event.set()
+        #         elif key_8bit == ord("f"):
+        #             print("Backup flipped key pressed")
+        #             if shared_state["flipped"] is None:
+        #                 shared_state["flipped"] = True
+        #             else:
+        #                 shared_state["flipped"] = not shared_state["flipped"]
+        #             if shared_state["paused"]:
+        #                 shared_state["skip_frame"] = True
+        #         elif key_8bit == ord("p"):
+        #             shared_state["paused"] = not shared_state["paused"]
+        #             shared_state["skip_frame"] = False
+        #             print(
+        #                 f"Playback {'paused' if shared_state['paused'] else 'resumed'}")
+        #         elif key_8bit == ord("w"):
+        #             shared_state["weapon_on"] = not shared_state["weapon_on"]
+        #             print(
+        #                 f"Weapon {'ON' if shared_state['weapon_on'] else 'OFF'}")
+        #         elif shared_state["paused"]:
+        #             # Any other key while paused skips one frame
+        #             shared_state["skip_frame"] = True
 
-            # Pass key to perception thread (resetting it to None if no key pressed is handled by waitKey returning 255)
-            shared_state["key"] = key if key != -1 else None
+        #     # Pass key to perception thread (resetting it to None if no key pressed is handled by waitKey returning 255)
+        #     shared_state["key"] = key if key != -1 else None
 
-            # Check if thread died
-            if not perception_thread.is_alive():
-                break
+        #     # Check if thread died
+        #     if not perception_thread.is_alive():
+        #         break
 
-        # Wait for the background perception thread to finish its current iteration and exit
-        perception_thread.join()
+        # # Wait for the background perception thread to finish its current iteration and exit
+        # perception_thread.join()
 
-        if CAMERA_STREAM:
-            stream.stop()
-        print("============================")
-        print("Video finished successfully!")
+        # if CAMERA_STREAM:
+        #     stream.stop()
+        # print("============================")
+        # print("Video finished successfully!")
 
-        if SHOW_FRAME:
-            cv2.destroyAllWindows()
-            if SHOW_QUANTIZED_HUEY:
-                try:
-                    cv2.destroyWindow("Quantized Huey")
-                except:
-                    pass
+        # if SHOW_FRAME:
+        #     cv2.destroyAllWindows()
+        #     if SHOW_QUANTIZED_HUEY:
+        #         try:
+        #             cv2.destroyWindow("Quantized Huey")
+        #         except:
+        #             pass
 
     except KeyboardInterrupt:
         print("KEYBOARD INTERRUPT CLEAN UP")
     except Exception as exception:
         print("UNKNOWN EXCEPTION FAILURE. PROCEEDING TO CLEAN UP:", exception)
     finally:
+
+        print("Finally")
 
         # Newbie squadron trial
         try:
