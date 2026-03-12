@@ -6,6 +6,7 @@ import numpy as np
 
 # Settings
 DATA_SET_NAME = "test_data"   # Name of your dataset folder in "testing_data"
+MANUAL_CENTER = False         # Allows you to select the center of the bot by hand 
 
 # --- Change this to your folder path ---
 ALL_TRAINING_DATA_PATH = "testing_data/"
@@ -56,13 +57,31 @@ def draw_overlay(img, tail=None, angle=None):
                         0.8, (0, 100, 255), 1, cv2.LINE_AA)
 
     # Instructions
+    # instructions = []
+    # if MANUAL_CENTER:
+    #     instructions = [
+    #         "Click 1: set the tail",
+    #         "Click 2: set the head",
+    #     ]
+    # else:
+    #     instructions = [
+    #         "Click: set angle",
+    #     ]
+    
+    # instructions += [
+    #     "ENTER: confirm & next",
+    #     "S: skip image",
+    #     "Q: quit"
+    # ]
+
     instructions = [
-        "Click 1: set the tail",
-        "Click 2: set the head",
+        "Click 1: set the tail" if MANUAL_CENTER else None,
+        "Click 2: set the head" if MANUAL_CENTER else "Click: set angle",
         "ENTER: confirm & next",
         "S: skip image",
-        "Q: quit",
+        "Q: quit"
     ]
+
     for i, text in enumerate(instructions):
         y = overlay.shape[0] - 15 - i * 22
         cv2.putText(overlay, text, (10, y), cv2.FONT_HERSHEY_SIMPLEX,
@@ -72,32 +91,30 @@ def draw_overlay(img, tail=None, angle=None):
 
     return overlay
 
-
-# def mouse_callback(event, x, y, flags, param):
-#     if event == cv2.EVENT_LBUTTONDOWN:
-#         cx, cy = state["center"]
-#         dx = x - cx
-#         dy = cy - y  # flip y for standard angle convention (up = positive)
-#         angle = math.degrees(math.atan2(dy, dx)) % 360
-#         state["angle"] = angle
-#         updated = draw_overlay(state["base_image"], state["center"], state["angle"])
-#         cv2.imshow(state["window_name"], updated)
-
 def mouse_callback(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
-        if state["tail"] is None:
-            # First click: set the tail point
-            state["tail"] = (x, y)
-            updated = draw_overlay(state["base_image"], state["tail"], None)
-            cv2.imshow(state["window_name"], updated)
+        if MANUAL_CENTER and state["tail"] is None:
+                # First click: set the tail point (< head ---------- tail )
+                state["tail"] = (x, y)
+                updated = draw_overlay(state["base_image"], state["tail"], None)
+                cv2.imshow(state["window_name"], updated)
         else:
             # Second click: set the head point and compute angle
-            tx, ty = state["tail"]
+            if MANUAL_CENTER:
+                tx, ty = state["tail"]
+            else:
+                tx, ty = state["center"] 
+
             dx = x - tx
             dy = ty - y  # flip y for standard angle convention (up = positive)
             angle = math.degrees(math.atan2(dy, dx)) % 360
             state["angle"] = angle
-            updated = draw_overlay(state["base_image"], state["tail"], state["angle"])
+
+            if MANUAL_CENTER:
+                updated = draw_overlay(state["base_image"], state["tail"], state["angle"])
+            else:
+                updated = draw_overlay(state["base_image"], state["center"], state["angle"])
+
             cv2.imshow(state["window_name"], updated)
 
 
@@ -133,10 +150,10 @@ def main():
         if scale > 1.0:
             image = cv2.resize(image, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_CUBIC)
 
-        # #this is the center of the screen and 
-        # h, w = image.shape[:2]
-        # center = (w // 2, h // 2)
-        #this code replaces the angle underneath 
+        # This is the center of the screen
+        h, w = image.shape[:2]
+        center = (w // 2, h // 2)
+        state["center"] = center
 
         # Reset state for this image
         state["angle"] = None
