@@ -1,23 +1,12 @@
 {
-    "Ryan God Settings":
+    "Ryan OG Green Settings":
     {
         "threshold": 24.725,
         "quantization_weights": [0.171, 0.3777, 0.669]
     },
-    "Testing":
-    {
-        "threshold": 41.12,
-        "quantization_weights": [0.342, 0.550, 1.000]
-    },
-    "Testing2":
-    {
-        "threshold": 37.12,
-        "quantization_weights": [0.103, 0.365, 0.943]
-    },
-    "Testing3":
+    "Green Huey":
     {
         "threshold": 36.14,
-        "quantization_weights": [0, -0.387, -0.957]
+        "quantization_weights": [0, 0.387, 0.957]
     }
-    
 }
