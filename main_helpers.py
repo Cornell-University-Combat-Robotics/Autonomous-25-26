@@ -123,7 +123,7 @@ def get_predictor(MODEL_NAME, OD_IMG_SIZE):
 
     elif ov.Core().get_available_devices() and "GPU" in ov.Core().get_available_devices():
         print(f"Using {MODEL_NAME} with OpenVINO on GPU for object detection.")
-        predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE, device="gpu")
+        predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE, device="intel:gpu")
 
     elif ov.Core().get_available_devices() and "CPU" in ov.Core().get_available_devices():
         print(f"Using {MODEL_NAME} with OpenVINO on CPU for object detection.")
