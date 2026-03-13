@@ -121,9 +121,13 @@ def get_predictor(MODEL_NAME, OD_IMG_SIZE):
     #     print(f"Using {MODEL_NAME} on MPS for object detection.")
     #     predictor = YoloModel(MODEL_NAME, "PT", OD_IMG_SIZE, device="mps")
 
+    elif ov.Core().get_available_devices() and "GPU" in ov.Core().get_available_devices():
+        print(f"Using {MODEL_NAME} with OpenVINO on GPU for object detection.")
+        predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE, device="intel:gpu")
+
     elif ov.Core().get_available_devices() and "CPU" in ov.Core().get_available_devices():
         print(f"Using {MODEL_NAME} with OpenVINO on CPU for object detection.")
-        predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE)
+        predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE, device="cpu")
 
     else:
         print(f"Using {MODEL_NAME} with ONNX on CPU for object detection.")
@@ -133,7 +137,8 @@ def get_predictor(MODEL_NAME, OD_IMG_SIZE):
 
 def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel):
     # 5.1: Defining Transmission Object if we're using a live video
-    ser = OurSerial(baudrate=115200) # Updated from 9600 to handle higher fps, push new arduino code
+    # Updated from 9600 to handle higher fps, push new arduino code 115200
+    ser = OurSerial(baudrate=115200)
     motor_group = Motor(ser=ser, channel=speed_motor_channel,
                         channel2=turn_motor_channel)
     if JANK_CONTROLLER:
@@ -180,7 +185,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
     return algorithm
 
 
-def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False,  centroids=[], show=True):
+def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False, weapon_on=False, centroids=[], show=True):
     if is_recovering:
         cv2.putText(image, "RECOVERING", (550, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
@@ -194,6 +199,13 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
         else:
             cv2.putText(image, "BACKWARD: " + against_wall, (450, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.67, (150, 67, 255), 2)
+
+    if weapon_on:
+        cv2.putText(image, "WEAPON ON", (image.shape[1] - 150, image.shape[0] - 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 255, 0), 2)
+    else:
+        cv2.putText(image, "WEAPON OFF", (image.shape[1] - 150, image.shape[0] - 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
 
     # BLUE line: Huey's Current Orientation according to Corner Detection
 
@@ -325,7 +337,7 @@ def draw_hud(image, fps10=None, move_dictionary=None, iteration=None, playback_s
     # Optimization: Only process the ROI (Region of Interest) instead of the full image
     h, w = image.shape[:2]
     y2 = min(hud_height, h)
-    x2 = min(250, w)
+    x2 = min(350, w)
 
     if y2 > 5 and x2 > 5:
         roi = image[5:y2, 5:x2]
@@ -343,18 +355,51 @@ def draw_hud(image, fps10=None, move_dictionary=None, iteration=None, playback_s
                     line_height), font, font_scale, text_color, thickness)
         line_num += 1
 
+    # Helper to draw bar
+    def draw_bar_graphic(val, x_start, y_baseline):
+        bar_width = 120
+        bar_height = 14
+        bar_y = y_baseline - bar_height + 3  # Shift up slightly from baseline
+
+        # Background
+        cv2.rectangle(image, (x_start, bar_y), (x_start + bar_width, bar_y + bar_height), (50, 50, 50), -1)
+        cv2.rectangle(image, (x_start, bar_y), (x_start + bar_width, bar_y + bar_height), (150, 150, 150), 1)
+
+        # Center line
+        center_x = x_start + bar_width // 2
+        cv2.line(image, (center_x, bar_y), (center_x, bar_y + bar_height), (200, 200, 200), 1)
+
+        # Value bar
+        max_val = 1.0
+        val_clamped = max(min(val, max_val), -max_val)
+        length = int((val_clamped / max_val) * (bar_width / 2))
+
+        if length > 0:
+            cv2.rectangle(image, (center_x, bar_y + 1), (center_x + length, bar_y + bar_height - 1), (0, 255, 0), -1)
+        elif length < 0:
+            # length is negative here, so center_x + length is to the left
+            cv2.rectangle(image, (center_x + length, bar_y + 1), (center_x, bar_y + bar_height - 1), (0, 0, 255), -1)
+
+        return x_start + bar_width + 10  # Return x position for next element
+
     # Display Speed
     if move_dictionary is not None and "speed" in move_dictionary:
-        speed_text = f"Speed: {move_dictionary['speed']:.2f}"
-        cv2.putText(image, speed_text, (x_offset, y_offset + line_num *
-                    line_height), font, font_scale, text_color, thickness)
+        val = move_dictionary['speed']
+        label = "Speed: "
+        cv2.putText(image, label, (x_offset, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
+        
+        next_x = draw_bar_graphic(val, x_offset + 90, y_offset + line_num * line_height)
+        cv2.putText(image, f"{val:.2f}", (next_x, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
         line_num += 1
 
     # Display Turn
     if move_dictionary is not None and "turn" in move_dictionary:
-        turn_text = f"Turn: {move_dictionary['turn']:.2f}"
-        cv2.putText(image, turn_text, (x_offset, y_offset + line_num *
-                    line_height), font, font_scale, text_color, thickness)
+        val = move_dictionary['turn']
+        label = "Turn: "
+        cv2.putText(image, label, (x_offset, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
+        
+        next_x = draw_bar_graphic(val, x_offset + 90, y_offset + line_num * line_height)
+        cv2.putText(image, f"{val:.2f}", (next_x, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
         line_num += 1
 
     # Display Iteration (frame number)
