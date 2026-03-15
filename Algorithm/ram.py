@@ -42,6 +42,9 @@ class Ram():
     recovery_step = 0
     against_wall = ""
     moving_forward = -1
+    sec_to_speed = 1
+    sec_to_acceleration = 1
+    prev_power = 1
 
     def __init__(self, bots=None, huey_position=(np.array([ARENA_WIDTH, ARENA_WIDTH])), huey_old_position=(np.array([ARENA_WIDTH, ARENA_WIDTH])),
                  huey_orientation=45, enemy_position=np.array([0, 0]), huey_old_turn=0, huey_old_speed=0, is_recovering=False) -> None:
@@ -97,6 +100,14 @@ class Ram():
         self.recover_turn = 0.5
         self.is_recovering = False
         self.is_backing = False
+
+        # PID vars
+        self.derivative = 0
+        self.acceleration = 0
+        self.prev_derivative = 0
+        self.prev_power = 0
+        self.secs_to_speed = 0.1
+        self.secs_to_acceleration = 1
     # ----------------------------- HELPER METHODS -----------------------------
 
     ''' use a PID controller to move the bot to the desired position '''
@@ -350,15 +361,19 @@ class Ram():
             # PID Shenanigans. Only use PID for the turn values
             if self.USE_PID and self.delta_t != 0:
                 if self.delta_t > 0:
-                    derivative = (((self.huey_orientation - self.huey_previous_orientations[-1] + 180) % 360 ) -180) / (self.delta_t * 180.0)
-                else:
-                    derivative = 0
+                    self.derivative = (((self.huey_orientation - self.huey_previous_orientations[-1] + 180) % 360 ) -180) / (self.delta_t * 180.0)
+                    self.acceleration = (self.prev_derivative - self.derivative) / self.delta_t
+                    self.prev_derivative = self.derivative
+                # else:
+                #     derivative = 0
                 
-                target_derivative = turn * secs_to_speed # Initialize these variables!
-                target_acceleration = (target_derivative - derivative) * secs_to_acceleration
-                power = target_acceleration * (prev_power / acceleration)
+                target_derivative = turn * self.secs_to_speed # Turn derivative is our proportional
+                target_acceleration = (target_derivative - self.derivative) * self.secs_to_acceleration
+                power = target_acceleration * (self.prev_power / (self.acceleration + 0.0000001))
                 
                 turn = clamp(power, -1, 1)
+
+                self.prev_power = turn
 
             return self.huey_move(speed, turn)
         else:
