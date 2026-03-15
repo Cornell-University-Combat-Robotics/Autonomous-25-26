@@ -6,7 +6,12 @@
     },
     "Green Huey":
     {
-        "threshold": 36.14,
-        "quantization_weights": [0, 0.387, 0.957]
+        "threshold": 26.335915418002198,
+        "quantization_weights": [0.21169277669187547, 0.3123271596867585,  0.8207064426180575]
+    },
+    "Purple Huey":
+    {
+        "threshold": 4.640077263670342,
+        "quantization_weights": [0.7665384196881221, 0.6562546911867898,  0.8356242920918429]
     }
 }
