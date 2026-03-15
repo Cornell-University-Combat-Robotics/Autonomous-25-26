@@ -91,6 +91,8 @@ def main():
         detected_bots_with_data = corner_detection.corner_detection_main()
         print(detected_bots_with_data)
 
+        # Differs from main
+        # Here we collect an unquantized image of Huey using the bounding box we get from corner_detection_main()
         huey_bbox=detected_bots_with_data['huey']['bbox']
         x1, y1 = int(huey_bbox[0][0]), int(huey_bbox[0][1])
         x2, y2 = int(huey_bbox[1][0]), int(huey_bbox[1][1])

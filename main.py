@@ -76,9 +76,9 @@ OD_IMG_SIZE = 320
 
 folder = os.getcwd() + "/main_files"
 
-camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-# camera_number = folder + "/test_videos/orbital_huey.mp4"
+camera_number = folder + "/test_videos/orbital_huey.mp4"
 # camera_number = folder + "/test_videos/cicero_corners_bzone.mov"
 # camera_number = 1
 # camera_number = 0
@@ -88,8 +88,10 @@ with open(quant_settings_file, "r") as f:
     all_settings = json.load(f)
 
 # Quantization Settings
-quantization_settings = None
+# quantization_settings = None
 # quantization_settings = all_settings["Green Huey"]
+quantization_settings = all_settings["Demo"]
+
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
