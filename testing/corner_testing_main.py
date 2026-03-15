@@ -3,6 +3,7 @@ import os
 import sys
 import cv2
 import time
+import math
 import pandas as pd
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -19,9 +20,9 @@ from main_helpers import (
 
 #Settings
 DISPLAY_IMAGES = True           # Displays each image in window
-NO_ORIENTATION_SCORE = 35       # Angle that is equivelently bad to no orientation
-DATA_SET_NAME = "prince_full"   # Name of your dataset folder in "testing_data"
-COLOR_SELECT_IMG = "900.png"    # This should be the name of your image you want to do color selection on
+NO_ORIENTATION_SCORE = 30       # Angle that is equivelently bad to no orientation
+DATA_SET_NAME = "purple_huey"   # Name of your dataset folder in "testing_data"
+COLOR_SELECT_IMG = "0.png"    # This should be the name of your image you want to do color selection on
 
 # Folder paths
 ALL_TRAINING_DATA_PATH = "testing_data/" 
@@ -112,9 +113,9 @@ def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, DISPLAY_IMAGE
                 frames_with_orientation += 1
                 current_angle_difference = angle_difference(true_angle, detected_bots_with_data['huey']['orientation']) #Use squared difference ?
                 total_theta += current_angle_difference
-                total_score += current_angle_difference # Score increases by angle difference
+                total_score += math.pow(current_angle_difference, 2) # Score increases by angle difference
             else:
-                total_score += NO_ORIENTATION_SCORE # Score increases by arbitrary value
+                total_score += math.pow(NO_ORIENTATION_SCORE, 2) # Score increases by arbitrary value
 
             if DISPLAY_IMAGES:
                 print(f"Correct Angle: {angle_lookup.get(filename)}")
