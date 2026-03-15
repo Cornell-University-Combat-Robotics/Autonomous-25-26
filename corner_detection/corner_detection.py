@@ -127,6 +127,49 @@ class RobotCornerDetection:
                             }
                             break
 
+                def compute_iou(b1, b2):
+                    x1_min, y1_min = b1["bbox"][0]
+                    x1_max, y1_max = b1["bbox"][1]
+
+                    x2_min, y2_min = b2["bbox"][0]
+                    x2_max, y2_max = b2["bbox"][1]
+
+                    # Intersection
+                    x_left = max(x1_min, x2_min)
+                    y_top = max(y1_min, y2_min)
+                    x_right = min(x1_max, x2_max)
+                    y_bottom = min(y1_max, y2_max)
+
+                    if x_right < x_left or y_bottom < y_top:
+                        return 0.0
+                    elif x_right >= x_left:
+                        
+                        pass
+                    elif y_bottom >= y_top:
+                        pass
+
+                    intersection = (x_right - x_left) * (y_bottom - y_top)
+
+                    # Areas
+                    area1 = (x1_max - x1_min) * (y1_max - y1_min)
+                    area2 = (x2_max - x2_min) * (y2_max - y2_min)
+
+                    union = area1 + area2 - intersection
+
+                    iou = intersection / union
+
+                    return iou
+                
+                iou = compute_iou(huey, enemy_bots)
+                if iou > 0:
+
+                    
+
+                
+                # if boxes_overlap(huey, enemy_bots):
+                    
+                #     pass
+
                 centroid_points = find_centroids(image, self.selected_colors)
                 self.centroids = centroid_points
                 

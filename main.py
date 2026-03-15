@@ -35,7 +35,7 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
-WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
 DISPLAY_SCALE = 1.0             # Display frame smaller for selection with 1080p video, 1.0 default
 IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
 WEAPON_ON = False               # True if weapon motor should be on
@@ -70,10 +70,10 @@ folder = os.getcwd() + "/main_files"
 # camera_number = folder + "/test_videos/orbital_huey.mp4"
 # camera_number = folder + "/test_videos/crude_rot_huey.mp4"
 # camera_number = folder + "/test_videos/two_huey_real_cage_800.mp4"
-# camera_number   = folder + "/test_videos/huey_vs_prince.mp4"
+camera_number   = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number   = folder + "/test_videos/vangoghuey.mp4"
 # camera_number   = folder + "/test_videos/diagona_huey.mp4"
-camera_number   = folder + "/test_videos/blink224_huey.mp4"
+# camera_number   = folder + "/test_videos/blink224_huey.mp4"
 # camera_number = 1
 # camera_number = 0
 
