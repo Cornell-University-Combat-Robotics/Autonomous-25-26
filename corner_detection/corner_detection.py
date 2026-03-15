@@ -35,7 +35,7 @@ class RobotCornerDetection:
     def set_bots(self, bots: dict):
         self.bots = bots
     
-    def detect_our_robot_main(self, bot_images: list[np.ndarray], threshold_set=False) -> np.ndarray:
+    def detect_our_robot_main(self, bot_images: list[np.ndarray], threshold_not_set=False) -> np.ndarray:
         """
         Detects the image containing our robot between two or more given images.
 
@@ -67,7 +67,7 @@ class RobotCornerDetection:
 
             if bot_images and all(img is not None for img in bot_images):
                 bot_color = self.selected_colors[0]
-                our_bot = find_our_bot(self, bot_images, bot_color, threshold_set)
+                our_bot = find_our_bot(self, bot_images, bot_color, threshold_not_set)
 
                 return our_bot
             else:
@@ -78,7 +78,7 @@ class RobotCornerDetection:
             print(f"Unexpected error in detect_our_robot_main: {e}")
             return None
 
-    def corner_detection_main(self, threshold_set=False) -> dict | None:
+    def corner_detection_main(self, threshold_not_set=False) -> dict | None:
         """
         Main function for detecting corners and orientation of the robot.
 
@@ -87,7 +87,7 @@ class RobotCornerDetection:
         """
         try:
             bot_images = [bot["img"] for bot in self.bots["bots"]]
-            image = self.detect_our_robot_main(bot_images, threshold_set)
+            image = self.detect_our_robot_main(bot_images, threshold_not_set)
             
             if image is not None:
                 # Find the identified bot (our robot)

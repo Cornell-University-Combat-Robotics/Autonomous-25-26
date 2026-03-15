@@ -156,7 +156,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
                             show=False, is_flipped=False)
     corner_detection.set_bots(first_run_ml)
     first_run_orientation = corner_detection.corner_detection_main(
-        threshold_set=True)
+        threshold_not_set=True)
 
     if first_run_orientation and first_run_orientation["huey"] and first_run_orientation["enemy"]:
         # Ensure single enemy
