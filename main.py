@@ -43,13 +43,13 @@ WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
 DISPLAY_ANGLES = True           # Only use when SHOW_FRAME is True
 # Process every captured frame, False -> cap at FRAME_RATE
-IS_ORIGINAL_FPS = False
+IS_ORIGINAL_FPS = True
 # FPS used for algo stuff, update to expected FPS on your system.
 FRAME_RATE = 120
 # Show heads-up display with FPS, speed, turn, frame number
 SHOW_HUD = True
 # Display the quantized bounding box of Huey in separate window
-SHOW_QUANTIZED_HUEY = True
+SHOW_QUANTIZED_HUEY = False
 # True to use color quantization, should always be True
 COLOR_QUANTIZATION = True
 CAN_RECOVER = False              # True to use recovery
@@ -76,9 +76,9 @@ OD_IMG_SIZE = 320
 folder = os.getcwd() + "/main_files"
 
 # camera_number = folder + "/test_videos/huey_vs_prince.mp4"
-# camera_number = folder + "/test_videos/huey_hell.mp4"
+camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/orbital_huey.mp4"
-camera_number = folder + "/test_videos/cicero_corners_bzone.mov"
+# camera_number = folder + "/test_videos/cicero_corners_bzone.mov"
 # camera_number = 1
 # camera_number = 0
 
