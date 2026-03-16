@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+import json
 from collections import deque
 
 import pandas as pd
@@ -86,12 +87,22 @@ camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_type = "Video"
 camera_type = "Webcam"
 
+quant_settings_file = "quant_settings.json"
+with open(quant_settings_file, "r") as f:
+    all_settings = json.load(f)
+
+# Quantization Settings
+quantization_settings = None
+# quantization_settings = all_settings["Green Huey"]
+# quantization_settings = all_settings["Purple Huey"]
+
 if IS_TRANSMITTING:
     speed_motor_channel = 1
     turn_motor_channel = 3
     weapon_motor_channel = 4
 
 rs = RuntimeSheet(use=SHEET_RUNTIME)
+
 # ------------------------------ BEFORE THE MATCH ------------------------------
 
 # Threading globals
@@ -100,7 +111,6 @@ stop_event = threading.Event()
 # Shared state for controls passed from UI thread to Perception thread
 shared_state = {"key": None, "flipped": None,
                 "paused": False, "skip_frame": False, "weapon_on": WEAPON_ON}
-
 
 def main():
     stream = None
@@ -270,7 +280,7 @@ def main():
                     with rs.log_timing("Color Quantization"):
                         if COLOR_QUANTIZATION:
                             detected_bots = quantize(
-                                detected_bots, selected_colors, show=False, is_flipped=is_flipped)
+                                detected_bots, selected_colors, show=False, is_flipped=is_flipped, settings=quantization_settings)
 
                     if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                         for bot in range(len(detected_bots["bots"])):
@@ -406,6 +416,7 @@ def main():
             stream.stop()
         print("============================")
         print("Video finished successfully!")
+
 
         if SHOW_FRAME:
             cv2.destroyAllWindows()
