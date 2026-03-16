@@ -275,8 +275,8 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False):
     #     threshold = 22
 
     # RYAN GOD SETTINGS (optimized for green huey based on prince video):
-    threshold = 24.725
-    custom_weights = [0.171, 0.377, 0.669]
+    threshold = 22
+    custom_weights = [0.05, 1, 1]
 
     colors_hsv_1x = np.array(selected_colors).reshape(1, -1, 3)
 

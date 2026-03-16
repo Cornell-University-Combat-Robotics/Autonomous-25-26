@@ -368,13 +368,14 @@ class Ram():
                 #     derivative = 0
                 
                 target_derivative = turn * self.secs_to_speed # Turn derivative is our proportional
-                target_acceleration = (target_derivative - self.derivative) * self.secs_to_acceleration
+                target_acceleration = (target_derivative - self.derivative) * self.secs_to_acceleration # TODO MAKE DIVIDED INSTEAD OF MULTIPLIED
                 power = target_acceleration * (self.prev_power / (self.acceleration + 0.0000001))
                 
                 turn = clamp(power, -1, 1)
 
                 self.prev_power = turn
 
+            print("Turn: "+(str(turn)))
             return self.huey_move(speed, turn)
         else:
             # print("enemy bot not detected, previous position appended")
