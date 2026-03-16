@@ -53,7 +53,7 @@ SHOW_QUANTIZED_HUEY = False
 # True to use color quantization, should always be True
 COLOR_QUANTIZATION = True
 CAN_RECOVER = False              # True to use recovery
-# True if using live camera stream, False if using a video file
+# True to run frame capture in a seperate thread, always false for videos
 CAMERA_STREAM = False
 # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 SHEET_RUNTIME = True
@@ -82,6 +82,10 @@ camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = 1
 # camera_number = 0
 
+# Set to webcam if capturing frames in main loop.
+# camera_type = "Video"
+camera_type = "Webcam"
+
 if IS_TRANSMITTING:
     speed_motor_channel = 1
     turn_motor_channel = 3
@@ -109,6 +113,13 @@ def main():
                 stream, CAMERA_STREAM, selection_scale=DISPLAY_SCALE)
         else:
             cap = cv2.VideoCapture(camera_number)
+            
+            if camera_type == "Webcam":
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+                cap.set(cv2.CAP_PROP_FPS, 120)
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
             captured_image = key_frame(
                 cap, CAMERA_STREAM, selection_scale=DISPLAY_SCALE)
 
