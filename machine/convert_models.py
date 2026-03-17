@@ -15,8 +15,8 @@ desired_model_input_size = 320
 # CoreML for M-series macs, engine for NVIDIA gpus
 # desired_format = "coreml"
 # desired_format = "engine"
-# desired_format = "onnx"
-desired_format = "openvino"
+desired_format = "onnx"
+# desired_format = "openvino"
 
 base_model_extension = ".pt"
 

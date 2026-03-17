@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+import json
 from collections import deque
 
 import pandas as pd
@@ -37,24 +38,24 @@ from warp_main import warp_map
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
 WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
 # Display frame smaller for selection with 1080p video, 1.0 default
-DISPLAY_SCALE = 1.0
+DISPLAY_SCALE = 0.5
 IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
 WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
 DISPLAY_ANGLES = True           # Only use when SHOW_FRAME is True
 # Process every captured frame, False -> cap at FRAME_RATE
-IS_ORIGINAL_FPS = False
+IS_ORIGINAL_FPS = True
 # FPS used for algo stuff, update to expected FPS on your system.
 FRAME_RATE = 120
 # Show heads-up display with FPS, speed, turn, frame number
 SHOW_HUD = True
 # Display the quantized bounding box of Huey in separate window
-SHOW_QUANTIZED_HUEY = True
+SHOW_QUANTIZED_HUEY = False
 # True to use color quantization, should always be True
 COLOR_QUANTIZATION = True
 CAN_RECOVER = False              # True to use recovery
-# True if using live camera stream, False if using a video file
-CAMERA_STREAM = True
+# True to run frame capture in a seperate thread, always false for videos
+CAMERA_STREAM = False
 # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 SHEET_RUNTIME = True
 # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
@@ -81,12 +82,26 @@ folder = os.getcwd() + "/main_files"
 # camera_number = 1
 camera_number = 0
 
+# Set to webcam if capturing frames in main loop.
+# camera_type = "Video"
+camera_type = "Webcam"
+
+quant_settings_file = "quant_settings.json"
+with open(quant_settings_file, "r") as f:
+    all_settings = json.load(f)
+
+# Quantization Settings
+quantization_settings = None
+# quantization_settings = all_settings["Green Huey"]
+# quantization_settings = all_settings["Purple Huey"]
+
 if IS_TRANSMITTING:
     speed_motor_channel = 1
     turn_motor_channel = 3
     weapon_motor_channel = 4
 
 rs = RuntimeSheet(use=SHEET_RUNTIME)
+
 # ------------------------------ BEFORE THE MATCH ------------------------------
 
 # Threading globals
@@ -108,6 +123,13 @@ def main():
                 stream, CAMERA_STREAM, selection_scale=DISPLAY_SCALE)
         else:
             cap = cv2.VideoCapture(camera_number)
+
+            if camera_type == "Webcam":
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+                cap.set(cv2.CAP_PROP_FPS, 120)
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
             captured_image = key_frame(
                 cap, CAMERA_STREAM, selection_scale=DISPLAY_SCALE)
 
@@ -173,6 +195,8 @@ def main():
 
         # ----------------------------------------------------------------------
         # Define the Perception Pipeline (Runs in Background Thread)
+        # This is all of our processing code minus the display of the images.
+        # Any image displays should modify the frame that is returned at the end of the loop.
         def perception_pipeline():
             prev = ptime()
             last_frame = 0
@@ -256,7 +280,7 @@ def main():
                     with rs.log_timing("Color Quantization"):
                         if COLOR_QUANTIZATION:
                             detected_bots = quantize(
-                                detected_bots, selected_colors, show=False, is_flipped=is_flipped)
+                                detected_bots, selected_colors, show=False, is_flipped=is_flipped, settings=quantization_settings)
 
                     if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                         for bot in range(len(detected_bots["bots"])):
