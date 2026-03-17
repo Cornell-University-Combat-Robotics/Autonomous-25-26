@@ -17,7 +17,7 @@ int ppm[chanel_number];
 
 void setup()
 {
-  Serial.begin(9600); // Initialize serial communication at 9600 baud rate
+  Serial.begin(115200); // Initialize serial communication at 9600 baud rate
 
   ppm[0] = default_servo_value + (defaultSteering * 500);
   ppm[1] = default_servo_value + (defaultThrottle * 500);

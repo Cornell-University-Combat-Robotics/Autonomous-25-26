@@ -121,9 +121,13 @@ def get_predictor(MODEL_NAME, OD_IMG_SIZE):
     #     print(f"Using {MODEL_NAME} on MPS for object detection.")
     #     predictor = YoloModel(MODEL_NAME, "PT", OD_IMG_SIZE, device="mps")
 
+    elif ov.Core().get_available_devices() and "GPU" in ov.Core().get_available_devices():
+        print(f"Using {MODEL_NAME} with OpenVINO on GPU for object detection.")
+        predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE, device="intel:gpu")
+
     elif ov.Core().get_available_devices() and "CPU" in ov.Core().get_available_devices():
         print(f"Using {MODEL_NAME} with OpenVINO on CPU for object detection.")
-        predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE)
+        predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE, device="cpu")
 
     else:
         print(f"Using {MODEL_NAME} with ONNX on CPU for object detection.")
@@ -133,7 +137,8 @@ def get_predictor(MODEL_NAME, OD_IMG_SIZE):
 
 def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel):
     # 5.1: Defining Transmission Object if we're using a live video
-    ser = OurSerial(baudrate=115200) # Updated from 9600 to handle higher fps, push new arduino code
+    # Updated from 9600 to handle higher fps, push new arduino code 115200
+    ser = OurSerial(baudrate=115200)
     motor_group = Motor(ser=ser, channel=speed_motor_channel,
                         channel2=turn_motor_channel)
     if JANK_CONTROLLER:
@@ -149,8 +154,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
     first_run_ml = quantize(first_run_ml, selected_colors,
                             show=False, is_flipped=False)
     corner_detection.set_bots(first_run_ml)
-    first_run_orientation = corner_detection.corner_detection_main(
-        threshold_set=True)
+    first_run_orientation = corner_detection.corner_detection_main(threshold_set=True, previous_orientations=[])
 
     if first_run_orientation and first_run_orientation["huey"] and first_run_orientation["enemy"]:
         # Ensure single enemy
@@ -179,7 +183,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
     return algorithm
 
 
-def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orientation=315, enemy_future_position=np.array([0,0]),initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False,  centroids=[], show=True, targeting_method = 1):
+def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orientation=315, enemy_future_position=np.array([0,0]),initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False, weapon_on=False, centroids=[], show=True, targeting_method = 1):
     if is_recovering:
         cv2.putText(image, "RECOVERING", (550, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
@@ -193,6 +197,13 @@ def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orient
         else:
             cv2.putText(image, "BACKWARD: " + against_wall, (450, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.67, (150, 67, 255), 2)
+
+    if weapon_on:
+        cv2.putText(image, "WEAPON ON", (image.shape[1] - 150, image.shape[0] - 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 255, 0), 2)
+    else:
+        cv2.putText(image, "WEAPON OFF", (image.shape[1] - 150, image.shape[0] - 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
 
     # BLUE line: Huey's Current Orientation according to Corner Detection
 
@@ -224,8 +235,29 @@ def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orient
             # Huey's center
 
             end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
-            cv2.arrowedLine(image, (start_x, start_y),
-                            end_point, (255, 0, 0), 2)
+            cv2.arrowedLine(image, (start_x, start_y), end_point, (255, 0, 0), 2)
+
+            # Huey's corner points
+            x_shift = int(detected_bots_with_data["huey"]['bbox'][0][0])
+            y_shift = int(detected_bots_with_data["huey"]['bbox'][0][1])
+
+            for i in range(len(centroids)):
+                color = (255, 255, 0) if i == 0 else (0, 255, 255)
+                for p in centroids[i]:
+                    cv2.circle(image, (p[0] + x_shift, p[1] + y_shift), 8, color, -1)
+
+                # for i in range(len(centroids)):
+                # color = (255, 255, 0) if i == 0 else (0, 255, 255)
+                # for p, c in centroids[i]:
+                #     if p == 0 and i == 0: # FRONT L
+                #         color = (255, 255, 0)
+                #     if p == 0 and i == 1: # FRONT R
+                #         color = (255, 255, 100)
+                #     if p == 1 and i == 0: # BACK L
+                #         color = (100, 255, 255)
+                #     if p == 1 and i == 1: # BACK R
+                #         color = (0, 255, 255)
+                #     cv2.circle(image, (c[0] + x_shift, c[1] + y_shift), 8, color, -1)
 
             # RED line: Huey's Desired Orientation according to Algorithm
             if move_dictionary and (move_dictionary["turn"] is not None):
@@ -281,12 +313,18 @@ def initialize_quantization():
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2LAB)
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2HSV)
 
-
-def quantize(detected_bots, selected_colors, show, is_flipped=False):
-    if (is_flipped == 1):
+def quantize(detected_bots, selected_colors, show, is_flipped=False, settings=None):
+    
+    #Settings if no custom settings are input:
+    custom_weights = None
+    if(is_flipped == 1):
         threshold = 18
     else:
         threshold = 22
+
+    if settings:
+        threshold = settings['threshold']
+        custom_weights = settings['quantization_weights']
 
     colors_hsv_1x = np.array(selected_colors).reshape(1, -1, 3)
 
@@ -298,8 +336,7 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False):
 
     bgr_colors = bgr_colors_1x.reshape(-1, 3)  # (N_colors, 3)
     for bot in detected_bots["bots"]:
-        bot["img"] = quantize_robot_colors(
-            bot["img"], bgr_colors, thresh_lab=threshold, keep_background=False, show=show)
+        bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, thresh_lab=threshold,keep_background=False, show=show, custom_weights=custom_weights)
 
     return detected_bots
 
@@ -342,7 +379,7 @@ def draw_hud(image, fps10=None, move_dictionary=None, iteration=None, playback_s
     # Optimization: Only process the ROI (Region of Interest) instead of the full image
     h, w = image.shape[:2]
     y2 = min(hud_height, h)
-    x2 = min(250, w)
+    x2 = min(350, w)
 
     if y2 > 5 and x2 > 5:
         roi = image[5:y2, 5:x2]
@@ -360,18 +397,51 @@ def draw_hud(image, fps10=None, move_dictionary=None, iteration=None, playback_s
                     line_height), font, font_scale, text_color, thickness)
         line_num += 1
 
+    # Helper to draw bar
+    def draw_bar_graphic(val, x_start, y_baseline):
+        bar_width = 120
+        bar_height = 14
+        bar_y = y_baseline - bar_height + 3  # Shift up slightly from baseline
+
+        # Background
+        cv2.rectangle(image, (x_start, bar_y), (x_start + bar_width, bar_y + bar_height), (50, 50, 50), -1)
+        cv2.rectangle(image, (x_start, bar_y), (x_start + bar_width, bar_y + bar_height), (150, 150, 150), 1)
+
+        # Center line
+        center_x = x_start + bar_width // 2
+        cv2.line(image, (center_x, bar_y), (center_x, bar_y + bar_height), (200, 200, 200), 1)
+
+        # Value bar
+        max_val = 1.0
+        val_clamped = max(min(val, max_val), -max_val)
+        length = int((val_clamped / max_val) * (bar_width / 2))
+
+        if length > 0:
+            cv2.rectangle(image, (center_x, bar_y + 1), (center_x + length, bar_y + bar_height - 1), (0, 255, 0), -1)
+        elif length < 0:
+            # length is negative here, so center_x + length is to the left
+            cv2.rectangle(image, (center_x + length, bar_y + 1), (center_x, bar_y + bar_height - 1), (0, 0, 255), -1)
+
+        return x_start + bar_width + 10  # Return x position for next element
+
     # Display Speed
     if move_dictionary is not None and "speed" in move_dictionary:
-        speed_text = f"Speed: {move_dictionary['speed']:.2f}"
-        cv2.putText(image, speed_text, (x_offset, y_offset + line_num *
-                    line_height), font, font_scale, text_color, thickness)
+        val = move_dictionary['speed']
+        label = "Speed: "
+        cv2.putText(image, label, (x_offset, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
+        
+        next_x = draw_bar_graphic(val, x_offset + 90, y_offset + line_num * line_height)
+        cv2.putText(image, f"{val:.2f}", (next_x, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
         line_num += 1
 
     # Display Turn
     if move_dictionary is not None and "turn" in move_dictionary:
-        turn_text = f"Turn: {move_dictionary['turn']:.2f}"
-        cv2.putText(image, turn_text, (x_offset, y_offset + line_num *
-                    line_height), font, font_scale, text_color, thickness)
+        val = move_dictionary['turn']
+        label = "Turn: "
+        cv2.putText(image, label, (x_offset, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
+        
+        next_x = draw_bar_graphic(val, x_offset + 90, y_offset + line_num * line_height)
+        cv2.putText(image, f"{val:.2f}", (next_x, y_offset + line_num * line_height), font, font_scale, text_color, thickness)
         line_num += 1
 
     # Display Iteration (frame number)

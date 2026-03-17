@@ -133,6 +133,10 @@ class Ram():
         self.recover_speed = self.RECOVERY_SPEED_VALUES[self.recovery_step%4]
         self.recover_turn = self.RECOVERY_TURN_VALUES[self.recovery_step%4]
 
+    # returns the list of previous orienations. to be used in corner detection
+    def previous_orientations(self) -> list:
+        return self.huey_previous_orientations
+
     def check_previous_position_and_orientation(self, can_recover: bool = True):
         if not can_recover:
             self.is_recovering=False
@@ -424,6 +428,7 @@ class Ram():
             self.huey_previous_positions.append(self.huey_position)
             self.huey_previous_orientations.append(self.huey_orientation)
 
+        # Changed from 5 to 1, TODO: recovery values need adjusted
         if self.huey_pos_count % 1 == 0:
             self.huey_previous_positions.append(self.huey_position)
             self.huey_previous_orientations.append(self.huey_orientation)

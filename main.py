@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+import json
 from collections import deque
 
 import pandas as pd
@@ -55,7 +56,8 @@ TARGETING_METHOD = 1            # How we target the enemy (1,2 or 3 for now)
 
 # MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
 # MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
-MODEL_NAME = "Nano320Temp"        # Model trained with Huey images from matches, trained at 320 image size
+# Model trained with Huey images from matches, trained at 320 image size
+MODEL_NAME = "Nano320Temp"
 
 # Image size for object detection model, lower number -> faster, slightly worse accuracy.
 # 640 default, 416 fast, must be multiple of 32. Don't go below 320.
@@ -71,12 +73,26 @@ folder = os.getcwd() + "/main_files"
 # camera_number = 1
 camera_number = 0
 
+# Set to webcam if capturing frames in main loop.
+# camera_type = "Video"
+camera_type = "Webcam"
+
+quant_settings_file = "quant_settings.json"
+with open(quant_settings_file, "r") as f:
+    all_settings = json.load(f)
+
+# Quantization Settings
+quantization_settings = None
+# quantization_settings = all_settings["Green Huey"]
+# quantization_settings = all_settings["Purple Huey"]
+
 if IS_TRANSMITTING:
     speed_motor_channel = 1
     turn_motor_channel = 3
     weapon_motor_channel = 4
 
 rs = RuntimeSheet(use=SHEET_RUNTIME)
+
 # ------------------------------ BEFORE THE MATCH ------------------------------
 
 # Threading globals
@@ -84,7 +100,7 @@ frame_buffer = deque(maxlen=1)
 stop_event = threading.Event()
 # Shared state for controls passed from UI thread to Perception thread
 shared_state = {"key": None, "flipped": None,
-                "paused": False, "skip_frame": False}
+                "paused": False, "skip_frame": False, "weapon_on": WEAPON_ON}
 
 
 def main():
@@ -98,6 +114,13 @@ def main():
                 stream, CAMERA_STREAM, selection_scale=DISPLAY_SCALE)
         else:
             cap = cv2.VideoCapture(camera_number)
+
+            if camera_type == "Webcam":
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+                cap.set(cv2.CAP_PROP_FPS, 60)
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
             captured_image = key_frame(
                 cap, CAMERA_STREAM, selection_scale=DISPLAY_SCALE)
 
@@ -125,13 +148,13 @@ def main():
 
         # Initialize corner detection
         corner_detection = RobotCornerDetection(selected_colors, False, False)
-        
+
         # Initialize transmission TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
             ser, motor_group, weapon_motor_group = get_motor_groups(
                 JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
-            if WEAPON_ON:
-                weapon_motor_group.move(1)
+            # if WEAPON_ON:
+            #     weapon_motor_group.move(1)
 
         cv2.destroyAllWindows()
 
@@ -162,6 +185,8 @@ def main():
 
         # ----------------------------------------------------------------------
         # Define the Perception Pipeline (Runs in Background Thread)
+        # This is all of our processing code minus the display of the images.
+        # Any image displays should modify the frame that is returned at the end of the loop.
         def perception_pipeline():
             prev = ptime()
             last_frame = 0
@@ -224,6 +249,7 @@ def main():
                     # Get inputs from Shared State
                     key = shared_state["key"]
                     is_flipped = -1 if shared_state["flipped"] else 1
+                    weapon_on_this_frame = shared_state["weapon_on"]
 
                     # Warp image to homography matrix using maps
                     with rs.log_timing("Warp"):
@@ -244,7 +270,7 @@ def main():
                     with rs.log_timing("Color Quantization"):
                         if COLOR_QUANTIZATION:
                             detected_bots = quantize(
-                                detected_bots, selected_colors, show=False, is_flipped=is_flipped)
+                                detected_bots, selected_colors, show=False, is_flipped=is_flipped, settings=quantization_settings)
 
                     if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                         for bot in range(len(detected_bots["bots"])):
@@ -255,7 +281,7 @@ def main():
                     # 12. Run Object Detection's results through Corner Detection
                     with rs.log_timing("Corner Detection"):
                         corner_detection.set_bots(detected_bots)
-                        detected_bots_with_data = corner_detection.corner_detection_main()
+                        detected_bots_with_data = corner_detection.corner_detection_main(algorithm.huey_previous_orientations)
 
                     # Prepare Quantized Huey Image (for display buffer)
                     huey_display_img = None
@@ -283,9 +309,9 @@ def main():
                             speed = move_dictionary["speed"]
                             turn = move_dictionary["turn"]
                             motor_group.move(speed*is_flipped, turn * -1)
-                            # Added this post-comp, see if it works?
                             if WEAPON_ON:
-                                weapon_motor_group.move(1)
+                                weapon_motor_group.move(
+                                    1 if weapon_on_this_frame else 0)
 
                     # Prepare Main Display Image
                     main_display_img = None
@@ -299,7 +325,7 @@ def main():
 
                             # Call display_angles with show=False to get the image without displaying
                             main_display_img = display_angles(detected_bots_with_data, move_dictionary, warped_frame, enemy_orientation= algorithm.enemy_orientation,enemy_future_position=algorithm.enemy_future_position,is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing,
-                                                              against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped=is_flipped, centroids=corner_detection.centroids, show=False, targeting_method=TARGETING_METHOD)
+                                                              against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped=is_flipped, weapon_on=weapon_on_this_frame, centroids=corner_detection.centroids, show=False, targeting_method=TARGETING_METHOD)
 
                             if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                                 cv2.imwrite(
@@ -358,6 +384,10 @@ def main():
                     shared_state["skip_frame"] = False
                     print(
                         f"Playback {'paused' if shared_state['paused'] else 'resumed'}")
+                elif key_8bit == ord("w"):
+                    shared_state["weapon_on"] = not shared_state["weapon_on"]
+                    print(
+                        f"Weapon {'ON' if shared_state['weapon_on'] else 'OFF'}")
                 elif shared_state["paused"]:
                     # Any other key while paused skips one frame
                     shared_state["skip_frame"] = True
