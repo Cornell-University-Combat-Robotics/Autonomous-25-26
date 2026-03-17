@@ -123,7 +123,7 @@ def get_predictor(MODEL_NAME, OD_IMG_SIZE):
 
     elif ov.Core().get_available_devices() and "GPU" in ov.Core().get_available_devices():
         print(f"Using {MODEL_NAME} with OpenVINO on GPU for object detection.")
-        predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE, device="gpu")
+        predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE, device="intel:gpu")
 
     elif ov.Core().get_available_devices() and "CPU" in ov.Core().get_available_devices():
         print(f"Using {MODEL_NAME} with OpenVINO on CPU for object detection.")
@@ -291,16 +291,18 @@ def initialize_quantization():
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2LAB)
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2HSV)
 
+def quantize(detected_bots, selected_colors, show, is_flipped=False, settings=None):
+    
+    #Settings if no custom settings are input:
+    custom_weights = None
+    if(is_flipped == 1):
+        threshold = 18
+    else:
+        threshold = 22
 
-def quantize(detected_bots, selected_colors, show, is_flipped=False):
-    # if (is_flipped == 1):
-    #     threshold = 18
-    # else:
-    #     threshold = 22
-
-    # RYAN GOD SETTINGS (optimized for green huey based on prince video):
-    threshold = 24.725
-    custom_weights = [0.171, 0.377, 0.669]
+    if settings:
+        threshold = settings['threshold']
+        custom_weights = settings['quantization_weights']
 
     colors_hsv_1x = np.array(selected_colors).reshape(1, -1, 3)
 
@@ -312,8 +314,7 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False):
 
     bgr_colors = bgr_colors_1x.reshape(-1, 3)  # (N_colors, 3)
     for bot in detected_bots["bots"]:
-        bot["img"] = quantize_robot_colors(
-            bot["img"], bgr_colors, thresh_lab=threshold, keep_background=False, show=show, custom_weights=custom_weights)
+        bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, thresh_lab=threshold,keep_background=False, show=show, custom_weights=custom_weights)
 
     return detected_bots
 
