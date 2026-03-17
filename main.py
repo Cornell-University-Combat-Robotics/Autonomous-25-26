@@ -36,7 +36,7 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
 # Display frame smaller for selection with 1080p video, 1.0 default
 DISPLAY_SCALE = 0.5
 IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
@@ -127,7 +127,7 @@ def main():
             if camera_type == "Webcam":
                 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
                 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-                cap.set(cv2.CAP_PROP_FPS, 120)
+                cap.set(cv2.CAP_PROP_FPS, 60)
                 cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
             captured_image = key_frame(
