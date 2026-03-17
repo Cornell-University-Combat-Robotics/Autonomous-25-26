@@ -21,8 +21,8 @@ from main_helpers import (
 #Settings
 DISPLAY_IMAGES = True           # Displays each image in window
 NO_ORIENTATION_SCORE = 30       # Angle that is equivelently bad to no orientation
-DATA_SET_NAME = "purple_huey"   # Name of your dataset folder in "testing_data"
-COLOR_SELECT_IMG = "0.png"    # This should be the name of your image you want to do color selection on
+DATA_SET_NAME = "prince_full"   # Name of your dataset folder in "testing_data"
+COLOR_SELECT_IMG = "900.png"    # This should be the name of your image you want to do color selection on
 
 # Folder paths
 ALL_TRAINING_DATA_PATH = "testing_data/" 
