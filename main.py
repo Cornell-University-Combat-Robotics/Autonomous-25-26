@@ -94,7 +94,6 @@ with open(quant_settings_file, "r") as f:
 quantization_settings = None
 # quantization_settings = all_settings["Green Huey"]
 # quantization_settings = all_settings["Purple Huey"]
-# quantization_settings = all_settings["Low-T"]
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
