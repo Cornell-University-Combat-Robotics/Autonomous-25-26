@@ -4,7 +4,7 @@ import numpy as np
 import csv
 import pandas as pd
 FONT = cv2.FONT_HERSHEY_SIMPLEX
-MIN_THRESHOLD = 0.035
+MIN_THRESHOLD = 0.075 # TODO: come back to this TEST
 
 @staticmethod
 def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
@@ -58,15 +58,13 @@ def get_contours_per_color(side: str, hsv_image: np.ndarray, selected_colors) ->
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return contours
 
-def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_not_set=False) -> tuple[np.ndarray | None, int] | None:
+def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=True) -> tuple[np.ndarray | None, int] | None:
     """
     Identifies which image contains our robot based on a predefined robot color.
 
-    Args:
-        images (list[np.ndarray]): List of input images.
+    Args: images (list[np.ndarray]): List of input images.
 
-    Returns:
-        np.ndarray: The image containing our robot.
+    Returns: np.ndarray: The image containing our robot.
     """
     try:
         if not images:
@@ -77,21 +75,16 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_not_se
         bot_color_percentages = []
 
         for image in images: #this for loop handles whether the image is the huey bot
-            total_pixels = np.shape(image)[0]*np.shape(image)[1]
-
             if image is None:
                 print("Warning: One of the images is None, skipping...")
                 continue
             
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
-            # print("OOGABOOGA", color_pixel_count)
-
             image_area = image.size/3
             color_percentage = color_pixel_count/image_area
-            # print(f"OOGABOOGA {color_pixel_count}, {image_area}, {color_percentage}")
-
             bot_color_percentages.append(color_percentage)
-            #check if the next if statement is redundant since we are tracking the percentages with the list...
+            
+            # check if the next if statement is redundant since we are tracking the percentages with the list...
             # and sorting it to find the max. potentially, we do not need this calculation. Another note,
             # the color percentages are very variable during the match so i don't know if we should just 
             # continuously set a max.      
@@ -101,19 +94,62 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_not_se
 
         bot_color_percentages.sort()
         #self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2]))
-        
-        if threshold_not_set: #Set initial threshold
-            if len(bot_color_percentages) > 1 and bot_color_percentages[-1] > 0:
-                self.huey_color_percentage_threshold = max((bot_color_percentages[-1] + bot_color_percentages[-2]) / 2, MIN_THRESHOLD)
-                print("Threshold: " + str(self.huey_color_percentage_threshold))
-            elif len(bot_color_percentages) == 1:
-                self.huey_color_percentage_threshold = max(bot_color_percentages[0] - 0.075, MIN_THRESHOLD)
-                print("Threshold: " + str(self.huey_color_percentage_threshold))
-        if len(bot_color_percentages) == 1 and max_color_percentage < self.huey_color_percentage_threshold:
-            our_bot_image = None
-        elif len(bot_color_percentages) > 1 and max_color_percentage < min(MIN_THRESHOLD, self.huey_color_percentage_threshold):
-            our_bot_image = None
 
+        ### ———————————————————————————————————————————————————————————— ###
+
+        print("find_our_bot: " + str(threshold_set))
+        
+        # Case 1: Setting the initial threshold based on the very first frame
+        if not threshold_set:
+            print("case 1")
+            # Case 1.1: If we see 2 or more robots
+            if len(bot_color_percentages) > 1 and bot_color_percentages[-1] > 0:
+                print("case 1.1")
+                huey_color_percentage = bot_color_percentages[-1]
+                enemy_color_percentage = bot_color_percentages[-2]
+                print("huey_color_percentage: " + str(huey_color_percentage))
+                print("enemy_color_percentage: " + str(enemy_color_percentage))
+
+                self.huey_color_percentage_threshold = max((huey_color_percentage + enemy_color_percentage) / 2, MIN_THRESHOLD)
+                print("Initial Threshold: " + str(self.huey_color_percentage_threshold))
+            # Case 1.2: If we see only 1 robot. We use the static threshold because that robot could be us or not
+            else:
+                print("case 1.2")
+                self.huey_color_percentage_threshold = max(bot_color_percentages[0] - 0.075, MIN_THRESHOLD)
+                print("Initial Threshold: " + str(self.huey_color_percentage_threshold))
+
+        # Case 2: Setting threshold after initial frame based on self.dynamic_threshold_window
+        # TODO: figure out the optimal dynamic_threshold_window value, which is set in corner_detection.py
+        elif len(self.color_percentage_rows) > 0 and len(self.color_percentage_rows) % self.dynamic_threshold_window == 0:
+            recent_frames = self.color_percentage_rows[-self.dynamic_threshold_window:]
+            print("recent_frames: " + str(recent_frames))
+            print("len(recent_frames): " + str(len(recent_frames)))
+
+            midpoints = []
+            for frame in recent_frames:
+                huey_percentage, enemy_percentage = frame
+                midpoints.append((huey_percentage + enemy_percentage)/2)
+            print("midpoints: " + str(midpoints))
+
+            self.huey_color_percentage_threshold = max(sum(midpoints) / len(recent_frames), MIN_THRESHOLD)
+            print("huey_color_percentage_threshold: " + huey_color_percentage_threshold)
+
+
+
+
+        
+        ### —————————————————————————————————————————————————————————————————————————————————————————— ###
+
+
+
+
+        # Say we can't find huey if the bot's are below the huey threshold (for recovery)
+        if len(bot_color_percentages) == 1 and bot_color_percentages[-1] < self.huey_color_percentage_threshold:
+            our_bot_image = None
+        elif len(bot_color_percentages) > 1 and bot_color_percentages[-1] < min(MIN_THRESHOLD, self.huey_color_percentage_threshold):
+            our_bot_image = None
+        
+        ### —————————————————————————————— STATIC THRESHOLD GRAPHING —————————————————————————————— ###
         
         #Writing information to be graphed
         if len(bot_color_percentages) >= 2:
@@ -125,6 +161,10 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_not_se
                 self.color_percentage_rows.append((0, bot_color_percentages[0], self.huey_color_percentage_threshold))
         elif len(bot_color_percentages) == 0:
             self.color_percentage_rows.append((0, 0, self.huey_color_percentage_threshold))
+
+        
+        ### —————————————————————————————————————————————————————————————————————————————————————————— ###
+        
 
         # if our_bot_image is None:
         #     print("Huey is not found")

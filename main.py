@@ -144,7 +144,7 @@ def main():
         predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
 
         # Initialize corner detection
-        corner_detection = RobotCornerDetection(selected_colors, False, False)
+        corner_detection = RobotCornerDetection(selected_colors, False, False, FRAME_RATE)
 
         # Initialize transmission TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
@@ -155,12 +155,16 @@ def main():
 
         cv2.destroyAllWindows()
 
-        # Initialize algorithm
-        if WARP_AND_COLOR_PICKING:
-            algorithm = first_run(predictor, warped_frame,
-                                  SHOW_FRAME, corner_detection, selected_colors)
-        else:
-            algorithm = Ram()
+        # # Initialize algorithm
+        # if WARP_AND_COLOR_PICKING:
+        #     algorithm = first_run(predictor, warped_frame,
+        #                           SHOW_FRAME, corner_detection, selected_colors)
+        # else:
+        #     algorithm = Ram()
+
+        algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors)
+
+        ### TODO: call dynamic threshold here
 
         # Initialize BBox save directory
         if SAVE_BBOXES:
@@ -358,6 +362,8 @@ def main():
                 if frames["main"] is not None and SHOW_FRAME:
                     name = "Battle with Predictions" if DISPLAY_ANGLES else "Bounding boxes (no angles)"
                     cv2.imshow(name, frames["main"])
+                    # cv2.waitKey(0)
+                    # cv2.destroyAllWindows()
 
                 if frames["huey"] is not None and SHOW_QUANTIZED_HUEY:
                     cv2.imshow("Quantized Huey", frames["huey"])
