@@ -127,7 +127,7 @@ class RobotCornerDetection:
                             }
                             break
 
-                def compute_iou(b1, b2):
+                def compute_iou(b1, b2): #iou is intersection over union, meaning ... DEFINE B1 AS HUEY
                     x1_min, y1_min = b1["bbox"][0]
                     x1_max, y1_max = b1["bbox"][1]
 
@@ -151,8 +151,8 @@ class RobotCornerDetection:
                     intersection = (x_right - x_left) * (y_bottom - y_top)
 
                     # Areas
-                    area1 = (x1_max - x1_min) * (y1_max - y1_min)
-                    area2 = (x2_max - x2_min) * (y2_max - y2_min)
+                    area1 = (x1_max - x1_min) * (y1_max - y1_min) # area of the first bounding box
+                    area2 = (x2_max - x2_min) * (y2_max - y2_min) # area of the second bounding box
 
                     union = area1 + area2 - intersection
 
@@ -170,8 +170,8 @@ class RobotCornerDetection:
                     
                 #     pass
 
-                centroid_points = find_centroids(image, self.selected_colors)
-                self.centroids = centroid_points
+                    centroid_points = find_centroids(image, self.selected_colors)
+                    self.centroids = centroid_points
                 
                 # Every time we calculate 4 points, calculate diagonal and side length in the case of 1 front 1 back corner in the future
                 calc_diagonal_and_side_length(self.centroids, self.diag_len, self.side_len, self.num_lens)
