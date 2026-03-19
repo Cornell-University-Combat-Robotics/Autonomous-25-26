@@ -38,7 +38,7 @@ class ColorPicker:
                 try:
                     color = image[y, x]  # OpenCV reads as BGR
                     hsv_color = cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_BGR2HSV)[0][0]
-                    if len(selected_colors) < 4:
+                    if len(selected_colors) < 5: #added another one 
                         selected_colors.append(hsv_color)
                         points.append([x, y])
                         print(f"Selected color (HSV): {hsv_color}")
@@ -50,7 +50,7 @@ class ColorPicker:
         def redraw_image():
             img_copy = image.copy()
             for point in points:
-                cv2.circle(img_copy, point, 5, (0, 255, 0), -1)
+                cv2.circle(img_copy, point, 4, (0, 255, 0), -1)
                 cv2.putText(img_copy, f"{point}", point, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
 
             # Create a display panel for selected colors
@@ -58,12 +58,12 @@ class ColorPicker:
             color_panel_width = 150
             color_panel = np.zeros((color_panel_height, color_panel_width, 3), dtype=np.uint8)
 
-            labels = ["Robot", "Front", "Back"]
+            labels = ["Robot", "Front", "Back", "logo"]
 
             for i, hsv_color in enumerate(selected_colors):
                 bgr_color = cv2.cvtColor(np.uint8([[hsv_color]]), cv2.COLOR_HSV2BGR)[0][0]
-                start_y = i * (color_panel_height // 3)
-                end_y = (i + 1) * (color_panel_height // 3)
+                start_y = i * (color_panel_height // 4)
+                end_y = (i + 1) * (color_panel_height // 4)
                 color_panel[start_y:end_y, :] = bgr_color
 
                 cv2.putText(color_panel, labels[i], (10, start_y + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
@@ -90,14 +90,14 @@ class ColorPicker:
                 print("❌ Selection canceled. Exiting...")
                 selected_colors = []
                 return None
-            elif len(selected_colors) == 4:
+            elif len(selected_colors) == 5:
                 selected_colors = selected_colors[:len(selected_colors)-1]
                 print("🎨 Final Selected Colors (HSV):", selected_colors)
                 print("📌 Final Selected Points:", points)
                 break
 
         cv2.destroyAllWindows()
-        return selected_colors
+        return selected_colors 
 
 def save_colors_to_file(colors, output_file):
     """
@@ -134,7 +134,7 @@ def display_colors(selected_colors):
 
         height = 175
         width = 175
-        img = np.zeros((height, width * len(bgr_colors), 3), dtype=np.uint8) # TODO: 4 color channels?
+        img = np.zeros((height, width * len(bgr_colors), 4), dtype=np.uint8) # TODO: 4 color channels?
 
         for idx, color in enumerate(bgr_colors):
             img[:, idx * width:(idx + 1) * width] = color
