@@ -181,7 +181,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
     return algorithm
 
 
-def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False, weapon_on=False, centroids=[], show=True):
+def display_angles(detected_bots_with_data, move_dictionary, image, enemy_orientation=315, enemy_future_position=np.array([0,0]),initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False, weapon_on=False, centroids=[], show=True, targeting_method = 1):
     if is_recovering:
         cv2.putText(image, "RECOVERING", (550, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
@@ -233,12 +233,34 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
             # Huey's center
 
             end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
-            cv2.arrowedLine(image, (start_x, start_y),
-                            end_point, (255, 0, 0), 2)
+            cv2.arrowedLine(image, (start_x, start_y), end_point, (255, 0, 0), 2)
+
+            # Huey's corner points
+            x_shift = int(detected_bots_with_data["huey"]['bbox'][0][0])
+            y_shift = int(detected_bots_with_data["huey"]['bbox'][0][1])
+
+            for i in range(len(centroids)):
+                color = (255, 255, 0) if i == 0 else (0, 255, 255)
+                for p in centroids[i]:
+                    cv2.circle(image, (p[0] + x_shift, p[1] + y_shift), 8, color, -1)
+
+                # for i in range(len(centroids)):
+                # color = (255, 255, 0) if i == 0 else (0, 255, 255)
+                # for p, c in centroids[i]:
+                #     if p == 0 and i == 0: # FRONT L
+                #         color = (255, 255, 0)
+                #     if p == 0 and i == 1: # FRONT R
+                #         color = (255, 255, 100)
+                #     if p == 1 and i == 0: # BACK L
+                #         color = (100, 255, 255)
+                #     if p == 1 and i == 1: # BACK R
+                #         color = (0, 255, 255)
+                #     cv2.circle(image, (c[0] + x_shift, c[1] + y_shift), 8, color, -1)
 
             # RED line: Huey's Desired Orientation according to Algorithm
-            if move_dictionary and (move_dictionary["turn"]):
-                turn = move_dictionary["turn"]  # angle in degrees / 180
+            if move_dictionary and (move_dictionary["turn"] is not None):
+                print("🧑‍🎤MOVE DICTIONARY: DISPLAY ANGLES: 🧑‍🎤" + str(move_dictionary))
+                turn = move_dictionary["turn"] # angle in degrees / 180
                 new_orientation_degrees = orientation_degrees + (turn * 180)
 
                 # Components of predicted turn
@@ -247,8 +269,30 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
                 dy = -1 * math.sin(new_rad)
 
                 end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
-                cv2.arrowedLine(image, (start_x, start_y),
-                                end_point, (0, 0, 255), 2)
+                cv2.arrowedLine(image, (start_x, start_y), end_point, (0, 0, 255), 2)
+        print("----- enemy orientation_degrees: " + str(enemy_orientation))
+
+        if detected_bots_with_data["enemy"]:
+            # Components of enemy front arrow
+            dx = np.cos(math.pi / 180 * enemy_orientation)
+            dy = -1 * np.sin(math.pi / 180 * enemy_orientation)
+
+            # Enemy's center
+            start_x_enemy = int(detected_bots_with_data["enemy"]["center"][0])
+            start_y_enemy = int(detected_bots_with_data["enemy"]["center"][1]) #TODO: not negative...
+
+            # Enemy's future position
+            if targeting_method == 1:
+                start_x_enemy_fut = start_x_enemy
+                start_y_enemy_fut = start_y_enemy
+            elif targeting_method == 2 or targeting_method == 3:
+                start_x_enemy_fut = int(enemy_future_position[0])
+                start_y_enemy_fut = int(enemy_future_position[1])
+
+            end_point_enemy = (int(start_x_enemy + 300 * dx), int(start_y_enemy + 300 * dy))
+            cv2.arrowedLine(image, (start_x_enemy, start_y_enemy), end_point_enemy, (67, 255, 0), 2)
+            cv2.arrowedLine(image, (start_x, start_y), (start_x_enemy_fut, start_y_enemy_fut), (255, 0, 212), 2)
+            cv2.circle(image, (start_x_enemy_fut, start_y_enemy_fut), 5, (67, 255, 0), 2 )
 
     if show:
         if initial_run:
@@ -260,6 +304,7 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
     return image
 
     # cv2.waitKey(1)
+
 
 
 def initialize_quantization():

@@ -35,7 +35,7 @@ class Ram():
     EDGE_THRESHOLD = 5
     RECOVERY_SPEED_VALUES = [BACK_UP_SPEED* 0.8, FORWARD_SPEED* 0.8, LEFT_SPEED* 0.8, RIGHT_SPEED* 0.8] 
     RECOVERY_TURN_VALUES = [BACK_UP_TURN, FORWARD_TURN, LEFT_TURN, RIGHT_TURN]
-    USE_PID = True
+    USE_PID = False
     is_recovering = False
     is_backing = False
     reverse = 0
@@ -106,8 +106,8 @@ class Ram():
         self.acceleration = 0
         self.prev_derivative = 0
         self.prev_power = 0
-        self.secs_to_speed = 0.1
-        self.secs_to_acceleration = 1
+        self.secs_to_speed = 0.01
+        self.secs_to_acceleration = 0.01
     # ----------------------------- HELPER METHODS -----------------------------
 
     ''' use a PID controller to move the bot to the desired position '''
@@ -367,8 +367,8 @@ class Ram():
                 # else:
                 #     derivative = 0
                 
-                target_derivative = turn * self.secs_to_speed # Turn derivative is our proportional
-                target_acceleration = (target_derivative - self.derivative) * self.secs_to_acceleration # TODO MAKE DIVIDED INSTEAD OF MULTIPLIED
+                target_derivative = turn / self.secs_to_speed # Turn derivative is our proportional
+                target_acceleration = (target_derivative - self.derivative) / self.secs_to_acceleration # TODO MAKE DIVIDED INSTEAD OF MULTIPLIED
                 power = target_acceleration * (self.prev_power / (self.acceleration + 0.0000001))
                 
                 turn = clamp(power, -1, 1)
