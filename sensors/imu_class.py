@@ -97,7 +97,7 @@ class IMU_sensor():
         Returns: -1 if bot is upside down and 1 if the bot is right side up
         """
         self.get_dict()
-        return 1 if self.dict["accelerometer"]["gravity_z"] >= 0 else -1
+        return 1 if self.dict["acc"]["z"] >= 0 else -1
 
     def get_yaw(self):
         """
@@ -106,7 +106,7 @@ class IMU_sensor():
         """
         # try to get a new reading for yaw
         self.get_dict()
-        _, _, yaw = self.quaternion_to_euler(self.dict["game"]["r"], self.dict["game"]["i"], self.dict["game"]["j"], self.dict["game"]["k"])
+        _, _, yaw = self.quaternion_to_euler(self.dict["rot"]["r"], self.dict["rot"]["i"], self.dict["rot"]["j"], self.dict["rot"]["k"])
         self.yaw = (yaw / math.pi) * 180
         if self.yaw < 0:
             self.yaw += 360        

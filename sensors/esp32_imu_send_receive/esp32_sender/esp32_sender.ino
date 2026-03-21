@@ -1,168 +1,159 @@
-/*
-    ESP-NOW Broadcast Master
-    Lucas Saavedra Vaz - 2024
-
-    This sketch demonstrates how to broadcast messages to all devices within the ESP-NOW network.
-    This example is intended to be used with the ESP-NOW Broadcast Slave example.
-
-    The master device will broadcast a message every 5 seconds to all devices within the network.
-    This will be done using by registering a peer object with the broadcast address.
-
-    The slave devices will receive the broadcasted messages and print them to the Serial Monitor.
-*/
-
 #include "ESP32_NOW.h"
 #include "WiFi.h"
-
-#include <esp_mac.h>  // For the MAC2STR and MACSTR macros
+#include <esp_mac.h>
 #include <Adafruit_BNO08x.h>
 
-#include <math.h>
-
-
-/* Definitions */
+/* ================= CONFIG ================= */
 
 #define ESPNOW_WIFI_CHANNEL 6
+#define SEND_INTERVAL_MS 20   // 50 Hz (adjust: 10 = 100 Hz, 50 = 20 Hz)
 
-// For SPI mode, we need a CS pin
-#define BNO08X_CS 10
-#define BNO08X_INT 
+/* ================= IMU ================= */
 
-// For SPI mode, we also need a RESET 
-//#define BNO08X_RESET 5
-// but not for I2C or UART
 #define BNO08X_RESET -1
-
-
-Adafruit_BNO08x  bno08x(BNO08X_RESET);
+Adafruit_BNO08x bno08x(BNO08X_RESET);
 sh2_SensorValue_t sensorValue;
 
-/* Classes */
+/* ================= DATA STRUCT ================= */
 
-// Creating a new class that inherits from the ESP_NOW_Peer class is required.
+// Compact binary packet (much faster + cooler)
+struct Packet {
+  float gr, gi, gj, gk;
+  float gx, gy, gz;
+};
+
+/* ================= ESP-NOW ================= */
 
 class ESP_NOW_Broadcast_Peer : public ESP_NOW_Peer {
 public:
-  // Constructor of the class using the broadcast address
-  ESP_NOW_Broadcast_Peer(uint8_t channel, wifi_interface_t iface, const uint8_t *lmk) : ESP_NOW_Peer(ESP_NOW.BROADCAST_ADDR, channel, iface, lmk) {}
+  ESP_NOW_Broadcast_Peer(uint8_t channel, wifi_interface_t iface, const uint8_t *lmk)
+    : ESP_NOW_Peer(ESP_NOW.BROADCAST_ADDR, channel, iface, lmk) {}
 
-  // Destructor of the class
   ~ESP_NOW_Broadcast_Peer() {
     remove();
   }
 
-  // Function to properly initialize the ESP-NOW and register the broadcast peer
   bool begin() {
     if (!ESP_NOW.begin() || !add()) {
-      log_e("Failed to initialize ESP-NOW or register the broadcast peer");
+      log_e("ESP-NOW init failed");
       return false;
     }
     return true;
   }
 
-  // Function to send a message to all devices within the network
   bool send_message(const uint8_t *data, size_t len) {
-    if (!send(data, len)) {
-      log_e("Failed to broadcast message");
-      return false;
-    }
-    return true;
+    return send(data, len);
   }
 };
 
-/* Global Variables */
-
-uint32_t msg_count = 0;
-
-// Create a broadcast peer object
 ESP_NOW_Broadcast_Peer broadcast_peer(ESPNOW_WIFI_CHANNEL, WIFI_IF_STA, NULL);
 
+/* ================= GLOBAL STATE ================= */
 
-/* Main */
+static float gr = 0, gi = 0, gj = 0, gk = 0;
+static float gx = 0, gy = 0, gz = 0;
+
+uint32_t lastSend = 0;
+
+/* ================= SETUP ================= */
+
+void setReports() {
+  Serial.println("Setting IMU reports");
+
+  // 100 Hz reports (adjust if needed)
+  if (!bno08x.enableReport(SH2_GAME_ROTATION_VECTOR, 10000)) {
+    Serial.println("Failed to enable rotation vector");
+  }
+
+  if (!bno08x.enableReport(SH2_GRAVITY, 10000)) {
+    Serial.println("Failed to enable gravity");
+  }
+}
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial) {
-    delay(10);
-  }
 
-  // Initialize the Wi-Fi module
+  // Lower CPU frequency (good for heat)
+  setCpuFrequencyMhz(80);
+
+  // WiFi setup
   WiFi.mode(WIFI_STA);
   WiFi.setChannel(ESPNOW_WIFI_CHANNEL);
+
+  // Lower TX power (BIG heat reduction)
+  WiFi.setTxPower(WIFI_POWER_8_5dBm);
+
   while (!WiFi.STA.started()) {
-    delay(100);
+    delay(50);
   }
 
+  Serial.println("WiFi ready");
+
+  // IMU init
   if (!bno08x.begin_I2C()) {
-    Serial.println("Failed to find BNO08x chip");
-    while (1) { delay(10); }
+    Serial.println("BNO08x not found");
+    while (1) delay(10);
   }
-  
+
   setReports();
   delay(100);
 
-  Serial.println("ESP-NOW Example - Broadcast Master");
-  Serial.println("Wi-Fi parameters:");
-  Serial.println("  Mode: STA");
-  Serial.println("  MAC Address: " + WiFi.macAddress());
-  Serial.printf("  Channel: %d\n", ESPNOW_WIFI_CHANNEL);
-
-  // Register the broadcast peer
+  // ESP-NOW init
   if (!broadcast_peer.begin()) {
-    Serial.println("Failed to initialize broadcast peer");
-    Serial.println("Reebooting in 5 seconds...");
-    delay(5000);
+    Serial.println("ESP-NOW failed, rebooting...");
+    delay(3000);
     ESP.restart();
   }
 
-  Serial.println("Setup complete. Broadcasting messages every 5 seconds.");
+  Serial.println("Setup complete");
 }
 
-void setReports(void) {
-  Serial.println("Setting desired reports");
-  if (! bno08x.enableReport(SH2_GRAVITY)) {
-    Serial.println("Could not enable vector");
-  }
-  if (! bno08x.enableReport(SH2_GAME_ROTATION_VECTOR)) {
-    Serial.println("Could not enable vector");
-  }
-}
+/* ================= LOOP ================= */
 
-static float r = 0, i = 0, j = 0, k = 0, accuracy = 0;
-static float gr = 0, gi = 0, gj = 0, gk = 0;
-static float gravity_x = 0, gravity_y = 0, gravity_z = 0;
 void loop() {
-  // Broadcast a message to all devices within the network
+
+  // Handle IMU reset
   if (bno08x.wasReset()) {
-    Serial.print("sensor was reset ");
+    Serial.println("IMU reset");
     setReports();
   }
-  
-  if (! bno08x.getSensorEvent(&sensorValue)) {
-    return;
+
+  // Read sensor (non-blocking)
+  if (bno08x.getSensorEvent(&sensorValue)) {
+
+    switch (sensorValue.sensorId) {
+
+      case SH2_GAME_ROTATION_VECTOR:
+        gr = sensorValue.un.gameRotationVector.real;
+        gi = sensorValue.un.gameRotationVector.i;
+        gj = sensorValue.un.gameRotationVector.j;
+        gk = sensorValue.un.gameRotationVector.k;
+        break;
+
+      case SH2_GRAVITY:
+        gx = sensorValue.un.gravity.x;
+        gy = sensorValue.un.gravity.y;
+        gz = sensorValue.un.gravity.z;
+        break;
+    }
   }
 
-  char data[1024];
+  // Throttle transmission rate
+  if (millis() - lastSend < SEND_INTERVAL_MS) return;
+  lastSend = millis();
 
-  switch (sensorValue.sensorId) {
-      // quaternion_to_euler(r, i, j , k, &roll, &pitch, &yaw);
-    case SH2_GRAVITY:
-      gravity_x = sensorValue.un.gravity.x;
-      gravity_y = sensorValue.un.gravity.y;
-      gravity_z = sensorValue.un.gravity.z;
-      break;
-    case SH2_GAME_ROTATION_VECTOR:
-      gr = sensorValue.un.gameRotationVector.real;
-      gi = sensorValue.un.gameRotationVector.i;
-      gj = sensorValue.un.gameRotationVector.j;
-      gk = sensorValue.un.gameRotationVector.k;
-      break;
+  Packet p = {gr, gi, gj, gk, gx, gy, gz};
+
+  // Send
+  if (!broadcast_peer.send_message((uint8_t*)&p, sizeof(p))) {
+    Serial.println("Send failed");
   }
-  
-  sprintf(data, "\"game\": {\"r\": %f, \"i\": %f, \"j\": %f, \"k\": %f}, \"accelerometer\": {\"gravity_x\": %f, \"gravity_y\": %f, \"gravity_z\": %f}  }", gr, gi, gj, gk, gravity_x, gravity_y, gravity_z);
-  Serial.printf("%s\n", data);
 
-  if (!broadcast_peer.send_message((uint8_t *)data, sizeof(data))) {
-    Serial.println("Failed to broadcast message");
+  // print every second 
+  static uint32_t lastPrint = 0;
+  if (millis() - lastPrint > 1000) {
+    lastPrint = millis();
+    Serial.printf("Temp: %.2f | gx: %.2f gy: %.2f gz: %.2f\n",
+              temperatureRead(), gx, gy, gz);
   }
 }
