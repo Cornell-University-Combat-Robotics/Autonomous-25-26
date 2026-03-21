@@ -55,7 +55,7 @@ SHOW_QUANTIZED_HUEY = False
 COLOR_QUANTIZATION = True
 CAN_RECOVER = False              # True to use recovery
 # True to run frame capture in a seperate thread, always false for videos
-CAMERA_STREAM = False
+CAMERA_STREAM = True
 # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 SHEET_RUNTIME = True
 # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
@@ -127,7 +127,7 @@ def main():
             if camera_type == "Webcam":
                 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
                 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-                cap.set(cv2.CAP_PROP_FPS, 60)
+                cap.set(cv2.CAP_PROP_FPS, 120)
                 cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
             captured_image = key_frame(
@@ -233,17 +233,6 @@ def main():
                         frame_save_dir = os.path.join(
                             bb_output_dir, f"frame_{iteration}")
 
-                    # Logs average of last 10 FPS
-                    if SHEET_RUNTIME:
-                        if iteration > 11:
-                            fps10 = 1.0 / \
-                                ((prev - rs.get_row(-10)["Start Time"]) / 10.0)
-                        else:
-                            fps10 = 1.0 / ((prev - start_time) / iteration)
-                        rs.log("FPS10", fps10)
-                    else:
-                        fps10 = None
-
                     # Grabs frame from camera thread if using camera stream, otherwise reads from video
                     with rs.log_timing("Frame Read"):
                         if CAMERA_STREAM:
@@ -322,6 +311,17 @@ def main():
                             if WEAPON_ON:
                                 weapon_motor_group.move(
                                     1 if weapon_on_this_frame else 0)
+                                
+                    # Logs average of last 10 FPS
+                    if SHEET_RUNTIME:
+                        if iteration > 11:
+                            fps10 = 1.0 / \
+                                ((ptime() - rs.get_row(-9)["Start Time"]) / 10.0)
+                        else:
+                            fps10 = 1.0 / ((ptime() - start_time) / iteration)
+                        rs.log("FPS10", fps10)
+                    else:
+                        fps10 = None
 
                     # Prepare Main Display Image
                     main_display_img = None
@@ -355,6 +355,10 @@ def main():
                     })
 
                     rs.dump()
+                
+                else:
+                    print("Waiting" + str(iteration))
+                    time.sleep(0.001)
 
         # Start the Perception Thread
         perception_thread = threading.Thread(
