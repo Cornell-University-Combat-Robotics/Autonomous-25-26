@@ -1,7 +1,7 @@
 import os
 import cv2
 import numpy as np
-from .corner_detection_helpers import find_our_bot, find_centroids, compute_angle_between_midpoints, get_left_and_right_front_points, display_image
+from .corner_detection_helpers import find_our_bot, find_centroids, compute_angle_between_midpoints, two_corners, math, deque, calc_diagonal_and_side_length
 
 class RobotCornerDetection:
     """
@@ -9,6 +9,8 @@ class RobotCornerDetection:
     based on their unique colors and shapes.
     """
     
+    LENGTH_BUFFER = 20
+
     def __init__(self, selected_colors: list, display_final_image: bool = False, display_possible_hueys: bool = False, color_percentage_rows = []):
         """
         Initializes the RobotCornerDetection class.
@@ -31,6 +33,16 @@ class RobotCornerDetection:
         self.huey_color_percentage_threshold = -1
         self.color_percentage_rows = color_percentage_rows
         self.centroids = []
+        
+        # Note: These are actually floats/int but we need them to be mutable
+        self.diag_len = []
+        self.side_len = []
+        self.num_lens = [0]
+
+        self.left_diff = []
+        self.right_diff = []
+        self.ratio = []
+
 
     def set_bots(self, bots: dict):
         self.bots = bots
@@ -78,7 +90,7 @@ class RobotCornerDetection:
             print(f"Unexpected error in detect_our_robot_main: {e}")
             return None
 
-    def corner_detection_main(self, threshold_set=False) -> dict | None:
+    def corner_detection_main(self, previous_orientations: list = [], threshold_set: bool=False) -> dict | None:
         """
         Main function for detecting corners and orientation of the robot.
 
@@ -86,6 +98,7 @@ class RobotCornerDetection:
             dict: A dictionary containing details of the robot and enemy robots.
         """
         try:
+            
             bot_images = [bot["img"] for bot in self.bots["bots"]]
             image = self.detect_our_robot_main(bot_images, threshold_set)
             
@@ -116,12 +129,22 @@ class RobotCornerDetection:
 
                 centroid_points = find_centroids(image, self.selected_colors)
                 self.centroids = centroid_points
+                
+                # Every time we calculate 4 points, calculate diagonal and side length in the case of 1 front 1 back corner in the future
+                calc_diagonal_and_side_length(self.centroids, self.diag_len, self.side_len, self.num_lens)
+                        
+                if (len(centroid_points[0]) + len(centroid_points[1]) == 2):
+                    if previous_orientations is not None and len(previous_orientations) > 0:
+                        previous_orientation = previous_orientations[-1] # why index 0...
+                        huey["orientation"] = two_corners(centroid_points, previous_orientation, self.diag_len, self.side_len)
+                        # print(f"PREV ORIENT: 🌸🐋💛 {previous_orientation}")
+                        # print(f"Current ORIENT: 💛🐋🌸 { huey["orientation"]}")
+                    else:
+                        huey["orientation"] = None
+                    return {"huey": huey, "enemy": enemy_bots}
 
-                # For displaying centroids
-                # left_front, right_front = get_left_and_right_front_points(centroid_points)
-
-                if (len(centroid_points[0]) + len(centroid_points[1]) < 3):
-                    # print("Less than 3 corners found")
+                elif (len(centroid_points[0]) + len(centroid_points[1]) < 2):
+                    print("Less than 2 corners found")
                     return {"huey": huey, "enemy": enemy_bots}
 
                 front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5
@@ -179,6 +202,9 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error reading selected_colors.txt: {e}")
         exit(1)
+
+        filename = 'area.csv'
+
     
     corner_detection = RobotCornerDetection(selected_colors, True, False)
     corner_detection.set_bots(all_bots)

@@ -155,8 +155,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
     first_run_ml = quantize(first_run_ml, selected_colors,
                             show=False, is_flipped=False)
     corner_detection.set_bots(first_run_ml)
-    first_run_orientation = corner_detection.corner_detection_main(
-        threshold_set=True)
+    first_run_orientation = corner_detection.corner_detection_main(threshold_set=True, previous_orientations=[])
 
     if first_run_orientation and first_run_orientation["huey"] and first_run_orientation["enemy"]:
         # Ensure single enemy
@@ -237,8 +236,29 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
             # Huey's center
 
             end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
-            cv2.arrowedLine(image, (start_x, start_y),
-                            end_point, (255, 0, 0), 2)
+            cv2.arrowedLine(image, (start_x, start_y), end_point, (255, 0, 0), 2)
+
+            # Huey's corner points
+            x_shift = int(detected_bots_with_data["huey"]['bbox'][0][0])
+            y_shift = int(detected_bots_with_data["huey"]['bbox'][0][1])
+
+            for i in range(len(centroids)):
+                color = (255, 255, 0) if i == 0 else (0, 255, 255)
+                for p in centroids[i]:
+                    cv2.circle(image, (p[0] + x_shift, p[1] + y_shift), 8, color, -1)
+
+                # for i in range(len(centroids)):
+                # color = (255, 255, 0) if i == 0 else (0, 255, 255)
+                # for p, c in centroids[i]:
+                #     if p == 0 and i == 0: # FRONT L
+                #         color = (255, 255, 0)
+                #     if p == 0 and i == 1: # FRONT R
+                #         color = (255, 255, 100)
+                #     if p == 1 and i == 0: # BACK L
+                #         color = (100, 255, 255)
+                #     if p == 1 and i == 1: # BACK R
+                #         color = (0, 255, 255)
+                #     cv2.circle(image, (c[0] + x_shift, c[1] + y_shift), 8, color, -1)
 
             # RED line: Huey's Desired Orientation according to Algorithm
             if move_dictionary and (move_dictionary["turn"]):

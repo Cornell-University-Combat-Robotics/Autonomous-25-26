@@ -280,7 +280,7 @@ def main():
                     # 12. Run Object Detection's results through Corner Detection
                     with rs.log_timing("Corner Detection"):
                         corner_detection.set_bots(detected_bots)
-                        detected_bots_with_data = corner_detection.corner_detection_main()
+                        detected_bots_with_data = corner_detection.corner_detection_main(algorithm.huey_previous_orientations)
 
                     # Prepare Quantized Huey Image (for display buffer)
                     huey_display_img = None
