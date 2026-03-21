@@ -31,10 +31,7 @@ from main_helpers import (
 from warp_main import warp
 from warp_main import get_warp_maps
 from warp_main import warp_map
-# from overlap_tracker import log_overlap, plot_overlap
-# if os.path.exists("overlap_.csv"):
-#     os.remove("overlap_log.csv")
-# from corner_detection.corner_detection_helpers import is_overlap
+
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
@@ -53,18 +50,19 @@ FRAME_RATE = 120
 # Show heads-up display with FPS, speed, turn, frame number
 SHOW_HUD = True
 # Display the quantized bounding box of Huey in separate window
-SHOW_QUANTIZED_HUEY = False
+SHOW_QUANTIZED_HUEY = True
 # True to use color quantization, should always be True
 COLOR_QUANTIZATION = True
 CAN_RECOVER = False              # True to use recovery
 # True to run frame capture in a seperate thread, always false for videos
 CAMERA_STREAM = False
 # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
-SHEET_RUNTIME = True
+SHEET_RUNTIME = False
 # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
 SAVE_BBOXES = False
 # How often to save bounding box images (every n iterations)
 BBOX_SAVE_FREQUENCY = 10
+BLACKOUT_THRESHOLD = 0.4
 
 # MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
 # MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
@@ -81,9 +79,9 @@ folder = os.getcwd() + "/main_files"
 
 # camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-# camera_number = folder + "/test_videos/orbital_huey.mp4"
+camera_number = folder + "/test_videos/orbital_huey.mp4"
 # camera_number = 1
-camera_number = 0
+# camera_number = 0
 
 # Set to webcam if capturing frames in main loop.
 # camera_type = "Video"
@@ -315,17 +313,6 @@ def main():
                     with rs.log_timing("Algorithm"):
                         move_dictionary = algorithm.ram_ram(
                             detected_bots_with_data, CAN_RECOVER, fps=FRAME_RATE, key=key)
-                            # LOG OVERLAP
-                    #     if detected_bots_with_data:
-                    #         huey_bbox = detected_bots_with_data.get("huey")
-                    #         enemy_bbox = detected_bots_with_data.get("enemy")
-                    #         if huey_bbox and enemy_bbox and huey_bbox.get("bbox") and enemy_bbox.get("bbox"):
-                    #             log_overlap(is_overlap(huey_bbox, enemy_bbox))
-                    #         else:
-                    #             log_overlap(False)
-                    #     else:
-                    #         log_overlap(False)
-
                     # 14. Transmitting the motor values to Huey's if we're using a live video
                     with rs.log_timing("Transmission"):
                         if IS_TRANSMITTING:
@@ -443,9 +430,6 @@ def main():
     except Exception as exception:
         print("UNKNOWN EXCEPTION FAILURE. PROCEEDING TO CLEAN UP:", exception)
     finally:
-
-        # blackout squadron trial
-       # plot_overlap()
 
         if IS_TRANSMITTING:  # Motors need to be cleaned up correctly
             try:
