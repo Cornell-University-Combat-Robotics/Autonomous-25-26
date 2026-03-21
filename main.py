@@ -30,12 +30,15 @@ from main_helpers import (
 from warp_main import warp
 from warp_main import get_warp_maps
 from warp_main import warp_map
-
+# from overlap_tracker import log_overlap, plot_overlap
+# if os.path.exists("overlap_.csv"):
+#     os.remove("overlap_log.csv")
+# from corner_detection.corner_detection_helpers import is_overlap
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
 DISPLAY_SCALE = 1.0             # Display frame smaller for selection with 1080p video, 1.0 default
 IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
 WEAPON_ON = False               # True if weapon motor should be on
@@ -51,6 +54,7 @@ CAMERA_STREAM = False           # True if using live camera stream, False if usi
 SHEET_RUNTIME = False            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
 BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
+BLACKOUT_THRESHOLD = 0.4        # Integer value of area to large to blackout
 
 # MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
 # MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
@@ -130,7 +134,7 @@ def main():
         predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
 
         # Initialize corner detection
-        corner_detection = RobotCornerDetection(selected_colors, False, False)
+        corner_detection = RobotCornerDetection(selected_colors, False, False, thresh= BLACKOUT_THRESHOLD)
 
         # Initialize transmission TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
@@ -286,6 +290,16 @@ def main():
                     with rs.log_timing("Algorithm"):
                         move_dictionary = algorithm.ram_ram(
                             detected_bots_with_data, CAN_RECOVER, fps=FRAME_RATE, key=key)
+                            # LOG OVERLAP
+                    #     if detected_bots_with_data:
+                    #         huey_bbox = detected_bots_with_data.get("huey")
+                    #         enemy_bbox = detected_bots_with_data.get("enemy")
+                    #         if huey_bbox and enemy_bbox and huey_bbox.get("bbox") and enemy_bbox.get("bbox"):
+                    #             log_overlap(is_overlap(huey_bbox, enemy_bbox))
+                    #         else:
+                    #             log_overlap(False)
+                    #     else:
+                    #         log_overlap(False)
 
                     # 14. Transmitting the motor values to Huey's if we're using a live video
                     with rs.log_timing("Transmission"):
@@ -405,13 +419,8 @@ def main():
         print("UNKNOWN EXCEPTION FAILURE. PROCEEDING TO CLEAN UP:", exception)
     finally:
 
-        # Newbie squadron trial
-        try:
-            color_df = pd.DataFrame(corner_detection.color_percentage_rows)
-            color_df.to_csv("color_output.csv", index=True)
-            # color_percentages_graphing.makeGraph()
-        except Exception as color_exception:
-            print("Data collection failed:", color_exception)
+        # blackout squadron trial
+       # plot_overlap()
 
         if IS_TRANSMITTING:  # Motors need to be cleaned up correctly
             try:
@@ -433,7 +442,6 @@ def main():
             cv2.destroyAllWindows()
 
         rs.save("itertimes")
-
 
 if __name__ == "__main__":
     main()

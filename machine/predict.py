@@ -96,14 +96,6 @@ class YoloModel(TemplateModel):
                 robots.append(data)
 
         output = {"bots": robots, "housebot": housebots}
-        for bot1 in output["bots"]:
-            x_min, y_min = bot1["bbox"][0]
-            x_max, y_max = bot1["bbox"][1]
-            bot1_center = bot1["center"]
-
-            for bot2 in output["bots"]:
-                if math.dist(bot1["center"], bot2["center"]) < min()
-
         return output
 
     def show_predictions(self, img, bots_dict):
