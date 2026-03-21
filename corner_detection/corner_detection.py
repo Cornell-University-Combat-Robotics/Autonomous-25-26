@@ -1,7 +1,7 @@
 import os
 import cv2
 import numpy as np
-from .corner_detection_helpers import find_our_bot, find_centroids, compute_angle_between_midpoints, two_corners, math, deque, calc_diagonal_and_side_length
+from .corner_detection_helpers import find_our_bot, find_centroids, compute_angle_between_midpoints, two_corners, math, deque, calc_diagonal_and_side_length, compute_blackout_box, is_overlap
 
 class RobotCornerDetection:
     """
@@ -11,7 +11,7 @@ class RobotCornerDetection:
     
     LENGTH_BUFFER = 20
 
-    def __init__(self, selected_colors: list, display_final_image: bool = False, display_possible_hueys: bool = False, color_percentage_rows = []):
+    def __init__(self, selected_colors: list, display_final_image: bool = False, display_possible_hueys: bool = False, color_percentage_rows = [], thresh = 0.4):
         """
         Initializes the RobotCornerDetection class.
 
@@ -42,6 +42,7 @@ class RobotCornerDetection:
         self.left_diff = []
         self.right_diff = []
         self.ratio = []
+        self.thresh = thresh
 
 
     def set_bots(self, bots: dict):
@@ -126,9 +127,13 @@ class RobotCornerDetection:
                                 "center": np.mean(bot_data["bbox"], axis=0),
                             }
                             break
-
-                centroid_points = find_centroids(image, self.selected_colors)
-                self.centroids = centroid_points
+                    
+                    # Compute blackout overlapped part and create csv
+                    if enemy_bots and enemy_bots["bbox"] and huey and huey["bbox"] and is_overlap(huey["bbox"],enemy_bots["bbox"]):
+                        image = compute_blackout_box(image, huey["bbox"], enemy_bots["bbox"], thresh = self.thresh)
+                        
+                    centroid_points = find_centroids(image, self.selected_colors)
+                    self.centroids = centroid_points
                 
                 # Every time we calculate 4 points, calculate diagonal and side length in the case of 1 front 1 back corner in the future
                 calc_diagonal_and_side_length(self.centroids, self.diag_len, self.side_len, self.num_lens)

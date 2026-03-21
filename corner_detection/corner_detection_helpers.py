@@ -472,3 +472,78 @@ def display_image(image: np.ndarray, left_front: list, right_front: list):
     cv2.imshow("Image with Left and Right Front Corners", image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+def norm_from_bbox(bbox):
+    """
+    Gets four corner points from a bbox dictionary to reduce code reuse.
+    """
+    (x1, y1), (x2, y2) = bbox
+    xmin, xmax = (x1, x2) if x1 <= x2 else (x2, x1)
+    ymin, ymax = (y1, y2) if y1 <= y2 else (y2, y1)
+    return xmin, ymin, xmax, ymax
+
+def is_overlap(huey_bbox, enemy_bbox):
+    """
+    Checks whether the two bboxes interlap.
+
+    Returns: Whether the two bboxes overlap
+    """
+    hx_min, hy_min, hx_max, hy_max = norm_from_bbox(huey_bbox)
+    ex_min, ey_min, ex_max, ey_max = norm_from_bbox(enemy_bbox)
+    return (hx_min < ex_max) and (hx_max > ex_min) and (hy_min < ey_max) and (hy_max > ey_min)
+
+def compute_blackout_box(image, huey_bbox, enemy_bbox, thresh = 0.4):
+    """
+    Blacks out intersection of huey and enemy_bbox onto the huey image. 
+    If the interseciton is more than the threshold percent of huey's image,
+    then we just return the original image.
+
+    Args:
+        image: should be hueys cropped image
+
+    Returns:
+        hueys image blacked out on the intersection if it was a small enough area
+    """
+    if image is None:
+        return None
+    # Huey x and y min and max
+    hx_min, hy_min, hx_max, hy_max = norm_from_bbox(huey_bbox)
+    # Enemy x and y min and max
+    ex_min, ey_min, ex_max, ey_max = norm_from_bbox(enemy_bbox)
+
+    # Intersection
+    x_left = max(hx_min, ex_min)
+    y_top = max(hy_min, ey_min)
+    x_right = min(hx_max, ex_max)
+    y_bottom = min(hy_max, ey_max)
+
+    width = x_right - x_left
+    height = y_bottom - y_top
+    
+    int_area = abs(width * height)
+    huey_area = (hx_max - hx_min) * (hy_max - hy_min)
+    
+    # Check on whether we should blackout at all
+    if int_area > huey_area * thresh:
+        return image
+
+    # Arena to bbox cords
+    xmin = int(round(x_left  - hx_min))
+    xmax = int(round(x_right - hx_min))
+    ymin = int(round(y_top   - hy_min))
+    ymax = int(round(y_bottom  - hy_min))
+
+    H, W = image.shape[:2]
+    # Make sure borders aren't outside of image
+    xmin = max(0, min(W, xmin))
+    xmax = max(0, min(W, xmax))
+    ymin = max(0, min(H, ymin))
+    ymax = max(0, min(H, ymax))
+
+    if xmin >= xmax or ymin >= ymax:
+        return image
+
+    # I think numpy indexing is (y,x)
+    image[ymin:ymax, xmin:xmax] = np.asarray([0,0,0])
+    return image
+

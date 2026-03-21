@@ -50,18 +50,19 @@ FRAME_RATE = 120
 # Show heads-up display with FPS, speed, turn, frame number
 SHOW_HUD = True
 # Display the quantized bounding box of Huey in separate window
-SHOW_QUANTIZED_HUEY = False
+SHOW_QUANTIZED_HUEY = True
 # True to use color quantization, should always be True
 COLOR_QUANTIZATION = True
 CAN_RECOVER = False              # True to use recovery
 # True to run frame capture in a seperate thread, always false for videos
 CAMERA_STREAM = True
 # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
-SHEET_RUNTIME = True
+SHEET_RUNTIME = False
 # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
 SAVE_BBOXES = False
 # How often to save bounding box images (every n iterations)
 BBOX_SAVE_FREQUENCY = 10
+BLACKOUT_THRESHOLD = 0.4
 
 # MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
 # MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
@@ -78,9 +79,9 @@ folder = os.getcwd() + "/main_files"
 
 # camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-# camera_number = folder + "/test_videos/orbital_huey.mp4"
+camera_number = folder + "/test_videos/orbital_huey.mp4"
 # camera_number = 1
-camera_number = 0
+# camera_number = 0
 
 # Set to webcam if capturing frames in main loop.
 # camera_type = "Video"
@@ -156,7 +157,7 @@ def main():
         predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
 
         # Initialize corner detection
-        corner_detection = RobotCornerDetection(selected_colors, False, False)
+        corner_detection = RobotCornerDetection(selected_colors, False, False, thresh= BLACKOUT_THRESHOLD)
 
         # Initialize transmission TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
@@ -301,7 +302,6 @@ def main():
                     with rs.log_timing("Algorithm"):
                         move_dictionary = algorithm.ram_ram(
                             detected_bots_with_data, CAN_RECOVER, fps=FRAME_RATE, key=key)
-
                     # 14. Transmitting the motor values to Huey's if we're using a live video
                     with rs.log_timing("Transmission"):
                         if IS_TRANSMITTING:
@@ -435,14 +435,6 @@ def main():
         print("UNKNOWN EXCEPTION FAILURE. PROCEEDING TO CLEAN UP:", exception)
     finally:
 
-        # Newbie squadron trial
-        try:
-            color_df = pd.DataFrame(corner_detection.color_percentage_rows)
-            color_df.to_csv("color_output.csv", index=True)
-            # color_percentages_graphing.makeGraph()
-        except Exception as color_exception:
-            print("Data collection failed:", color_exception)
-
         if IS_TRANSMITTING:  # Motors need to be cleaned up correctly
             try:
                 if 'motor_group' in locals():
@@ -463,7 +455,6 @@ def main():
             cv2.destroyAllWindows()
 
         rs.save("itertimes")
-
 
 if __name__ == "__main__":
     main()
