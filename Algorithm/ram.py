@@ -35,7 +35,7 @@ class Ram():
     EDGE_THRESHOLD = 5
     RECOVERY_SPEED_VALUES = [BACK_UP_SPEED* 0.8, FORWARD_SPEED* 0.8, LEFT_SPEED* 0.8, RIGHT_SPEED* 0.8] 
     RECOVERY_TURN_VALUES = [BACK_UP_TURN, FORWARD_TURN, LEFT_TURN, RIGHT_TURN]
-    USE_PID = False
+    USE_PID = True
     is_recovering = False
     is_backing = False
     reverse = 0
@@ -106,8 +106,8 @@ class Ram():
         self.acceleration = 0
         self.prev_derivative = 0
         self.prev_power = 0
-        self.secs_to_speed = 0.01
-        self.secs_to_acceleration = 0.01
+        self.secs_to_speed = 0.1
+        self.secs_to_acceleration = 1
     # ----------------------------- HELPER METHODS -----------------------------
 
     ''' use a PID controller to move the bot to the desired position '''
