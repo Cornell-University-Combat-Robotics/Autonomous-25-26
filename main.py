@@ -44,16 +44,16 @@ WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
 DISPLAY_ANGLES = True           # Only use when SHOW_FRAME is True
 # Process every captured frame, False -> cap at FRAME_RATE
-IS_ORIGINAL_FPS = True
+IS_ORIGINAL_FPS = False
 # FPS used for algo stuff, update to expected FPS on your system.
-FRAME_RATE = 120
+FRAME_RATE = 60
 # Show heads-up display with FPS, speed, turn, frame number
 SHOW_HUD = True
 # Display the quantized bounding box of Huey in separate window
-SHOW_QUANTIZED_HUEY = False
+SHOW_QUANTIZED_HUEY = True
 # True to use color quantization, should always be True
 COLOR_QUANTIZATION = True
-CAN_RECOVER = False              # True to use recovery
+CAN_RECOVER = False             # True to use recovery
 CAMERA_STREAM = False           # True if using live camera stream, False if using a video file
 SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
@@ -63,10 +63,11 @@ SEGMENT = True                  # True to use segmentation when getting bounding
 # Object detection models
 # MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
 # MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
-# MODEL_NAME = "Nano320Temp"        # Model trained with added Huey images from matches, trained at 320 image size
+MODEL_NAME = "Nano320Temp"        # Model trained with added Huey images from matches, trained at 320 image size
 
 # Segmentation models
-MODEL_NAME = "NanoSegHueyPrince"    # Segmentation model trained with 200 images from Huey v Prince
+if SEGMENT:
+    MODEL_NAME = "NanoSegHueyPrince"    # Segmentation model trained with 200 images from Huey v Prince
 
 # Image size for object detection model, lower number -> faster, slightly worse accuracy.
 # 640 default, 416 fast, must be multiple of 32. Don't go below 320.
@@ -80,7 +81,7 @@ camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/orbital_huey.mp4"
 # camera_number = 1
-camera_number = 0
+# camera_number = 0
 
 # Set to webcam if capturing frames in main loop.
 camera_type = "Video"
@@ -91,8 +92,9 @@ with open(quant_settings_file, "r") as f:
     all_settings = json.load(f)
 
 # Quantization Settings
-quantization_settings = None
+# quantization_settings = None
 # quantization_settings = all_settings["Green Huey"]
+quantization_settings = all_settings["Green Huey High-T"]
 # quantization_settings = all_settings["Purple Huey"]
 
 if IS_TRANSMITTING:

@@ -8,7 +8,7 @@ from collections import deque
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 MIN_THRESHOLD = 0.035
-CORNER_THRESHOLD = 10.0
+CORNER_THRESHOLD = 0.0
 
 
 @staticmethod
@@ -178,7 +178,8 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
         dist_sq = (cx - center_x)**2 + (cy - center_y)**2
         
         # Sort by distance (ascending) then area (descending)
-        return (dist_sq, -area)
+        # return (dist_sq, -area)
+        return (-area, dist_sq)
 
     # 4. Sort the entire list
     sorted_contours = sorted(contours, key=sorting_criteria)
