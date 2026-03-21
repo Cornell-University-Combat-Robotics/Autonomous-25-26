@@ -55,7 +55,7 @@ SHOW_QUANTIZED_HUEY = True
 COLOR_QUANTIZATION = True
 CAN_RECOVER = False              # True to use recovery
 # True to run frame capture in a seperate thread, always false for videos
-CAMERA_STREAM = True
+CAMERA_STREAM = False
 # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 SHEET_RUNTIME = False
 # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
@@ -64,7 +64,6 @@ SAVE_BBOXES = False
 BBOX_SAVE_FREQUENCY = 10
 # Filter out enemy bot intersection w/Huey
 BLACKOUT = True 
-
 
 # MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
 # MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
@@ -79,15 +78,15 @@ OD_IMG_SIZE = 320
 
 folder = os.getcwd() + "/main_files"
 
-# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-camera_number = folder + "/test_videos/orbital_huey.mp4"
+# camera_number = folder + "/test_videos/orbital_huey.mp4"
 # camera_number = 1
 # camera_number = 0
 
 # Set to webcam if capturing frames in main loop.
-# camera_type = "Video"
-camera_type = "Webcam"
+camera_type = "Video"
+# camera_type = "Webcam"
 
 quant_settings_file = "quant_settings.json"
 with open(quant_settings_file, "r") as f:
