@@ -6,7 +6,7 @@
 /* ================= CONFIG ================= */
 
 #define ESPNOW_WIFI_CHANNEL 6
-#define SEND_INTERVAL_MS 20   // 50 Hz (adjust: 10 = 100 Hz, 50 = 20 Hz)
+#define SEND_INTERVAL_MS 20   // 50 Hz
 
 /* ================= IMU ================= */
 
@@ -60,7 +60,7 @@ uint32_t lastSend = 0;
 void setReports() {
   Serial.println("Setting IMU reports");
 
-  // 100 Hz reports (adjust if needed)
+  // 100 Hz reports 
   if (!bno08x.enableReport(SH2_GAME_ROTATION_VECTOR, 10000)) {
     Serial.println("Failed to enable rotation vector");
   }
@@ -73,7 +73,7 @@ void setReports() {
 void setup() {
   Serial.begin(115200);
 
-  // Lower CPU frequency (good for heat)
+  // Lower CPU frequency 
   setCpuFrequencyMhz(80);
 
   // WiFi setup
