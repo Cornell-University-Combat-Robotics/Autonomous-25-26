@@ -33,7 +33,7 @@ def quantize_robot_colors(
     thresh_lab=25.0,
     keep_background=True,
     show = False,
-    custom_weights = None
+    custom_weights = None,
 ):
     H, W = img_bgr.shape[:2]
     N = H * W
@@ -63,6 +63,16 @@ def quantize_robot_colors(
     # Distance to robot colors (no big broadcast, no sqrt)
     thresh2 = thresh_lab * thresh_lab
     flat = flat_lab  # (N, 3)
+
+    # Define weights for L, a, and b
+    # Setting L_weight to 0.0 ignores brightness entirely.
+    # Setting it to 0.2 makes it matter, but much less than color.
+    L_weight = 0.05
+    weights = np.array([L_weight, 1.0, 1.0], dtype=np.float32) #WEIGHTS: CIELAB color space
+
+    if custom_weights:
+        L_weight = custom_weights[0]
+        weights = np.array(custom_weights, dtype=np.float32)
 
     # Start with first color (weighted)
     diff0 = (flat - robot_lab[0]) * weights
