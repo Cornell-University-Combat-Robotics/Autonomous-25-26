@@ -70,7 +70,7 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Tr
         if not images:
             raise ValueError("The input image list is empty.")
         max_color_percentage = -1
-        our_bot_image = None 
+        our_bot_image = None
 
         bot_color_percentages = []
 
@@ -122,22 +122,20 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Tr
         # TODO: figure out the optimal dynamic_threshold_window value, which is set in corner_detection.py
         elif len(self.color_percentage_rows) > 0 and len(self.color_percentage_rows) % self.dynamic_threshold_window == 0:
             recent_frames = self.color_percentage_rows[-self.dynamic_threshold_window:]
-            print("recent_frames: " + str(recent_frames))
-            print("len(recent_frames): " + str(len(recent_frames)))
+            # print("recent_frames: " + str(recent_frames))
+            # print("len(recent_frames): " + str(len(recent_frames)))
 
             midpoints = []
             for frame in recent_frames:
-                huey_percentage, enemy_percentage = frame
+                huey_percentage = frame[0]
+                enemy_percentage = frame[1]
                 midpoints.append((huey_percentage + enemy_percentage)/2)
-            print("midpoints: " + str(midpoints))
-
-            self.huey_color_percentage_threshold = max(sum(midpoints) / len(recent_frames), MIN_THRESHOLD)
-            print("huey_color_percentage_threshold: " + huey_color_percentage_threshold)
-
-
+            # print("midpoints: " + str(midpoints))
+            if midpoints:
+                self.huey_color_percentage_threshold = max(sum(midpoints) / len(recent_frames), MIN_THRESHOLD)
+            # print("huey_color_percentage_threshold: " + huey_color_percentage_threshold)
 
 
-        
         ### —————————————————————————————————————————————————————————————————————————————————————————— ###
 
 
