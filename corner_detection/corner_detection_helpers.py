@@ -2,9 +2,14 @@ import math
 import cv2
 import numpy as np
 import csv
+import matplotlib.pyplot as plt
 import pandas as pd
+from collections import deque
+
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 MIN_THRESHOLD = 0.035
+CORNER_THRESHOLD = 10.0
+
 
 @staticmethod
 def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
@@ -58,7 +63,7 @@ def get_contours_per_color(side: str, hsv_image: np.ndarray, selected_colors) ->
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return contours
 
-def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=False) -> tuple[np.ndarray | None, int] | None:
+def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=False) -> np.ndarray | None:
     """
     Identifies which image contains our robot based on a predefined robot color.
 
@@ -76,22 +81,19 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
 
         bot_color_percentages = []
 
-        for image in images: #this for loop handles whether the image is the huey bot
-            total_pixels = np.shape(image)[0]*np.shape(image)[1]
-
+        for image in images: # this for loop handles whether the image is the huey bot
             if image is None:
                 print("Warning: One of the images is None, skipping...")
                 continue
             
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
-            # print("OOGABOOGA", color_pixel_count)
 
             image_area = image.size/3
+
             color_percentage = color_pixel_count/image_area
-            # print(f"OOGABOOGA {color_pixel_count}, {image_area}, {color_percentage}")
 
             bot_color_percentages.append(color_percentage)
-            #check if the next if statement is redundant since we are tracking the percentages with the list...
+            # check if the next if statement is redundant since we are tracking the percentages with the list...
             # and sorting it to find the max. potentially, we do not need this calculation. Another note,
             # the color percentages are very variable during the match so i don't know if we should just 
             # continuously set a max.      
@@ -100,9 +102,8 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
                 max_color_percentage = color_percentage
 
         bot_color_percentages.sort()
-        #self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2]))
         
-        if threshold_set: #Set initial threshold
+        if threshold_set: # Set initial threshold
             if len(bot_color_percentages) > 1 and bot_color_percentages[-1] > 0:
                 self.huey_color_percentage_threshold = max((bot_color_percentages[-1] + bot_color_percentages[-2]) / 2, MIN_THRESHOLD)
                 print("Threshold: " + str(self.huey_color_percentage_threshold))
@@ -113,9 +114,8 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
             our_bot_image = None
         elif len(bot_color_percentages) > 1 and max_color_percentage < min(MIN_THRESHOLD, self.huey_color_percentage_threshold):
             our_bot_image = None
-
         
-        #Writing information to be graphed
+        # Writing information to be graphed
         if len(bot_color_percentages) >= 2:
             self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2],self.huey_color_percentage_threshold))
         if len(bot_color_percentages) == 1:
@@ -153,13 +153,17 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
 
     # 1. Get image dimensions and center point
     img_h, img_w = hsv_image.shape[:2]
+    
     center_x, center_y = img_w // 2, img_h // 2
 
     # 2. Get contours from your helper function
     contours = get_contours_per_color(side, hsv_image, selected_colors)
     
+    # Calculate bbox area:
     # 3. Define the sorting key (Distance is primary, Area is secondary)
     def sorting_criteria(c):
+        area = cv2.contourArea(c)
+
         M = cv2.moments(c)
         if M["m00"] == 0:
             # Handle lines/points: assume the first point is the location
@@ -172,13 +176,16 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
         
         # Euclidean distance squared from center
         dist_sq = (cx - center_x)**2 + (cy - center_y)**2
-        area = cv2.contourArea(c)
         
         # Sort by distance (ascending) then area (descending)
         return (dist_sq, -area)
 
     # 4. Sort the entire list
     sorted_contours = sorted(contours, key=sorting_criteria)
+    sorted_contours = [c for c in sorted_contours if cv2.contourArea(c) >= CORNER_THRESHOLD]
+    # print(f"🧏‍♂️ sorted areas: {[cv2.contourArea(c) for c in sorted_contours]}")
+    # print(f"🧏‍♂️ sorted percentages: {[(cv2.contourArea(c)/(img_h * img_w)) for c in sorted_contours]}")
+    # print(f"🚔🚔image area: {img_h * img_w}")
 
     # 5. Extract top 2 centroids
     centroids = []
@@ -191,33 +198,8 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
             cx = int(M["m10"] / M["m00"])
             cy = int(M["m01"] / M["m00"])
             centroids.append((cx, cy))
-        # else:
-        #     # Fallback for 0-area contours if you still want their location
-        #     # (e.g., using the first point in the contour array)
-        #     if len(contour) > 0:
-        #         cx, cy = contour[0][0]
-        #         centroids.append((int(cx), int(cy)))
             
     return centroids
-    # contours = get_contours_per_color(side, hsv_image, selected_colors)
-    # contours = sorted(contours, key=cv2.contourArea, reverse=True)
-    # contours = sorted(contours, key=cv2.)
-    # centroids = []
-    # for contour in contours:
-    #     # Filter out small contours based on area
-    #     image_area = image.size/3
-    #     contour_area = cv2.contourArea(contour)
-    #     contour_percent = contour_area/image_area
-    #     # if contour_area > 20: # area > 20
-    #     # TODO: this value is subject to change based on dimensions of our video & resize_factor
-    #     # Compute moments for each contour
-    #     M = cv2.moments(contour)
-    #     if M["m00"] != 0 and len(centroids) < 2:
-    #         # Calculate the centroid (center of the dot)
-    #         cx = int(M["m10"] / M["m00"])
-    #         cy = int(M["m01"] / M["m00"])
-    #         centroids.append((cx, cy))
-    # return centroids
 
 def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     """
@@ -241,15 +223,108 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
         points = [centroid_front, centroid_back]
         centroid_front, centroid_back = get_missing_point(points)
 
-    # Ensure we have exactly 2 points for front and back
-    if len(centroid_front) < 2 or len(centroid_back) < 2:
-        return np.array([[], []])  # Return empty arrays if not enough points
+    # # Ensure we have exactly 2 points for front and back
+    # if len(centroid_front) < 2 or len(centroid_back) < 2:
+    #     return np.array([[], []])  # Return empty arrays if not enough points
 
     # Convert to numpy arrays with consistent shape
     front_array = np.array(centroid_front[:2])  # Take first 2 points if more exist
     back_array = np.array(centroid_back[:2])    # Take first 2 points if more exist
+
+    return np.array([front_array, back_array], dtype=object)
+
+def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagonals: list, sides: list) -> float:
+    """
+    Handles orientation calculation when only 2 points are detected.
+    """
+
+    front_points = centroid_points[0]
+    back_points = centroid_points[1]
+
+    # CASE 1: Only 2 Front Corners detected OR Only 2 Back Corners detected
+
+    if len(front_points) == 2 or len(back_points) == 2:
+        # Correctly pick the points based on which list has 2
+        points = front_points if len(front_points) == 2 else back_points
+
+        point1, point2 = points[0], points[1]
+        dx = point2[0] - point1[0]
+        dy = -(point2[1] - point1[1]) # Flip Y for image coordinates
+        
+        line_angle = math.degrees(math.atan2(dy, dx))
+
+        angle1 = (line_angle + 90) % 360 # Perpendicular possibilities
+        angle2 = (line_angle - 90) % 360
+        
+        return pick_closest_angle(angle1, angle2, previous_orientation)
+
+    # CASE 2: 1 Front and 1 Back Corner detected.
+    elif len(front_points) == 1 and len(back_points) == 1:
+        if len(diagonals) > 0:
+            diagonal_avg = diagonals[0]
+            sides_avg = sides[0]
+
+            cutoff = (diagonal_avg + sides_avg)/2
+            corner_distance = distance(front_points[0], back_points[0])
+            dx = front_points[0][0] - back_points[0][0]
+            dy = -(front_points[0][1] - back_points[0][1])
+            angle = math.atan2(dy,dx) * (180/math.pi)
+            
+            # CASE 2.1: Both corners are on the same side
+            if (corner_distance < cutoff):
+                # print(f"🌫️🌫️🌫️🌫️🌫️CORNERS ON SAME SIDE: {angle} degrees")
+                return angle
+            
+            # CASE 2.2: The corners are diagonal
+            else:
+                p1 = (angle + 45) % 360
+                p2 = (angle - 45) % 360
+                # print(f"🌈🌈🌈CORNERS ON DIFFERENT SIDE: {p1} or {p2} degrees🌈🌈🌈")
+                
+                return pick_closest_angle(p1, p2, previous_orientation)
+
+    raise ValueError(f"Invalid point configuration: Front={len(front_points)}, Back={len(back_points)}")
+
+def calc_diagonal_and_side_length(centroids, diagonal_len, side_len, len_nums):
+    """
+    Helper to calculate the diagonal and side length if we have 4 corners
+    We use the average of the last 20 diagonal and side lenghts (1.5d and d) in the case of 1 front 1 back corner
+    """
     
-    return np.array([front_array, back_array])
+    if len(centroids) == 2 and len(centroids[0]) == len(centroids[1]) == 2:
+        len_nums[0] += 1 
+        # Left distances
+        hypo_l = (np.linalg.norm(centroids[0][0] - centroids[1][1]))
+        side_l = (np.linalg.norm(centroids[0][0] - centroids[1][0]))
+
+        # Right distances
+        hypo_r = (np.linalg.norm(centroids[0][1] - centroids[1][0]))
+        side_r = (np.linalg.norm(centroids[0][1] - centroids[1][1]))
+
+        if  hypo_l < side_l: # Identify longest as hypotenuse
+            temp = hypo_l
+            hypo_l = side_l
+            side_l = temp
+        
+        if  hypo_r < side_r:
+            temp = hypo_r
+            hypo_r = side_r
+            side_r = temp
+
+        if len(diagonal_len) == 0 :
+            diagonal_len.append((hypo_l + hypo_r)/2)
+            side_len.append((side_l + side_r)/2)
+        else:
+            # take a waited average so that the average is resistent to changes
+            diagonal_len[0] = (diagonal_len[0]*((len_nums[0]-1)/len_nums[0]) + hypo_l*((.5)/len_nums[0]) + hypo_r*((.5)/len_nums[0]))
+            side_len[0] = (side_len[0]*((len_nums[0]-1)/len_nums[0]) + side_l*((.5)/len_nums[0]) + side_r*((.5)/len_nums[0]))
+
+def pick_closest_angle(angle1: float, angle2: float, target: float) -> float:
+    """Helper to find which candidate is closer to the previous orientation."""
+    def get_diff(a, b):
+        return abs((a - b + 180) % 360 - 180)
+    
+    return angle1 if get_diff(angle1, target) < get_diff(angle2, target) else angle2
 
 def distance(point1: tuple, point2: tuple) -> float:
     """
@@ -273,17 +348,17 @@ def get_missing_point(points: list) -> list:
     1. Calculate the distance from each blue point to the red point.
     2. Identify the longer distance (hypotenuse).
     3. Copy the blue point associated with the hypotenuse near the red point
-            to form the second red point.
+        to form the second red point.
     - If given 2 red points and 1 blue point:
     1. Calculate the distance from each red point to the blue point.
     2. Identify the longer distance (hypotenuse).
     3. Copy the red point associated with the hypotenuse near the blue point
-            to form the second blue point.
+        to form the second blue point.
 
     Args:
-            points (list): A list containing two sublists:
-                                    - points[0]: List of red points.
-                                    - points[1]: List of blue points.
+        points (list): A list containing two sublists:
+            - points[0]: List of red points.
+            - points[1]: List of blue points.
 
     Returns:
             list: A list containing updated red and blue points.
@@ -380,73 +455,6 @@ def compute_angle_between_midpoints(p1: tuple, p2: tuple) -> float:
     dy = -(y2 - y1)
     angle_rad = np.arctan2(dy, dx)
     return math.degrees(angle_rad) % 360
-
-def get_left_and_right_front_points(points: list) -> list:
-    """
-    Determines the left and right front points of the robot.
-
-    Args:
-        points (list): A list containing red and blue points.
-
-    Returns:
-        list: The left and right front points of the robot.
-    """
-    try:
-        red_points = points[0]
-        blue_points = points[1]
-
-        # TODO: check that this runs with any three points, change error
-        # Ensure there are exactly two red points and at least one blue point
-        if (len(red_points) + len(blue_points) < 3):
-            raise ValueError("Expected exactly 2 red points and at least 1 blue point.") # TODO
-
-        all_points = red_points + blue_points
-        center = np.mean(all_points, axis=0)
-
-        vector1 = np.array(red_points[0]) - center
-        vector2 = np.array(red_points[1]) - center
-
-        # We do this because in code, positive y is downward and we want to make it upward
-        vector1[1] = -vector1[1]
-        vector2[1] = -vector2[1]
-
-        theta1 = math.atan2(vector1[1], vector1[0])
-        theta2 = math.atan2(vector2[1], vector2[0])
-
-        theta1_deg = (
-            math.degrees(theta1)
-            if math.degrees(theta1) >= 0
-            else math.degrees(theta1) + 360
-        )
-        theta2_deg = (
-            math.degrees(theta2)
-            if math.degrees(theta2) >= 0
-            else math.degrees(theta2) + 360
-        )
-
-        # Determine which red point is the top right front corner
-        if theta2_deg - theta1_deg > 235:
-            right_front = red_points[1]
-            left_front = red_points[0]
-        elif theta1_deg - theta2_deg > 235:
-            right_front = red_points[0]
-            left_front = red_points[1]
-        elif abs(theta2_deg - theta1_deg) > 180:
-            right_front = red_points[0]
-            left_front = red_points[1]
-        elif theta2_deg > theta1_deg:
-            # The point with the smaller angle is the top right front corner
-            right_front = red_points[0]
-            left_front = red_points[1]
-        else:
-            # The point with the larger angle is the top right front corner
-            right_front = red_points[1]
-            left_front = red_points[0]
-        return [left_front, right_front]
-
-    except Exception as e:
-        print(f"Unexpected error in get_left_and_right_front_points: {e}")
-        return [None, None]
 
 def display_image(image: np.ndarray, left_front: list, right_front: list):
     left_x, left_y = int(left_front[0]), int(left_front[1])
