@@ -46,7 +46,7 @@ DISPLAY_ANGLES = True           # Only use when SHOW_FRAME is True
 # Process every captured frame, False -> cap at FRAME_RATE
 IS_ORIGINAL_FPS = False
 # FPS used for algo stuff, update to expected FPS on your system.
-FRAME_RATE = 60
+FRAME_RATE = 120
 # Show heads-up display with FPS, speed, turn, frame number
 SHOW_HUD = True
 # Display the quantized bounding box of Huey in separate window
@@ -78,6 +78,7 @@ folder = os.getcwd() + "/main_files"
 
 camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
+# camera_number = folder + "/test_videos/huey_in_n_out.mp4"
 # camera_number = folder + "/test_videos/orbital_huey.mp4"
 # camera_number = folder + "/test_videos/cicero_corners_bzone.mov"
 # camera_number = 1

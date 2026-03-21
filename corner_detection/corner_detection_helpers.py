@@ -129,7 +129,8 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Tr
             for frame in recent_frames:
                 huey_percentage = frame[0]
                 enemy_percentage = frame[1]
-                midpoints.append((huey_percentage + enemy_percentage)/2)
+                if huey_percentage > 0 and enemy_percentage >= 0:
+                    midpoints.append((huey_percentage + enemy_percentage)/2)
             # print("midpoints: " + str(midpoints))
             if midpoints:
                 self.huey_color_percentage_threshold = max(sum(midpoints) / len(recent_frames), MIN_THRESHOLD)
