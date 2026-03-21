@@ -11,7 +11,7 @@ class RobotCornerDetection:
     
     LENGTH_BUFFER = 20
 
-    def __init__(self, selected_colors: list, display_final_image: bool = False, display_possible_hueys: bool = False, color_percentage_rows = [], thresh = 0.4):
+    def __init__(self, selected_colors: list, display_final_image: bool = False, display_possible_hueys: bool = False, color_percentage_rows = [], BLACKOUT=True, thresh = 0.4):
         """
         Initializes the RobotCornerDetection class.
 
@@ -43,6 +43,7 @@ class RobotCornerDetection:
         self.right_diff = []
         self.ratio = []
         self.thresh = thresh
+        self.BLACKOUT = BLACKOUT
 
 
     def set_bots(self, bots: dict):
@@ -129,7 +130,7 @@ class RobotCornerDetection:
                             break
                     
                     # Compute blackout overlapped part and create csv
-                    if enemy_bots and enemy_bots["bbox"] and huey and huey["bbox"] and is_overlap(huey["bbox"],enemy_bots["bbox"]):
+                    if self.BLACKOUT and enemy_bots and enemy_bots["bbox"] and huey and huey["bbox"] and is_overlap(huey["bbox"],enemy_bots["bbox"]):
                         image = compute_blackout_box(image, huey["bbox"], enemy_bots["bbox"], thresh = self.thresh)
                         
                     centroid_points = find_centroids(image, self.selected_colors)
