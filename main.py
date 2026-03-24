@@ -44,7 +44,7 @@ WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
 DISPLAY_ANGLES = True           # Only use when SHOW_FRAME is True
 # Process every captured frame, False -> cap at FRAME_RATE
-IS_ORIGINAL_FPS = False
+IS_ORIGINAL_FPS = True
 # FPS used for algo stuff, update to expected FPS on your system.
 FRAME_RATE = 120
 # Show heads-up display with FPS, speed, turn, frame number
@@ -54,14 +54,16 @@ SHOW_QUANTIZED_HUEY = True
 # True to use color quantization, should always be True
 COLOR_QUANTIZATION = True
 CAN_RECOVER = False              # True to use recovery
-# True if using live camera stream, False if using a video file
+# True to run frame capture in a seperate thread, always false for videos
 CAMERA_STREAM = False
 # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
-SHEET_RUNTIME = True
+SHEET_RUNTIME = False
 # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
 SAVE_BBOXES = False
 # How often to save bounding box images (every n iterations)
 BBOX_SAVE_FREQUENCY = 10
+# Filter out enemy bot intersection w/Huey
+BLACKOUT = True 
 
 # MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
 # MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
@@ -80,9 +82,12 @@ camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
 # camera_number = folder + "/test_videos/orbital_huey.mp4"
-# camera_number = folder + "/test_videos/cicero_corners_bzone.mov"
 # camera_number = 1
 # camera_number = 0
+
+# Set to webcam if capturing frames in main loop.
+camera_type = "Video"
+# camera_type = "Webcam"
 
 quant_settings_file = "quant_settings.json"
 with open(quant_settings_file, "r") as f:
@@ -91,6 +96,9 @@ with open(quant_settings_file, "r") as f:
 # Quantization Settings
 # quantization_settings = None
 quantization_settings = all_settings["Green Huey"]
+quantization_settings = None
+# quantization_settings = all_settings["Green Huey"]
+# quantization_settings = all_settings["Purple Huey"]
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
@@ -108,6 +116,7 @@ stop_event = threading.Event()
 shared_state = {"key": None, "flipped": None,
                 "paused": False, "skip_frame": False, "weapon_on": WEAPON_ON}
 
+
 def main():
     stream = None
     try:
@@ -119,6 +128,13 @@ def main():
                 stream, CAMERA_STREAM, selection_scale=DISPLAY_SCALE)
         else:
             cap = cv2.VideoCapture(camera_number)
+
+            if camera_type == "Webcam":
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+                cap.set(cv2.CAP_PROP_FPS, 120)
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
             captured_image = key_frame(
                 cap, CAMERA_STREAM, selection_scale=DISPLAY_SCALE)
 
@@ -145,7 +161,11 @@ def main():
         predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
 
         # Initialize corner detection
+<<<<<<< HEAD
         corner_detection = RobotCornerDetection(selected_colors, False, False, FRAME_RATE)
+=======
+        corner_detection = RobotCornerDetection(selected_colors, False, False, BLACKOUT=BLACKOUT, thresh=0.4, FRAME_RATE)
+>>>>>>> develop
 
         # Initialize transmission TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
@@ -226,17 +246,6 @@ def main():
                         frame_save_dir = os.path.join(
                             bb_output_dir, f"frame_{iteration}")
 
-                    # Logs average of last 10 FPS
-                    if SHEET_RUNTIME:
-                        if iteration > 11:
-                            fps10 = 1.0 / \
-                                ((prev - rs.get_row(-10)["Start Time"]) / 10.0)
-                        else:
-                            fps10 = 1.0 / ((prev - start_time) / iteration)
-                        rs.log("FPS10", fps10)
-                    else:
-                        fps10 = None
-
                     # Grabs frame from camera thread if using camera stream, otherwise reads from video
                     with rs.log_timing("Frame Read"):
                         if CAMERA_STREAM:
@@ -284,7 +293,7 @@ def main():
                     # 12. Run Object Detection's results through Corner Detection
                     with rs.log_timing("Corner Detection"):
                         corner_detection.set_bots(detected_bots)
-                        detected_bots_with_data = corner_detection.corner_detection_main()
+                        detected_bots_with_data = corner_detection.corner_detection_main(algorithm.huey_previous_orientations)
 
                     # Prepare Quantized Huey Image (for display buffer)
                     huey_display_img = None
@@ -305,7 +314,6 @@ def main():
                     with rs.log_timing("Algorithm"):
                         move_dictionary = algorithm.ram_ram(
                             detected_bots_with_data, CAN_RECOVER, fps=FRAME_RATE, key=key)
-
                     # 14. Transmitting the motor values to Huey's if we're using a live video
                     with rs.log_timing("Transmission"):
                         if IS_TRANSMITTING:
@@ -315,6 +323,17 @@ def main():
                             if WEAPON_ON:
                                 weapon_motor_group.move(
                                     1 if weapon_on_this_frame else 0)
+                                
+                    # Logs average of last 10 FPS
+                    if SHEET_RUNTIME:
+                        if iteration > 11:
+                            fps10 = 1.0 / \
+                                ((ptime() - rs.get_row(-9)["Start Time"]) / 10.0)
+                        else:
+                            fps10 = 1.0 / ((ptime() - start_time) / iteration)
+                        rs.log("FPS10", fps10)
+                    else:
+                        fps10 = None
 
                     # Prepare Main Display Image
                     main_display_img = None
@@ -348,6 +367,10 @@ def main():
                     })
 
                     rs.dump()
+                
+                else:
+                    print("Waiting" + str(iteration))
+                    time.sleep(0.001)
 
         # Start the Perception Thread
         perception_thread = threading.Thread(
@@ -412,7 +435,6 @@ def main():
         print("============================")
         print("Video finished successfully!")
 
-
         if SHOW_FRAME:
             cv2.destroyAllWindows()
             if SHOW_QUANTIZED_HUEY:
@@ -426,14 +448,6 @@ def main():
     except Exception as exception:
         print("UNKNOWN EXCEPTION FAILURE. PROCEEDING TO CLEAN UP:", exception)
     finally:
-
-        # Newbie squadron trial
-        try:
-            color_df = pd.DataFrame(corner_detection.color_percentage_rows)
-            color_df.to_csv("color_output.csv", index=True)
-            # color_percentages_graphing.makeGraph()
-        except Exception as color_exception:
-            print("Data collection failed:", color_exception)
 
         if IS_TRANSMITTING:  # Motors need to be cleaned up correctly
             try:
@@ -455,7 +469,6 @@ def main():
             cv2.destroyAllWindows()
 
         rs.save("itertimes")
-
 
 if __name__ == "__main__":
     main()
