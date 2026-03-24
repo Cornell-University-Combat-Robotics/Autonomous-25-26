@@ -80,7 +80,6 @@ class RobotCornerDetection:
             if bot_images and all(img is not None for img in bot_images):
                 bot_color = self.selected_colors[0]
                 our_bot = find_our_bot(self, bot_images, bot_color, threshold_set)
-                print("detect_our_robot_main: " + str(threshold_set))
 
                 return our_bot
             else:
@@ -91,7 +90,7 @@ class RobotCornerDetection:
             print(f"Unexpected error in detect_our_robot_main: {e}")
             return None
 
-    def corner_detection_main(self, previous_orientations: list = [], threshold_set: bool=False) -> dict | None:
+    def corner_detection_main(self, previous_orientations: list = [], threshold_set: bool=True) -> dict | None:
         """
         Main function for detecting corners and orientation of the robot.
 
@@ -101,7 +100,6 @@ class RobotCornerDetection:
         try:
             
             bot_images = [bot["img"] for bot in self.bots["bots"]]
-            print("corner_detection_main: " + str(threshold_set))
             image = self.detect_our_robot_main(bot_images, threshold_set)
             
             if image is not None:

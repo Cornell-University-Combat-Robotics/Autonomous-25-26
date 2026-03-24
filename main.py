@@ -96,8 +96,6 @@ with open(quant_settings_file, "r") as f:
 # Quantization Settings
 # quantization_settings = None
 quantization_settings = all_settings["Green Huey"]
-quantization_settings = None
-# quantization_settings = all_settings["Green Huey"]
 # quantization_settings = all_settings["Purple Huey"]
 
 if IS_TRANSMITTING:
@@ -161,11 +159,7 @@ def main():
         predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
 
         # Initialize corner detection
-<<<<<<< HEAD
-        corner_detection = RobotCornerDetection(selected_colors, False, False, FRAME_RATE)
-=======
-        corner_detection = RobotCornerDetection(selected_colors, False, False, BLACKOUT=BLACKOUT, thresh=0.4, FRAME_RATE)
->>>>>>> develop
+        corner_detection = RobotCornerDetection(selected_colors, False, False, BLACKOUT=BLACKOUT, thresh=0.4, frame_rate = FRAME_RATE)
 
         # Initialize transmission TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
