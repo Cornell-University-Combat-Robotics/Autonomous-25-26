@@ -62,11 +62,8 @@ SHEET_RUNTIME = True
 SAVE_BBOXES = False
 # How often to save bounding box images (every n iterations)
 BBOX_SAVE_FREQUENCY = 10
-<<<<<<< HEAD
-=======
 # Filter out enemy bot intersection w/Huey
 BLACKOUT = True 
->>>>>>> bf446299df32ec59bf8d0f943f69cd33197ff3c9
 
 # MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
 # MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
