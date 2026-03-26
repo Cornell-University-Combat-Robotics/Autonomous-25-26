@@ -36,7 +36,7 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
-WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
 # Display frame smaller for selection with 1080p video, 1.0 default
 DISPLAY_SCALE = 0.5
 IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
@@ -55,14 +55,13 @@ SHOW_QUANTIZED_HUEY = True
 COLOR_QUANTIZATION = True
 CAN_RECOVER = False              # True to use recovery
 # True to run frame capture in a seperate thread, always false for videos
-CAMERA_STREAM = True
+CAMERA_STREAM = False
 # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
-SHEET_RUNTIME = False
+SHEET_RUNTIME = True
 # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
 SAVE_BBOXES = False
 # How often to save bounding box images (every n iterations)
 BBOX_SAVE_FREQUENCY = 10
-BLACKOUT_THRESHOLD = 0.4
 
 # MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
 # MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
@@ -92,8 +91,8 @@ with open(quant_settings_file, "r") as f:
     all_settings = json.load(f)
 
 # Quantization Settings
-quantization_settings = None
-# quantization_settings = all_settings["Green Huey"]
+# quantization_settings = None
+quantization_settings = all_settings["Green Huey"]
 # quantization_settings = all_settings["Purple Huey"]
 
 if IS_TRANSMITTING:
@@ -128,7 +127,7 @@ def main():
             if camera_type == "Webcam":
                 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
                 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-                cap.set(cv2.CAP_PROP_FPS, 120)
+                cap.set(cv2.CAP_PROP_FPS, 60)
                 cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
             captured_image = key_frame(
@@ -157,7 +156,7 @@ def main():
         predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
 
         # Initialize corner detection
-        corner_detection = RobotCornerDetection(selected_colors, False, False, thresh= BLACKOUT_THRESHOLD)
+        corner_detection = RobotCornerDetection(selected_colors, False, False)
 
         # Initialize transmission TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
@@ -234,6 +233,17 @@ def main():
                         frame_save_dir = os.path.join(
                             bb_output_dir, f"frame_{iteration}")
 
+                    # Logs average of last 10 FPS
+                    if SHEET_RUNTIME:
+                        if iteration > 11:
+                            fps10 = 1.0 / \
+                                ((prev - rs.get_row(-10)["Start Time"]) / 10.0)
+                        else:
+                            fps10 = 1.0 / ((prev - start_time) / iteration)
+                        rs.log("FPS10", fps10)
+                    else:
+                        fps10 = None
+
                     # Grabs frame from camera thread if using camera stream, otherwise reads from video
                     with rs.log_timing("Frame Read"):
                         if CAMERA_STREAM:
@@ -302,6 +312,7 @@ def main():
                     with rs.log_timing("Algorithm"):
                         move_dictionary = algorithm.ram_ram(
                             detected_bots_with_data, CAN_RECOVER, fps=FRAME_RATE, key=key)
+
                     # 14. Transmitting the motor values to Huey's if we're using a live video
                     with rs.log_timing("Transmission"):
                         if IS_TRANSMITTING:
@@ -311,17 +322,6 @@ def main():
                             if WEAPON_ON:
                                 weapon_motor_group.move(
                                     1 if weapon_on_this_frame else 0)
-                                
-                    # Logs average of last 10 FPS
-                    if SHEET_RUNTIME:
-                        if iteration > 11:
-                            fps10 = 1.0 / \
-                                ((ptime() - rs.get_row(-9)["Start Time"]) / 10.0)
-                        else:
-                            fps10 = 1.0 / ((ptime() - start_time) / iteration)
-                        rs.log("FPS10", fps10)
-                    else:
-                        fps10 = None
 
                     # Prepare Main Display Image
                     main_display_img = None
@@ -330,8 +330,12 @@ def main():
                             warped_frame = predictor.show_predictions(
                                 warped_frame, detected_bots)
                             if SHOW_HUD:
+                                #Uncomment this to get all the stats
+                                # warped_frame = draw_hud(
+                                    # warped_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
+                                #Uncomment this to get only frame rate:
                                 warped_frame = draw_hud(
-                                    warped_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
+                                    warped_frame, iteration=iteration)
 
                             # Call display_angles with show=False to get the image without displaying
                             main_display_img = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing,
@@ -355,10 +359,6 @@ def main():
                     })
 
                     rs.dump()
-                
-                else:
-                    print("Waiting" + str(iteration))
-                    time.sleep(0.001)
 
         # Start the Perception Thread
         perception_thread = threading.Thread(
@@ -435,6 +435,14 @@ def main():
         print("UNKNOWN EXCEPTION FAILURE. PROCEEDING TO CLEAN UP:", exception)
     finally:
 
+        # Newbie squadron trial
+        try:
+            color_df = pd.DataFrame(corner_detection.color_percentage_rows)
+            color_df.to_csv("color_output.csv", index=True)
+            # color_percentages_graphing.makeGraph()
+        except Exception as color_exception:
+            print("Data collection failed:", color_exception)
+
         if IS_TRANSMITTING:  # Motors need to be cleaned up correctly
             try:
                 if 'motor_group' in locals():
@@ -455,6 +463,7 @@ def main():
             cv2.destroyAllWindows()
 
         rs.save("itertimes")
+
 
 if __name__ == "__main__":
     main()
