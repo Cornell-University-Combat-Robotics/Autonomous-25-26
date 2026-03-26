@@ -260,9 +260,9 @@ class Ram():
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
     def ram_ram(self, bots: dict[str, any] = None, can_recover: bool = True, fps = 50, key=None):
         if self.is_recovering or self.is_backing:
-            self.HISTORY_BUFFER = fps/2
-        else:
             self.HISTORY_BUFFER = fps
+        else:
+            self.HISTORY_BUFFER = fps*2
         self.BACK_UP_THRESHOLD = 0.75*self.HISTORY_BUFFER
         self.EDGE_THRESHOLD = 0.25*self.HISTORY_BUFFER
         
