@@ -224,6 +224,7 @@ def main():
                 time_elapsed = ptime() - prev
 
                 rs.start_iter()
+                # TODO: Fix frame rate logic
                 if (IS_ORIGINAL_FPS or time_elapsed > 1.0 / FRAME_RATE) and (not CAMERA_STREAM or stream.frameCount() > last_frame):
                     prev = ptime()
                     iteration += 1
