@@ -158,11 +158,7 @@ def main():
         predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
 
         # Initialize corner detection
-<<<<<<< HEAD
-        corner_detection = RobotCornerDetection(selected_colors, False, False)
-=======
         corner_detection = RobotCornerDetection(selected_colors, False, False, BLACKOUT=BLACKOUT, thresh=0.4)
->>>>>>> bf446299df32ec59bf8d0f943f69cd33197ff3c9
 
         # Initialize transmission TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
