@@ -185,8 +185,8 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
     # 5. Extract top 2 centroids
     centroids = []
     for contour in sorted_contours:
-        # if len(centroids) >= 2:
-        #     break
+        if len(centroids) >= 2:
+            break
             
         M = cv2.moments(contour)
         if M["m00"] != 0:
@@ -223,11 +223,6 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     #     return np.array([[], []])  # Return empty arrays if not enough points
 
     # Convert to numpy arrays with consistent shape
-    front_array = np.array(centroid_front)  # Take first 2 points if more exist
-    back_array = np.array(centroid_back)    # Take first 2 points if more exist
-    print(f"🚡🚡🚡 # of Front corners detected: {len(front_array)}")
-    print(f"🚡🚡🚡 # of Back corners detected: {len(back_array)} ")
-    #OG code that cuts off at two centroids:
     front_array = np.array(centroid_front[:2])  # Take first 2 points if more exist
     back_array = np.array(centroid_back[:2])    # Take first 2 points if more exist
 
