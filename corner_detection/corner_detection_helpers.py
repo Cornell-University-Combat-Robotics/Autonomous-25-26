@@ -9,6 +9,7 @@ from collections import deque
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 MIN_THRESHOLD = 0.035
 CORNER_THRESHOLD = 10.0
+BLACKOUT_THRESHOLD = 0.4
 
 
 @staticmethod
@@ -491,7 +492,7 @@ def is_overlap(huey_bbox, enemy_bbox):
     ex_min, ey_min, ex_max, ey_max = norm_from_bbox(enemy_bbox)
     return (hx_min < ex_max) and (hx_max > ex_min) and (hy_min < ey_max) and (hy_max > ey_min)
 
-def compute_blackout_box(image, huey_bbox, enemy_bbox, thresh = 0.4):
+def compute_blackout_box(image, huey_bbox, enemy_bbox, thresh = BLACKOUT_THRESHOLD):
     """
     Blacks out intersection of huey and enemy_bbox onto the huey image. 
     If the interseciton is more than the threshold percent of huey's image,

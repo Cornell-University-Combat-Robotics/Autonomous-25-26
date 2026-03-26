@@ -62,6 +62,11 @@ SHEET_RUNTIME = True
 SAVE_BBOXES = False
 # How often to save bounding box images (every n iterations)
 BBOX_SAVE_FREQUENCY = 10
+<<<<<<< HEAD
+=======
+# Filter out enemy bot intersection w/Huey
+BLACKOUT = True 
+>>>>>>> bf446299df32ec59bf8d0f943f69cd33197ff3c9
 
 # MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
 # MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
@@ -76,15 +81,15 @@ OD_IMG_SIZE = 320
 
 folder = os.getcwd() + "/main_files"
 
-# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-camera_number = folder + "/test_videos/orbital_huey.mp4"
+# camera_number = folder + "/test_videos/orbital_huey.mp4"
 # camera_number = 1
 # camera_number = 0
 
 # Set to webcam if capturing frames in main loop.
-# camera_type = "Video"
-camera_type = "Webcam"
+camera_type = "Video"
+# camera_type = "Webcam"
 
 quant_settings_file = "quant_settings.json"
 with open(quant_settings_file, "r") as f:
@@ -156,7 +161,11 @@ def main():
         predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
 
         # Initialize corner detection
+<<<<<<< HEAD
         corner_detection = RobotCornerDetection(selected_colors, False, False)
+=======
+        corner_detection = RobotCornerDetection(selected_colors, False, False, BLACKOUT=BLACKOUT, thresh=0.4)
+>>>>>>> bf446299df32ec59bf8d0f943f69cd33197ff3c9
 
         # Initialize transmission TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
