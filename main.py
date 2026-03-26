@@ -53,7 +53,7 @@ SHOW_HUD = True
 SHOW_QUANTIZED_HUEY = True
 # True to use color quantization, should always be True
 COLOR_QUANTIZATION = True
-CAN_RECOVER = False              # True to use recovery
+CAN_RECOVER = True              # True to use recovery
 # True to run frame capture in a seperate thread, always false for videos
 CAMERA_STREAM = False
 # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
@@ -97,6 +97,7 @@ with open(quant_settings_file, "r") as f:
 # quantization_settings = None
 quantization_settings = all_settings["Green Huey"]
 # quantization_settings = all_settings["Purple Huey"]
+# quantization_settings = all_settings["Ryan OG Green Settings"]
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
@@ -442,6 +443,14 @@ def main():
     except Exception as exception:
         print("UNKNOWN EXCEPTION FAILURE. PROCEEDING TO CLEAN UP:", exception)
     finally:
+
+        # Newbie squadron trial
+        try:
+            color_df = pd.DataFrame(corner_detection.color_percentage_rows)
+            color_df.to_csv("color_output.csv", index=True)
+            # color_percentages_graphing.makeGraph()
+        except Exception as color_exception:
+            print("Data collection failed:", color_exception)
 
         if IS_TRANSMITTING:  # Motors need to be cleaned up correctly
             try:

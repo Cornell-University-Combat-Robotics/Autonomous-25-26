@@ -54,6 +54,7 @@ def makeGraph():
     ax.set_ylabel('Percentage', fontsize=12)
     ax.set_title('Color Percentage Data Visualization', fontsize=14, fontweight='bold')
     ax.set_ylim(0, 1.0)  # expanded from 0.5
+    # ax.set_xlim(0, 1000)
     ax.set_xticks([i * 50 for i in range(len(df) // 50 + 2)])  # dynamically fits however many frames you have
     ax.set_yticks([i * 0.05 for i in range(21)])  # 0, 0.05, 0.10, ..., 1.0 (finer granularity)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f'{y:.1f}'))

@@ -1,7 +1,6 @@
 import math
 import cv2
 import numpy as np
-import csv
 import matplotlib.pyplot as plt
 import pandas as pd
 from collections import deque
@@ -91,13 +90,15 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Tr
                 max_color_percentage = color_percentage
 
         bot_color_percentages.sort()
-        self.dynamic_threshold(threshold_set, bot_color_percentages)
+        dynamic_threshold(self, threshold_set, bot_color_percentages)
 
         # Say we can't find huey if the bot's are below the huey threshold (for recovery)
         if len(bot_color_percentages) == 1 and bot_color_percentages[-1] < self.huey_color_percentage_threshold:
             our_bot_image = None
+            print("💔 check A")
         elif len(bot_color_percentages) > 1 and bot_color_percentages[-1] < min(MIN_THRESHOLD, self.huey_color_percentage_threshold):
             our_bot_image = None
+            print("💛 check B")
         
         return our_bot_image
     
@@ -106,6 +107,7 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Tr
         return None
 
 def dynamic_threshold(self, threshold_set, bot_color_percentages):
+    print("💀 DYNAMIC THRESHOLD")
     # Case 1: Setting the initial threshold 
     if not threshold_set:
         print("case 1")

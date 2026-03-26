@@ -1,7 +1,7 @@
 import os
 import cv2
 import numpy as np
-from .corner_detection_helpers import find_our_bot, find_centroids, compute_angle_between_midpoints, two_corners, math, deque, calc_diagonal_and_side_length, compute_blackout_box, is_overlap
+from .corner_detection_helpers import find_our_bot, find_centroids, compute_angle_between_midpoints, two_corners, math, deque, calc_diagonal_and_side_length, compute_blackout_box, is_overlap, dynamic_threshold
 
 class RobotCornerDetection:
     """
@@ -42,7 +42,7 @@ class RobotCornerDetection:
         self.ratio = []
         self.thresh = thresh
         self.BLACKOUT = BLACKOUT
-        self.dynamic_threshold_window = frame_rate # Time/Number of Frames for the dynamic threshold for FindOurBot
+        self.dynamic_threshold_window = frame_rate//2 # Time/Number of Frames for the dynamic threshold for FindOurBot
 
     def set_bots(self, bots: dict):
         self.bots = bots
