@@ -43,6 +43,8 @@ class RobotCornerDetection:
         self.thresh = thresh
         self.BLACKOUT = BLACKOUT
         self.dynamic_threshold_window = frame_rate//2 # Time/Number of Frames for the dynamic threshold for FindOurBot
+        self.threshold_queue = deque(maxlen = self.dynamic_threshold_window)
+        self.running_sum = 0 # running sum of midpoints for threshold logic
 
     def set_bots(self, bots: dict):
         self.bots = bots

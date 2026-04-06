@@ -107,7 +107,6 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Tr
         return None
 
 def dynamic_threshold(self, threshold_set, bot_color_percentages):
-    print("💀 DYNAMIC THRESHOLD")
     # Case 1: Setting the initial threshold 
     if not threshold_set:
         print("case 1")
@@ -121,22 +120,30 @@ def dynamic_threshold(self, threshold_set, bot_color_percentages):
         else:
             self.huey_color_percentage_threshold = max(bot_color_percentages[0] - 0.075, MIN_THRESHOLD)
             print("Initial Threshold (1 robot): " + str(self.huey_color_percentage_threshold))
-
-    # Case 2: Setting threshold after initial frame based on self.dynamic_threshold_window
-    # TODO: figure out the optimal dynamic_threshold_window value, which is set in corner_detection.py
-    elif len(self.color_percentage_rows) > 0 and len(self.color_percentage_rows) % self.dynamic_threshold_window == 0:
-        recent_frames = self.color_percentage_rows[-self.dynamic_threshold_window:]
-
-        midpoints = []
-        for frame in recent_frames:
-            huey_percentage = frame[0]
-            enemy_percentage = frame[1]
-            if huey_percentage > 0 and enemy_percentage >= 0:
-                midpoints.append((huey_percentage + enemy_percentage)/2)
-        if midpoints:
-            self.huey_color_percentage_threshold = max(sum(midpoints) / len(recent_frames), MIN_THRESHOLD)
-            print("huey_color_percentage_threshold: " + str(self.huey_color_percentage_threshold))
     
+    # Case 2: Updating threshold and running sum using queue
+    elif threshold_set and len(bot_color_percentages) >= 2:
+        print("💀 DYNAMIC THRESHOLD")
+        huey_color_percentage = bot_color_percentages[-1]
+        enemy_color_percentage = bot_color_percentages[-2]
+
+        if huey_color_percentage > 0 and enemy_color_percentage > 0:
+            midpoint = (huey_color_percentage + enemy_color_percentage)/2
+            if len(self.threshold_queue) == self.dynamic_threshold_window:
+                # window is full so we can start caclulating
+                popped = self.threshold_queue[0]
+                self.running_sum += midpoint - popped
+                # add the new midpoint and subtract the oldest
+            else:
+                self.running_sum += midpoint
+                # add new midpoint if queue isnt full yet
+
+            self.threshold_queue.append(midpoint)
+            
+            if len(self.threshold_queue) == self.dynamic_threshold_window:
+                # set threshold if the queue is the size of the window we want to extract from
+                self.huey_color_percentage_threshold = max(self.running_sum / self.dynamic_threshold_window, MIN_THRESHOLD)
+
     # Dynamic threshold and graphing data
     if len(bot_color_percentages) >= 2:
         self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2],self.huey_color_percentage_threshold))
