@@ -6,7 +6,7 @@ import pandas as pd
 from collections import deque
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
-MIN_THRESHOLD = 0.035
+MIN_THRESHOLD = 0.08
 CORNER_THRESHOLD = 10.0
 BLACKOUT_THRESHOLD = 0.4
 
@@ -123,11 +123,11 @@ def dynamic_threshold(self, threshold_set, bot_color_percentages):
     
     # Case 2: Updating threshold and running sum using queue
     elif threshold_set and len(bot_color_percentages) >= 2:
-        print("💀 DYNAMIC THRESHOLD")
+        # print("💀 DYNAMIC THRESHOLD")
         huey_color_percentage = bot_color_percentages[-1]
         enemy_color_percentage = bot_color_percentages[-2]
 
-        if huey_color_percentage > 0 and enemy_color_percentage > 0:
+        if huey_color_percentage > 0:
             midpoint = (huey_color_percentage + enemy_color_percentage)/2
             if len(self.threshold_queue) == self.dynamic_threshold_window:
                 # window is full so we can start caclulating

@@ -44,9 +44,9 @@ WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
 DISPLAY_ANGLES = True           # Only use when SHOW_FRAME is True
 # Process every captured frame, False -> cap at FRAME_RATE
-IS_ORIGINAL_FPS = True
+IS_ORIGINAL_FPS = False
 # FPS used for algo stuff, update to expected FPS on your system.
-FRAME_RATE = 120
+FRAME_RATE = 60
 # Show heads-up display with FPS, speed, turn, frame number
 SHOW_HUD = True
 # Display the quantized bounding box of Huey in separate window
@@ -364,7 +364,7 @@ def main():
                     rs.dump()
                 
                 else:
-                    print("Waiting" + str(iteration))
+                    # print("Waiting" + str(iteration))
                     time.sleep(0.001)
 
         # Start the Perception Thread

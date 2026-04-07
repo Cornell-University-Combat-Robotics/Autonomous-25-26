@@ -57,7 +57,7 @@ def makeGraph():
     # ax.set_xlim(0, 1000)
     ax.set_xticks([i * 50 for i in range(len(df) // 50 + 2)])  # dynamically fits however many frames you have
     ax.set_yticks([i * 0.05 for i in range(21)])  # 0, 0.05, 0.10, ..., 1.0 (finer granularity)
-    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f'{y:.1f}'))
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f'{y:.2f}'))
     ax.grid(True, alpha=0.3)
 
     # Adjust layout
