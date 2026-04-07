@@ -83,6 +83,7 @@ else: # VIDEO_TESTING
 folder = os.getcwd() + "/main_files"
 camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
+# camera_number = folder + "/test_videos/huey_in_n_out.mp4"
 # camera_number = folder + "/test_videos/orbital_huey.mp4"
 # camera_number = 1
 # camera_number = 0
@@ -98,6 +99,8 @@ with open(quant_settings_file, "r") as f:
     all_settings = json.load(f)
 
 # Quantization Settings
+# quantization_settings = None
+quantization_settings = all_settings["Green Huey"]
 # quantization_settings = None
 quantization_settings = all_settings["Green Huey"]
 # quantization_settings = all_settings["Purple Huey"]
@@ -159,7 +162,7 @@ def main():
         predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
 
         # Initialize corner detection
-        corner_detection = RobotCornerDetection(selected_colors, False, False, BLACKOUT=BLACKOUT, thresh=0.4)
+        corner_detection = RobotCornerDetection(selected_colors, False, False, BLACKOUT=BLACKOUT, thresh=0.4, frame_rate = FRAME_RATE)
 
         # Initialize transmission TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
@@ -170,12 +173,16 @@ def main():
 
         cv2.destroyAllWindows()
 
-        # Initialize algorithm
-        if WARP_AND_COLOR_PICKING:
-            algorithm = first_run(predictor, warped_frame,
-                                  SHOW_FRAME, corner_detection, selected_colors)
-        else:
-            algorithm = Ram()
+        # # Initialize algorithm
+        # if WARP_AND_COLOR_PICKING:
+        #     algorithm = first_run(predictor, warped_frame,
+        #                           SHOW_FRAME, corner_detection, selected_colors)
+        # else:
+        #     algorithm = Ram()
+
+        algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors)
+
+        ### TODO: call dynamic threshold here
 
         # Initialize BBox save directory
         if SAVE_BBOXES:
@@ -358,6 +365,10 @@ def main():
                     # Update Frame Buffer
                     frame_buffer.append({ "main": main_display_img, "huey": huey_display_img})
                     rs.dump()
+                
+                else:
+                    print("Waiting" + str(iteration))
+                    time.sleep(0.001)
 
         # Start the Perception Thread
         perception_thread = threading.Thread(target=perception_pipeline, daemon=True)
@@ -372,6 +383,8 @@ def main():
                 if frames["main"] is not None and SHOW_FRAME:
                     name = "Battle with Predictions" if DISPLAY_ANGLES else "Bounding boxes (no angles)"
                     cv2.imshow(name, frames["main"])
+                    # cv2.waitKey(0)
+                    # cv2.destroyAllWindows()
 
                 if frames["huey"] is not None and SHOW_QUANTIZED_HUEY:
                     cv2.imshow("Quantized Huey", frames["huey"])
