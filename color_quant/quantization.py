@@ -116,6 +116,7 @@ def quantize_robot_colors(
     robot_colors_bgr = robot_colors_bgr.astype(np.uint8)
     flat_out[mask_robot] = robot_colors_bgr[min_idx[mask_robot]]
     if show:
+        out_img = cv2.resize(out_img,None, fx=3.0,fy=3.0,interpolation=cv2.INTER_CUBIC)
         cv2.imshow("Quantized Image", out_img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
@@ -129,7 +130,7 @@ if __name__ == "__main__":
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2HSV)
     
     img = cv2.imread("quantization/test_files/test3.png")
-    img = cv2.resize(img,(150,150))
+    img = cv2.resize(img,None, fx = 3.0, fy=3.0,interpolation=cv2.INTER_CUBIC)
     # Pick colors (HSV) using your ColorPicker
     color_picker = ColorPicker
     colors_hsv = np.array(color_picker.pick_colors(img), dtype=np.uint8)

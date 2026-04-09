@@ -1,14 +1,14 @@
 import math
 import cv2
 import numpy as np
-import csv
 import matplotlib.pyplot as plt
 import pandas as pd
 from collections import deque
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
-MIN_THRESHOLD = 0.035
+MIN_THRESHOLD = 0.08
 CORNER_THRESHOLD = 10.0
+BLACKOUT_THRESHOLD = 0.4
 
 
 @staticmethod
@@ -16,11 +16,9 @@ def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
     """
     Detects the number of a predefined color pixels in the given image.
 
-    Args:
-        image (np.ndarray): Input image of the robot in BGR format.
+    Args: image (np.ndarray): Input image of the robot in BGR format.
 
-    Returns:
-        int: The number of predefined color pixels detected in the image.
+    Returns: int: The number of predefined color pixels detected in the image.
     """
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
@@ -44,8 +42,7 @@ def get_contours_per_color(side: str, hsv_image: np.ndarray, selected_colors) ->
         side (str): "front" for red contours, "back" for blue contours.
         hsv_image (np.ndarray): Input image in HSV format.
 
-    Returns:
-        list: Contours corresponding to the given color.
+    Returns: list: Contours corresponding to the given color.
     """
     selected_color = (selected_colors[1] if side == "front" else selected_colors[2])
 
@@ -63,22 +60,19 @@ def get_contours_per_color(side: str, hsv_image: np.ndarray, selected_colors) ->
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return contours
 
-def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=False) -> np.ndarray | None:
+def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=True) -> np.ndarray | None:
     """
     Identifies which image contains our robot based on a predefined robot color.
 
-    Args:
-        images (list[np.ndarray]): List of input images.
+    Args: images (list[np.ndarray]): List of input images.
 
-    Returns:
-        np.ndarray: The image containing our robot.
+    Returns: np.ndarray: The image containing our robot.
     """
     try:
         if not images:
             raise ValueError("The input image list is empty.")
         max_color_percentage = -1
-        our_bot_image = None 
-
+        our_bot_image = None
         bot_color_percentages = []
 
         for image in images: # this for loop handles whether the image is the huey bot
@@ -87,56 +81,79 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
                 continue
             
             color_pixel_count = find_bot_color_pixels(image, bot_color_hsv)
-
             image_area = image.size/3
-
             color_percentage = color_pixel_count/image_area
-
             bot_color_percentages.append(color_percentage)
-            # check if the next if statement is redundant since we are tracking the percentages with the list...
-            # and sorting it to find the max. potentially, we do not need this calculation. Another note,
-            # the color percentages are very variable during the match so i don't know if we should just 
-            # continuously set a max.      
+                
             if color_percentage > max_color_percentage:
                 our_bot_image = image
                 max_color_percentage = color_percentage
 
         bot_color_percentages.sort()
-        
-        if threshold_set: # Set initial threshold
-            if len(bot_color_percentages) > 1 and bot_color_percentages[-1] > 0:
-                self.huey_color_percentage_threshold = max((bot_color_percentages[-1] + bot_color_percentages[-2]) / 2, MIN_THRESHOLD)
-                print("Threshold: " + str(self.huey_color_percentage_threshold))
-            elif len(bot_color_percentages) == 1:
-                self.huey_color_percentage_threshold = max(bot_color_percentages[0] - 0.075, MIN_THRESHOLD)
-                print("Threshold: " + str(self.huey_color_percentage_threshold))
-        if len(bot_color_percentages) == 1 and max_color_percentage < self.huey_color_percentage_threshold:
-            our_bot_image = None
-        elif len(bot_color_percentages) > 1 and max_color_percentage < min(MIN_THRESHOLD, self.huey_color_percentage_threshold):
-            our_bot_image = None
-        
-        # Writing information to be graphed
-        if len(bot_color_percentages) >= 2:
-            self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2],self.huey_color_percentage_threshold))
-        if len(bot_color_percentages) == 1:
-            if bot_color_percentages[0] > self.huey_color_percentage_threshold:
-                self.color_percentage_rows.append((bot_color_percentages[0], 0,self.huey_color_percentage_threshold))
-            else:
-                self.color_percentage_rows.append((0, bot_color_percentages[0], self.huey_color_percentage_threshold))
-        elif len(bot_color_percentages) == 0:
-            self.color_percentage_rows.append((0, 0, self.huey_color_percentage_threshold))
+        dynamic_threshold(self, threshold_set, bot_color_percentages)
 
-        # if our_bot_image is None:
-        #     print("Huey is not found")
-            
-        # cv2.imshow("OUR BOT!", our_bot_image)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
+        # Say we can't find huey if the bot's are below the huey threshold (for recovery)
+        if len(bot_color_percentages) == 1 and bot_color_percentages[-1] < self.huey_color_percentage_threshold:
+            our_bot_image = None
+            print("💔 check A")
+        elif len(bot_color_percentages) > 1 and bot_color_percentages[-1] < min(MIN_THRESHOLD, self.huey_color_percentage_threshold):
+            our_bot_image = None
+            print("💛 check B")
+        
         return our_bot_image
     
     except Exception as e:
         print(f"Unexpected error occurred in find_our_bot: {e}")
         return None
+
+def dynamic_threshold(self, threshold_set, bot_color_percentages):
+    # Case 1: Setting the initial threshold 
+    if not threshold_set:
+        print("case 1")
+        # Case 1.1: If we see 2 or more robots
+        if len(bot_color_percentages) > 1 and bot_color_percentages[-1] > 0:
+            huey_color_percentage = bot_color_percentages[-1]
+            enemy_color_percentage = bot_color_percentages[-2]
+            self.huey_color_percentage_threshold = max((huey_color_percentage + enemy_color_percentage) / 2, MIN_THRESHOLD)
+            print("Initial Threshold (2+ robots): " + str(self.huey_color_percentage_threshold))
+        # Case 1.2: If we see only 1 robot. We use the static threshold because that robot could be us or not
+        else:
+            self.huey_color_percentage_threshold = max(bot_color_percentages[0] - 0.075, MIN_THRESHOLD)
+            print("Initial Threshold (1 robot): " + str(self.huey_color_percentage_threshold))
+    
+    # Case 2: Updating threshold and running sum using queue
+    elif threshold_set and len(bot_color_percentages) >= 2:
+        # print("💀 DYNAMIC THRESHOLD")
+        huey_color_percentage = bot_color_percentages[-1]
+        enemy_color_percentage = bot_color_percentages[-2]
+
+        if huey_color_percentage > 0:
+            midpoint = (huey_color_percentage + enemy_color_percentage)/2
+            if len(self.threshold_queue) == self.dynamic_threshold_window:
+                # window is full so we can start caclulating
+                popped = self.threshold_queue[0]
+                self.running_sum += midpoint - popped
+                # add the new midpoint and subtract the oldest
+            else:
+                self.running_sum += midpoint
+                # add new midpoint if queue isnt full yet
+
+            self.threshold_queue.append(midpoint)
+            
+            if len(self.threshold_queue) == self.dynamic_threshold_window:
+                # set threshold if the queue is the size of the window we want to extract from
+                self.huey_color_percentage_threshold = max(self.running_sum / self.dynamic_threshold_window, MIN_THRESHOLD)
+
+    # Dynamic threshold and graphing data
+    if len(bot_color_percentages) >= 2:
+        self.color_percentage_rows.append((bot_color_percentages[-1], bot_color_percentages[-2],self.huey_color_percentage_threshold))
+    if len(bot_color_percentages) == 1:
+        if bot_color_percentages[0] > self.huey_color_percentage_threshold:
+            self.color_percentage_rows.append((bot_color_percentages[0], 0,self.huey_color_percentage_threshold))
+        else:
+            self.color_percentage_rows.append((0, bot_color_percentages[0], self.huey_color_percentage_threshold))
+    elif len(bot_color_percentages) == 0:
+        self.color_percentage_rows.append((0, 0, self.huey_color_percentage_threshold))
 
 def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray, selected_colors) -> list:
     """
@@ -147,8 +164,7 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
         image (np.ndarray): The input image in BGR format.
         hsv_image (np.ndarray): The HSV version of the input image.
 
-    Returns:
-        list: Centroids of the detected contours.
+    Returns: list: Centroids of the detected contours.
     """
 
     # 1. Get image dimensions and center point
@@ -205,16 +221,14 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     """
     Finds the centroids for the front and back corners of the robot.
 
-    Args:
-        image (np.ndarray): The input image in BGR format.
+    Args: image (np.ndarray): The input image in BGR format.
 
-    Returns:
-        list: A list containing centroids for the front and back corners.
+    Returns: list: A list containing centroids for the front and back corners.
     """
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     centroid_front = find_centroids_per_color("front", image, hsv_image, selected_colors)
     centroid_back = find_centroids_per_color("back", image, hsv_image, selected_colors)
-
+    #3 CORNERS LOGIC    
     # Check if we have incomplete points and use get_missing_point to fix it
     if len(centroid_front) == 1 and len(centroid_back) == 2:
         points = [centroid_front, centroid_back]
@@ -334,8 +348,7 @@ def distance(point1: tuple, point2: tuple) -> float:
         point1 (tuple): The first point (x1, y1).
         point2 (tuple): The second point (x2, y2).
 
-    Returns:
-        float: The Euclidean distance.
+    Returns: float: The Euclidean distance.
     """
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
 
@@ -426,8 +439,7 @@ def compute_tangent_angle(p1: tuple, p2: tuple) -> float: #NOTE: does not comput
         p1 (tuple): The first front point (x1, y1).
         p2 (tuple): The second front point (x2, y2).
 
-    Returns:
-        float: The angle of the tangent line relative to the x-axis in degrees.
+    Returns: float: The angle of the tangent line relative to the x-axis in degrees.
     """
     x1, y1 = p1
     x2, y2 = p2
@@ -446,8 +458,7 @@ def compute_angle_between_midpoints(p1: tuple, p2: tuple) -> float:
         p1 (tuple): The front midpoint (x1, y1).
         p2 (tuple): The back midpoint (x2, y2).
 
-    Returns:
-        float: The angle of the line between the points relative to the x-axis in degrees.
+    Returns: float: The angle of the line between the points relative to the x-axis in degrees.
     """
     x1, y1 = p1
     x2, y2 = p2
@@ -472,3 +483,76 @@ def display_image(image: np.ndarray, left_front: list, right_front: list):
     cv2.imshow("Image with Left and Right Front Corners", image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+def norm_from_bbox(bbox):
+    """
+    Gets four corner points from a bbox dictionary to reduce code reuse.
+    """
+    (x1, y1), (x2, y2) = bbox
+    xmin, xmax = (x1, x2) if x1 <= x2 else (x2, x1)
+    ymin, ymax = (y1, y2) if y1 <= y2 else (y2, y1)
+    return xmin, ymin, xmax, ymax
+
+def is_overlap(huey_bbox, enemy_bbox):
+    """
+    Checks whether the two bboxes interlap.
+
+    Returns: Whether the two bboxes overlap
+    """
+    hx_min, hy_min, hx_max, hy_max = norm_from_bbox(huey_bbox)
+    ex_min, ey_min, ex_max, ey_max = norm_from_bbox(enemy_bbox)
+    return (hx_min < ex_max) and (hx_max > ex_min) and (hy_min < ey_max) and (hy_max > ey_min)
+
+def compute_blackout_box(image, huey_bbox, enemy_bbox, thresh = BLACKOUT_THRESHOLD):
+    """
+    Blacks out intersection of huey and enemy_bbox onto the huey image. 
+    If the interseciton is more than the threshold percent of huey's image,
+    then we just return the original image.
+
+    Args: image: should be hueys cropped image
+
+    Returns: hueys image blacked out on the intersection if it was a small enough area
+    """
+    if image is None:
+        return None
+    # Huey x and y min and max
+    hx_min, hy_min, hx_max, hy_max = norm_from_bbox(huey_bbox)
+    # Enemy x and y min and max
+    ex_min, ey_min, ex_max, ey_max = norm_from_bbox(enemy_bbox)
+
+    # Intersection
+    x_left = max(hx_min, ex_min)
+    y_top = max(hy_min, ey_min)
+    x_right = min(hx_max, ex_max)
+    y_bottom = min(hy_max, ey_max)
+
+    width = x_right - x_left
+    height = y_bottom - y_top
+    
+    int_area = abs(width * height)
+    huey_area = (hx_max - hx_min) * (hy_max - hy_min)
+    
+    # Check on whether we should blackout at all
+    if int_area > huey_area * thresh:
+        return image
+
+    # Arena to bbox cords
+    xmin = int(round(x_left  - hx_min))
+    xmax = int(round(x_right - hx_min))
+    ymin = int(round(y_top   - hy_min))
+    ymax = int(round(y_bottom  - hy_min))
+
+    H, W = image.shape[:2]
+    # Make sure borders aren't outside of image
+    xmin = max(0, min(W, xmin))
+    xmax = max(0, min(W, xmax))
+    ymin = max(0, min(H, ymin))
+    ymax = max(0, min(H, ymax))
+
+    if xmin >= xmax or ymin >= ymax:
+        return image
+
+    # I think numpy indexing is (y,x)
+    image[ymin:ymax, xmin:xmax] = np.asarray([255,255,255])
+    return image
+
