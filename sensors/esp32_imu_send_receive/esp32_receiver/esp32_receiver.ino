@@ -12,6 +12,7 @@
 struct Packet {
   float gr, gi, gj, gk;
   float gx, gy, gz;
+  float t;
 };
 
 /* ================= PEER CLASS ================= */
@@ -36,9 +37,10 @@ public:
     memcpy(&p, data, sizeof(Packet));
 
     Serial.printf(
-    "{\"acc\": {\"x\": %.2f, \"y\": %.2f, \"z\": %.2f}, \"rot\": {\"r\": %.2f, \"i\": %.2f, \"j\": %.2f, \"k\": %.2f}}\n",
+    "{\"acc\": {\"x\": %.2f, \"y\": %.2f, \"z\": %.2f}, \"rot\": {\"r\": %.2f, \"i\": %.2f, \"j\": %.2f, \"k\": %.2f}, \"temp\": {\"t\": %.2f}}\n",
     p.gx, p.gy, p.gz,
-    p.gr, p.gi, p.gj, p.gk
+    p.gr, p.gi, p.gj, p.gk,
+    p.t
   );
   }
 };

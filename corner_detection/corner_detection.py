@@ -116,6 +116,7 @@ class RobotCornerDetection:
                     "bbox": huey_bbox,
                     "center": np.mean(huey_bbox, axis=0), # center of the bot with respect to the entire arena
                     "orientation": None,
+                    "corners": 0,
                 }
 
                 # Enemy bots are all except the identified bot
@@ -133,13 +134,16 @@ class RobotCornerDetection:
                     if self.BLACKOUT and enemy_bots and enemy_bots["bbox"] and huey and huey["bbox"] and is_overlap(huey["bbox"],enemy_bots["bbox"]):
                         image = compute_blackout_box(image, huey["bbox"], enemy_bots["bbox"], thresh = self.thresh)
                         
-                    centroid_points = find_centroids(image, self.selected_colors)
+                    centroid_points, num_corners = find_centroids(image, self.selected_colors)
                     self.centroids = centroid_points
                 
                 # Every time we calculate 4 points, calculate diagonal and side length in the case of 1 front 1 back corner in the future
                 calc_diagonal_and_side_length(self.centroids, self.diag_len, self.side_len, self.num_lens)
-                        
-                if (len(centroid_points[0]) + len(centroid_points[1]) == 2):
+
+                print(f"corners: {num_corners}")
+                huey["corners"] = num_corners
+                
+                if (num_corners == 2):
                     if previous_orientations is not None and len(previous_orientations) > 0:
                         previous_orientation = previous_orientations[-1] # why index 0...
                         huey["orientation"] = two_corners(centroid_points, previous_orientation, self.diag_len, self.side_len)
@@ -149,7 +153,7 @@ class RobotCornerDetection:
                         huey["orientation"] = None
                     return {"huey": huey, "enemy": enemy_bots}
 
-                elif (len(centroid_points[0]) + len(centroid_points[1]) < 2):
+                elif (num_corners < 2):
                     print("Less than 2 corners found")
                     return {"huey": huey, "enemy": enemy_bots}
 

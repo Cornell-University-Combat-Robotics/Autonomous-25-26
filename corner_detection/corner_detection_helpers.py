@@ -228,6 +228,7 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     centroid_front = find_centroids_per_color("front", image, hsv_image, selected_colors)
     centroid_back = find_centroids_per_color("back", image, hsv_image, selected_colors)
+    num_corners = len(centroid_front) + len(centroid_back)
     #3 CORNERS LOGIC    
     # Check if we have incomplete points and use get_missing_point to fix it
     if len(centroid_front) == 1 and len(centroid_back) == 2:
@@ -245,7 +246,7 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     front_array = np.array(centroid_front[:2])  # Take first 2 points if more exist
     back_array = np.array(centroid_back[:2])    # Take first 2 points if more exist
 
-    return np.array([front_array, back_array], dtype=object)
+    return np.array([front_array, back_array], dtype=object), num_corners
 
 def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagonals: list, sides: list) -> float:
     """

@@ -20,6 +20,7 @@ sh2_SensorValue_t sensorValue;
 struct Packet {
   float gr, gi, gj, gk;
   float gx, gy, gz;
+  float t;
 };
 
 /* ================= ESP-NOW ================= */
@@ -52,6 +53,7 @@ ESP_NOW_Broadcast_Peer broadcast_peer(ESPNOW_WIFI_CHANNEL, WIFI_IF_STA, NULL);
 
 static float gr = 0, gi = 0, gj = 0, gk = 0;
 static float gx = 0, gy = 0, gz = 0;
+static float t = 0;
 
 uint32_t lastSend = 0;
 
@@ -142,7 +144,7 @@ void loop() {
   if (millis() - lastSend < SEND_INTERVAL_MS) return;
   lastSend = millis();
 
-  Packet p = {gr, gi, gj, gk, gx, gy, gz};
+  Packet p = {gr, gi, gj, gk, gx, gy, gz, t};
 
   // Send
   if (!broadcast_peer.send_message((uint8_t*)&p, sizeof(p))) {
@@ -153,7 +155,8 @@ void loop() {
   static uint32_t lastPrint = 0;
   if (millis() - lastPrint > 1000) {
     lastPrint = millis();
+    t = temperatureRead();
     Serial.printf("Temp: %.2f | gx: %.2f gy: %.2f gz: %.2f\n",
-              temperatureRead(), gx, gy, gz);
+              t, gx, gy, gz);
   }
 }

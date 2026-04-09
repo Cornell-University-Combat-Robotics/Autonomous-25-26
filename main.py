@@ -25,14 +25,17 @@ from main_helpers import (
     read_prev_colors,
     read_prev_homography,
     initialize_quantization,
-    quantize
+    quantize,
+    draw_yaw_text
 )
 from warp_main import get_warp_maps
 from warp_main import warp_map
+from sensors.imu_class import IMU_sensor
+from sensors.imu_class import IMUReadError
 
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
-WARP_AND_COLOR_PICKING = False
+WARP_AND_COLOR_PICKING = True
 DISPLAY_SCALE = 0.5                # Display frame smaller for selection with 1080p video, 1.0 default
 
 COMP = False
@@ -43,6 +46,7 @@ SHEET_RUNTIME = True               # Save runtimes to a spreadsheet and generate
 rs = RuntimeSheet(use=SHEET_RUNTIME)
 SAVE_BBOXES = False                # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
 BBOX_SAVE_FREQUENCY = 10           # How often to save bounding box images (every n iterations)
+IMU_ENABLED = True              # True if IMU is connected
 
 # Cosmetics
 SHOW_FRAME = True                  # Show camera feed frames
@@ -81,10 +85,11 @@ else: # VIDEO_TESTING
 # ------------------------------ CAMERA/VIDEOS ------------------------------
 
 folder = os.getcwd() + "/main_files"
-camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
-# camera_number = folder + "/test_videos/orbital_huey.mp4"
+camera_number = folder + "/test_videos/orbital_huey.mp4"
+# camera_number = folder + "/test_videos/blink224_huey.mp4"
 # camera_number = 1
 # camera_number = 0
 
@@ -160,6 +165,10 @@ def main():
 
         # Get predictor, if anything goes wrong here, call Aaron #TODO: Document better
         predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
+
+        if IMU_ENABLED:
+            imu_sensor = IMU_sensor()
+            cali_yaw = 0
 
         # Initialize corner detection
         corner_detection = RobotCornerDetection(selected_colors, False, False, BLACKOUT=BLACKOUT, thresh=0.4, frame_rate = FRAME_RATE)
@@ -276,6 +285,21 @@ def main():
                     with rs.log_timing("Warp"):
                         warped_frame = warp_map(frame, map_x, map_y)
 
+                    if IMU_ENABLED:
+                        try:
+                            cali_yaw = imu_sensor.get_yaw_uncali()
+                        except IMUReadError as ex:
+                            # print(f"🟥 Error: {ex}") xd rawr
+                            pass
+                        except KeyError as ex:
+                            # print(f"🟥 Error: {ex}")
+                            pass
+                        except KeyboardInterrupt as e:
+                            raise(e)
+                        except Exception as e:
+                            print(f"error from imu: {e}")
+                            pass
+
                     # 11. Run the Warped Image through Object Detection
                     # Internal timings (Preprocess, Inference, etc.) are handled inside predict()
                     with rs.log_timing("Object Detection"):
@@ -319,9 +343,47 @@ def main():
                             except Exception as e:
                                 pass
 
+                    is_flipped = 1
+
+                    if IMU_ENABLED:
+                        try:
+                            is_flipped = imu_sensor.get_upside_down_continuous()
+                            # print("detected bots with data: ", detected_bots_with_data)
+                            
+                            # if detected_bots_with_data.get("huey") is not None and detected_bots_with_data.get("huey") != {}:
+                            if detected_bots_with_data.get("huey"):
+                                if detected_bots_with_data.get("huey").get("orientation") is not None:
+                                    #print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
+                                    imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
+                                    yaw = 0
+                                # else:
+                                    yaw = imu_sensor.get_yaw_continuous()
+                                    detected_bots_with_data["huey"]["orientation"] = yaw
+                                    print(f"yaw = {yaw}")
+                                    draw_yaw_text(warped_frame,yaw,is_flipped)
+                            # is_flipped = imu_sensor.get_upside_down_continuous()
+                            print(f"flipped = {is_flipped}")
+                            # print("detected bots with data: ", detected_bots_with_data)
+            
+                            # draw_yaw_text(warped_frame,yaw,is_flipped)
+                        except IMUReadError as ex:
+                            print(f"🟥 Error: {ex}")
+                            print(" 🟢 using cd orientation 🟢 ")
+                            pass
+                        except KeyError as ex:
+                            print(f"🟥 Error: {ex}")
+                            pass
+                        except Exception as ex:
+                            print("🦅 WTF is Happening 🦅")
+                            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                            message = template.format(type(ex).__name__, ex.args)
+                            print(message)
+                            raise(ex)        
+
                     with rs.log_timing("Algorithm"):
                         move_dictionary = algorithm.ram_ram(
                             detected_bots_with_data, CAN_RECOVER, fps=FRAME_RATE, key=key)
+                        
 
                     # 14. Transmitting the motor values to Huey's if we're using a live video
                     with rs.log_timing("Transmission"):
@@ -367,7 +429,7 @@ def main():
                     rs.dump()
                 
                 else:
-                    print("Waiting" + str(iteration))
+                    # print("Waiting" + str (iteration))
                     time.sleep(0.001)
 
         # Start the Perception Thread
