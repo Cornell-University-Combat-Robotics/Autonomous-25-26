@@ -36,7 +36,7 @@ from warp_main import warp_map
 
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
+WARP_AND_COLOR_PICKING = False   # Re-do warp & color selection
 # Display frame smaller for selection with 1080p video, 1.0 default
 DISPLAY_SCALE = 0.5
 IS_TRANSMITTING = True         # True to send transmissions to live Huey via Arduino
@@ -50,7 +50,7 @@ FRAME_RATE = 120
 # Show heads-up display with FPS, speed, turn, frame number
 SHOW_HUD = True
 # Display the quantized bounding box of Huey in separate window
-SHOW_QUANTIZED_HUEY = False
+SHOW_QUANTIZED_HUEY = True
 # True to use color quantization, should always be True
 COLOR_QUANTIZATION = True
 CAN_RECOVER = False              # True to use recovery
@@ -355,10 +355,7 @@ def main():
                     })
 
                     rs.dump()
-                
-                else:
-                    print("Waiting" + str(iteration))
-                    time.sleep(0.001)
+            
 
         # Start the Perception Thread
         perception_thread = threading.Thread(

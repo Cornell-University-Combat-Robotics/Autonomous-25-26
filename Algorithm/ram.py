@@ -93,7 +93,11 @@ class Ram():
         # delta time
         self.delta_t = 0.001
 
-        self.turn_pid = PIDController(kp=0.008, ki=0.000, kd=0.000, output_limits=(-1.0, 1.0))
+        # THIS WORKS IN TESTBOX
+        # self.turn_pid = PIDController(kp=0.008, ki=0.000, kd=0.0005, output_limits=(-1.0, 1.0))
+        # self.speed_pid = PIDController(kp=0.003, ki=0.000, kd=0.000, output_limits=(-1.0,1.0))
+        
+        self.turn_pid = PIDController(kp=0.008, ki=0.000, kd=0.0005, output_limits=(-1.0, 1.0))
         self.speed_pid = PIDController(kp=0.003, ki=0.000, kd=0.000, output_limits=(-1.0,1.0))
 
         #recovery
