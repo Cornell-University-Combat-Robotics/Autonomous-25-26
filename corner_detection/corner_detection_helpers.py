@@ -244,6 +244,9 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
 
     # CASE 1: Only 2 Front Corners detected OR Only 2 Back Corners detected
 
+    # TODO: IF FRONT: Choose orientation that "points away" from Huey (bbox) center
+    # TODO: ELSE (BACK): Choose orientation that "crosses" Huey (bbox) center
+
     if len(front_points) == 2 or len(back_points) == 2:
         # Correctly pick the points based on which list has 2
         points = front_points if len(front_points) == 2 else back_points
