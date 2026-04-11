@@ -347,7 +347,17 @@ def draw_hud(image, fps10=None, move_dictionary=None, iteration=None, playback_s
     line_height = 28
 
     # Calculate number of lines to display
-    num_lines = 4
+    num_lines = 0
+    if fps10 is not None:
+        num_lines += 1
+    if move_dictionary is not None:
+        num_lines += 2
+    if iteration is not None:
+        num_lines += 1
+
+
+
+    # num_lines = 4
     if playback_speed is not None:
         num_lines += 1
 

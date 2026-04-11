@@ -127,12 +127,6 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Fa
         elif len(bot_color_percentages) == 0:
             self.color_percentage_rows.append((0, 0, self.huey_color_percentage_threshold))
 
-        # if our_bot_image is None:
-        #     print("Huey is not found")
-            
-        # cv2.imshow("OUR BOT!", our_bot_image)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
         return our_bot_image
     
     except Exception as e:
@@ -215,7 +209,7 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     centroid_front = find_centroids_per_color("front", image, hsv_image, selected_colors)
     centroid_back = find_centroids_per_color("back", image, hsv_image, selected_colors)
-
+    #3 CORNERS LOGIC    
     # Check if we have incomplete points and use get_missing_point to fix it
     if len(centroid_front) == 1 and len(centroid_back) == 2:
         points = [centroid_front, centroid_back]
@@ -548,6 +542,6 @@ def compute_blackout_box(image, huey_bbox, enemy_bbox, thresh = BLACKOUT_THRESHO
         return image
 
     # I think numpy indexing is (y,x)
-    image[ymin:ymax, xmin:xmax] = np.asarray([0,0,0])
+    image[ymin:ymax, xmin:xmax] = np.asarray([255,255,255])
     return image
 
