@@ -35,7 +35,7 @@ from sensors.imu_class import IMUReadError
 
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
-WARP_AND_COLOR_PICKING = True
+WARP_AND_COLOR_PICKING = False
 DISPLAY_SCALE = 0.5                # Display frame smaller for selection with 1080p video, 1.0 default
 
 COMP = False
@@ -352,11 +352,12 @@ def main():
                             
                             # if detected_bots_with_data.get("huey") is not None and detected_bots_with_data.get("huey") != {}:
                             if detected_bots_with_data.get("huey"):
-                                if detected_bots_with_data.get("huey").get("orientation") is not None:
+                                if (detected_bots_with_data.get("huey").get("orientation") is not None) and detected_bots_with_data.get("huey").get("corners") == 4:
                                     #print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
                                     imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
+                                    print("CALLIBRATING")
                                     yaw = 0
-                                # else:
+                                else:
                                     yaw = imu_sensor.get_yaw_continuous()
                                     detected_bots_with_data["huey"]["orientation"] = yaw
                                     print(f"yaw = {yaw}")

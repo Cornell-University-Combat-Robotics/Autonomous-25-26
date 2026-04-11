@@ -206,14 +206,18 @@ class IMU_sensor():
             self.yaw += 360        
         return self.yaw
             
-    def quaternion_to_euler(self, q_w, q_x, q_y, q_z):
+    def quaternion_to_euler(self, q_w, q_x, q_y, q_z, yaw_only=True):
+
+        self.yaw = math.atan2(2 * (q_w * q_z + q_x * q_y), 1 - 2 * (q_y**2 + q_z**2))
+        if yaw_only:
+            return 0, 0, self.yaw
         # Roll (x-axis rotation)
         self.roll = math.atan2(2 * (q_w * q_x + q_y * q_z), 1 - 2 * (q_x**2 + q_y**2))
     
         # Pitch (y-axis rotation)
+        # TS BREAKS BTW SO FIX IT IF YOU WANT PITCH, 2 * (q_w * q_y - q_z * q_x) > 1 which is outside of asin domain (rounding error)
         self.pitch = math.asin(2 * (q_w * q_y - q_z * q_x))
     
         # Yaw (z-axis rotation)
-        self.yaw = math.atan2(2 * (q_w * q_z + q_x * q_y), 1 - 2 * (q_y**2 + q_z**2))
              
         return self.roll, self.pitch, self.yaw
