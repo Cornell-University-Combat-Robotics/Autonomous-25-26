@@ -1,17 +1,15 @@
 import os
 import cv2
 import numpy as np
-from .corner_detection_helpers import find_our_bot, find_centroids, compute_angle_between_midpoints, two_corners, math, deque, calc_diagonal_and_side_length, compute_blackout_box, is_overlap
+from .corner_detection_helpers import find_our_bot, find_centroids, compute_angle_between_midpoints, two_corners, math, deque, calc_diagonal_and_side_length, compute_blackout_box, is_overlap, dynamic_threshold
 
 class RobotCornerDetection:
     """
     A class for detecting the corners and orientation of robots in images
     based on their unique colors and shapes.
     """
-    
     LENGTH_BUFFER = 20
-
-    def __init__(self, selected_colors: list, display_final_image: bool = False, display_possible_hueys: bool = False, color_percentage_rows = [], BLACKOUT=True, thresh = 0.4):
+    def __init__(self, selected_colors: list, display_final_image: bool = False, display_possible_hueys: bool = False, BLACKOUT=True, thresh = 0.4, frame_rate = 120):
         """
         Initializes the RobotCornerDetection class.
 
@@ -31,7 +29,7 @@ class RobotCornerDetection:
         self.display_final_image = display_final_image
         self.display_possible_hueys = display_possible_hueys
         self.huey_color_percentage_threshold = -1
-        self.color_percentage_rows = color_percentage_rows
+        self.color_percentage_rows = []
         self.centroids = []
         
         # Note: These are actually floats/int but we need them to be mutable
@@ -44,12 +42,14 @@ class RobotCornerDetection:
         self.ratio = []
         self.thresh = thresh
         self.BLACKOUT = BLACKOUT
-
+        self.dynamic_threshold_window = 60 #frame_rate//2 # Time/Number of Frames for the dynamic threshold for FindOurBot
+        self.threshold_queue = deque(maxlen = self.dynamic_threshold_window)
+        self.running_sum = 0 # running sum of midpoints for threshold logic
 
     def set_bots(self, bots: dict):
         self.bots = bots
     
-    def detect_our_robot_main(self, bot_images: list[np.ndarray], threshold_set=False) -> np.ndarray:
+    def detect_our_robot_main(self, bot_images: list[np.ndarray], threshold_set=True) -> np.ndarray:
         """
         Detects the image containing our robot between two or more given images.
 
@@ -92,7 +92,7 @@ class RobotCornerDetection:
             print(f"Unexpected error in detect_our_robot_main: {e}")
             return None
 
-    def corner_detection_main(self, previous_orientations: list = [], threshold_set: bool=False) -> dict | None:
+    def corner_detection_main(self, previous_orientations: list = [], threshold_set: bool=True) -> dict | None:
         """
         Main function for detecting corners and orientation of the robot.
 

@@ -122,7 +122,9 @@ class Ram():
 
     def check_previous_position_and_orientation(self, can_recover: bool = True):
         if not can_recover:
-            self.is_recovering=False
+            self.is_recovering = False
+            self.is_backing = False
+            self.moving_forward = 0
             return False
         
         counter_pos = 0
@@ -138,14 +140,18 @@ class Ram():
         #         counter_orientation += 1
 
         if counter_pos >= self.BACK_UP_THRESHOLD:
-            self.is_recovering=True
+            self.is_recovering = True
+            self.is_backing = False
             return True
-        self.is_recovering=False
+        self.is_recovering = False
+        self.is_backing = False
         return False
     
     def check_arena_edge(self, can_recover: bool = True):
         if not can_recover:
             self.is_recovering=False
+            self.is_backing = False
+            self.moving_forward = 0
             return False
         counter_pos = 0
         counter_orientation = 0
@@ -305,12 +311,14 @@ class Ram():
         # print(f"🛸ORORIE:🛸 {self.huey_orientation}")
         # print(f"🦒🦒🦒GIRTH {self.huey_girth}")
 
-        backup = self.check_arena_edge()
+        backup = self.check_arena_edge(can_recover)
         if backup == 1:
             self.is_backing = True
+            self.is_recovering = False
             return self.huey_move(self.FORWARD_SPEED, self.FORWARD_TURN)
         elif backup == -1:
             self.is_backing = True
+            self.is_recovering = False
             return self.huey_move(self.BACK_UP_SPEED, self.BACK_UP_TURN)
         self.is_backing = False
             
