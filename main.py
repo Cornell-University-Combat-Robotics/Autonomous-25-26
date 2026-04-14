@@ -81,10 +81,10 @@ else: # VIDEO_TESTING
 # ------------------------------ CAMERA/VIDEOS ------------------------------
 
 folder = os.getcwd() + "/main_files"
-camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
-# camera_number = folder + "/test_videos/orbital_huey.mp4"
+camera_number = folder + "/test_videos/diagona_huey.mp4"
 # camera_number = 1
 # camera_number = 0
 
@@ -99,8 +99,6 @@ with open(quant_settings_file, "r") as f:
     all_settings = json.load(f)
 
 # Quantization Settings
-# quantization_settings = None
-quantization_settings = all_settings["Green Huey"]
 # quantization_settings = None
 quantization_settings = all_settings["Green Huey"]
 # quantization_settings = all_settings["Purple Huey"]
@@ -301,7 +299,7 @@ def main():
                     # 12. Run Object Detection's results through Corner Detection
                     with rs.log_timing("Corner Detection"):
                         corner_detection.set_bots(detected_bots)
-                        detected_bots_with_data = corner_detection.corner_detection_main(algorithm.huey_previous_orientations)
+                        detected_bots_with_data = corner_detection.corner_detection_main(algorithm.huey_previous_orientations, is_flipped=is_flipped)
 
                     # Prepare Quantized Huey Image (for display buffer)
                     huey_display_img = None

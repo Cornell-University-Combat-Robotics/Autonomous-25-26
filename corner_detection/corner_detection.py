@@ -42,9 +42,11 @@ class RobotCornerDetection:
         self.ratio = []
         self.thresh = thresh
         self.BLACKOUT = BLACKOUT
+        self.prev_flipped = 1 # track for two corner
         self.dynamic_threshold_window = 60 #frame_rate//2 # Time/Number of Frames for the dynamic threshold for FindOurBot
         self.threshold_queue = deque(maxlen = self.dynamic_threshold_window)
-        self.running_sum = 0 # running sum of midpoints for threshold logic
+        self.running_sum = 0 # running sum of midpoints for threshold logic        self.prev_flipped = 1 # track for two corner
+
 
     def set_bots(self, bots: dict):
         self.bots = bots
@@ -92,7 +94,7 @@ class RobotCornerDetection:
             print(f"Unexpected error in detect_our_robot_main: {e}")
             return None
 
-    def corner_detection_main(self, previous_orientations: list = [], threshold_set: bool=True) -> dict | None:
+    def corner_detection_main(self, previous_orientations: list = [], threshold_set: bool=True, is_flipped:int = 1) -> dict | None:
         """
         Main function for detecting corners and orientation of the robot.
 
@@ -142,7 +144,8 @@ class RobotCornerDetection:
                 if (len(centroid_points[0]) + len(centroid_points[1]) == 2):
                     if previous_orientations is not None and len(previous_orientations) > 0:
                         previous_orientation = previous_orientations[-1] # why index 0...
-                        huey["orientation"] = two_corners(centroid_points, previous_orientation, self.diag_len, self.side_len)
+                        huey["orientation"] = two_corners(centroid_points, previous_orientation, self.diag_len, self.side_len, huey["center"], self.prev_flipped, is_flipped=is_flipped)
+                        self.prev_flipped = is_flipped
                         # print(f"PREV ORIENT: 🌸🐋💛 {previous_orientation}")
                         # print(f"Current ORIENT: 💛🐋🌸 { huey["orientation"]}")
                     else:
