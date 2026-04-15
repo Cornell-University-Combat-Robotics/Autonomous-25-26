@@ -274,7 +274,7 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
         
         line_angle = math.degrees(math.atan2(dy, dx))
 
-        midpoint = (points[0]+points[1])/2 #TODO: maybe wrong math
+        midpoint = [(a + b) / 2 for a, b in zip(point1, point2)]
         dy_math = -(midpoint[1] - huey_center[1])
         dx = (midpoint[0] - huey_center[0])
         direction_angle = (np.degrees(np.arctan2(dy_math, dx)) + 360.0) % 360.0

@@ -365,7 +365,7 @@ def main():
                     rs.dump()
                 
                 else:
-                    print("Waiting" + str(iteration))
+                    # print("Waiting" + str(iteration))
                     time.sleep(0.001)
 
         # Start the Perception Thread
