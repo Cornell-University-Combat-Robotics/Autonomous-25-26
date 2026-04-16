@@ -95,10 +95,10 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Tr
         # Say we can't find huey if the bot's are below the huey threshold (for recovery)
         if len(bot_color_percentages) == 1 and bot_color_percentages[-1] < self.huey_color_percentage_threshold:
             our_bot_image = None
-            print("💔 check A")
+            # print("💔 check A")
         elif len(bot_color_percentages) > 1 and bot_color_percentages[-1] < min(MIN_THRESHOLD, self.huey_color_percentage_threshold):
             our_bot_image = None
-            print("💛 check B")
+            # print("💛 check B")
         
         return our_bot_image
     
@@ -247,9 +247,23 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
 
     return np.array([front_array, back_array], dtype=object)
 
-def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagonals: list, sides: list, huey_center: list, prev_flipped:int, is_flipped: int) -> float:
+def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagonals: list, sides: list, huey_bbox, prev_flipped:int, is_flipped: int) -> float:
     """
-    Handles orientation calculation when only 2 points are detected.
+    Handles orientation calculation when only 2 points are detected by cases.
+    Case 1: 2 Front or 2 Back corners are found
+        - Finds the two possible angles
+        - Finds the angle of the line between the center of Huey's bbox and the 
+          midpoint of the 2 corners found.
+        - Chooses the closer possible angle based on
+          
+    Case 2:
+        Case 2.1: Same-Side Corners
+        - Only one potential orientation: returns angle corr. front --> back
+        Case 2.2: Diagonal Corners
+        - Two potential orientations:
+            - If valid orientation (i.e. not recently flipped), 
+            return closest angle to prev  
+            - Else return average of two potentials
     """
     IS_VALID_ORIE = prev_flipped == is_flipped
     # we update prev_flipped in corner_detection_main
@@ -257,20 +271,18 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
     front_points = centroid_points[0]
     back_points = centroid_points[1]
 
-    # TODO: IF FRONT: Choose orientation that "points away" from Huey (bbox) center
-    # TODO: ELSE (BACK): Choose orientation that "crosses" Huey (bbox) center
+    hx_min, hy_min, hx_max, hy_max = norm_from_bbox(huey_bbox)
+    huey_center = ((hx_max - hx_min) / 2, (hy_max - hy_min) / 2)
 
     # CASE 1: Only 2 Front Corners detected OR Only 2 Back Corners detected
     if len(front_points) == 2 or len(back_points) == 2:
         # Correctly pick the points based on which list has 2
         
-        points = front_points if len(front_points) == 2 else back_points
+        points, frnt = (front_points, True) if len(front_points) == 2 else (back_points, False)
         
         point1, point2 = points[0], points[1]
         dx = point2[0] - point1[0]
         dy = -(point2[1] - point1[1]) # Flip Y for image coordinates
-
-        # huey_center = [cx, cy]
         
         line_angle = math.degrees(math.atan2(dy, dx))
 
@@ -278,6 +290,8 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
         dy_math = -(midpoint[1] - huey_center[1])
         dx = (midpoint[0] - huey_center[0])
         direction_angle = (np.degrees(np.arctan2(dy_math, dx)) + 360.0) % 360.0
+        if not frnt:
+            direction_angle = (direction_angle + 180) % 360
         
         angle1 = (line_angle + 90) % 360 # Perpendicular possibilities
         angle2 = (line_angle - 90) % 360

@@ -83,8 +83,8 @@ else: # VIDEO_TESTING
 folder = os.getcwd() + "/main_files"
 # camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-# camera_number = folder + "/test_videos/huey_in_n_out.mp4"
-camera_number = folder + "/test_videos/diagona_huey.mp4"
+# camera_number = folder + "/test_videos/diagona_huey.mp4"
+camera_number = folder + "/test_videos/huey_backs.mp4"
 # camera_number = 1
 # camera_number = 0
 
@@ -165,7 +165,7 @@ def main():
         # Initialize transmission TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
             ser, motor_group, weapon_motor_group = get_motor_groups(
-                JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
+                False, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
             # if WEAPON_ON:
             #     weapon_motor_group.move(1)
 

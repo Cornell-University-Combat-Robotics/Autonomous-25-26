@@ -144,7 +144,7 @@ class RobotCornerDetection:
                 if (len(centroid_points[0]) + len(centroid_points[1]) == 2):
                     if previous_orientations is not None and len(previous_orientations) > 0:
                         previous_orientation = previous_orientations[-1] # why index 0...
-                        huey["orientation"] = two_corners(centroid_points, previous_orientation, self.diag_len, self.side_len, huey["center"], self.prev_flipped, is_flipped=is_flipped)
+                        huey["orientation"] = two_corners(centroid_points, previous_orientation, self.diag_len, self.side_len, huey["bbox"], self.prev_flipped, is_flipped=is_flipped)
                         self.prev_flipped = is_flipped
                         # print(f"PREV ORIENT: 🌸🐋💛 {previous_orientation}")
                         # print(f"Current ORIENT: 💛🐋🌸 { huey["orientation"]}")
