@@ -18,6 +18,7 @@ from main_helpers import (
     draw_hud,
     first_run,
     get_motor_groups,
+    get_separate_motor_groups,
     get_predictor,
     key_frame,
     make_new_colors,
@@ -43,6 +44,9 @@ SHEET_RUNTIME = True               # Save runtimes to a spreadsheet and generate
 rs = RuntimeSheet(use=SHEET_RUNTIME)
 SAVE_BBOXES = False                # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
 BBOX_SAVE_FREQUENCY = 10           # How often to save bounding box images (every n iterations)
+
+# Drive mode
+NORMAL_DRIVE = True                # True: keep current dual-channel motor_group (speed+turn). False: use per-motor skid-steer like separate_drive.py.
 
 # Cosmetics
 SHOW_FRAME = True                  # Show camera feed frames
@@ -112,6 +116,13 @@ if IS_TRANSMITTING:
     turn_motor_channel = 3
     weapon_motor_channel = 4
 
+    # unmixed channels + per-motor direction flags (used when NORMAL_DRIVE is False)
+    # True keeps the motor's direction as-is; False inverts it (for ESCs wired reversed).
+    left_motor_channel = 3
+    right_motor_channel = 1
+    LEFT_NORMAL = True
+    RIGHT_NORMAL = False
+
 # Threading globals
 frame_buffer = deque(maxlen=1)
 stop_event = threading.Event()
@@ -166,8 +177,12 @@ def main():
 
         # Initialize transmission TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
-            ser, motor_group, weapon_motor_group = get_motor_groups(
-                JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
+            if NORMAL_DRIVE:
+                ser, motor_group, weapon_motor_group = get_motor_groups(
+                    JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
+            else:
+                ser, left_motor, right_motor, weapon_motor_group = get_separate_motor_groups(
+                    JANK_CONTROLLER, left_motor_channel, right_motor_channel, weapon_motor_channel)
             # if WEAPON_ON:
             #     weapon_motor_group.move(1)
 
@@ -328,7 +343,17 @@ def main():
                         if IS_TRANSMITTING:
                             speed = move_dictionary["speed"]
                             turn = move_dictionary["turn"]
-                            motor_group.move(speed*is_flipped, turn * -1)
+                            if NORMAL_DRIVE:
+                                motor_group.move(speed*is_flipped, turn * -1)
+                            else:
+                                eff_speed = speed * is_flipped
+                                eff_turn = turn * -1
+                                left_cmd = max(-1.0, min(1.0, eff_speed + eff_turn))
+                                right_cmd = max(-1.0, min(1.0, eff_speed - eff_turn))
+                                left_sign = 1 if LEFT_NORMAL else -1
+                                right_sign = 1 if RIGHT_NORMAL else -1
+                                left_motor.move(left_sign * left_cmd)
+                                right_motor.move(right_sign * right_cmd)
                             if WEAPON_ON:
                                 weapon_motor_group.move(
                                     1 if weapon_on_this_frame else 0)
@@ -458,6 +483,10 @@ def main():
             try:
                 if 'motor_group' in locals():
                     motor_group.stop()
+                if 'left_motor' in locals():
+                    left_motor.stop()
+                if 'right_motor' in locals():
+                    right_motor.stop()
                 if 'weapon_motor_group' in locals():
                     weapon_motor_group.stop()
                 if 'ser' in locals():

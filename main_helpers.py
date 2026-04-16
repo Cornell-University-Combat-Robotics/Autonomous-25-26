@@ -149,6 +149,18 @@ def get_motor_groups(JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, w
     return ser, motor_group, weapon_motor_group
 
 
+def get_separate_motor_groups(JANK_CONTROLLER, left_motor_channel, right_motor_channel, weapon_motor_channel):
+    ser = OurSerial(baudrate=115200)
+    left_motor = Motor(ser=ser, channel=left_motor_channel)
+    right_motor = Motor(ser=ser, channel=right_motor_channel)
+    if JANK_CONTROLLER:
+        weapon_motor_group = Motor(
+            ser=ser, channel=weapon_motor_channel, speed=-1)
+    else:
+        weapon_motor_group = Motor(ser=ser, channel=weapon_motor_channel)
+    return ser, left_motor, right_motor, weapon_motor_group
+
+
 def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors):
     # 6. Do an initial run of ML and Corner. Initialize Algo
     first_run_ml = predictor.predict(warped_frame, show=SHOW_FRAME)
