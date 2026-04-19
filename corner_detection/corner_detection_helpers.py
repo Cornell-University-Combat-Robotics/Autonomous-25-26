@@ -325,10 +325,17 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
         else:
             # print(f"🌈🌈🌈CORNERS ON DIFFERENT SIDE: {p1} or {p2} degrees🌈🌈🌈")
             if not IS_VALID_ORIE: # take midorie
-                length = front_points[0][1] - back_points[0][1] # front[0][1] should be y coords,
-                width = front_points[0][0] - back_points[0][0]
-                hypotenuse = math.sqrt(math.pow(length, 2) + math.pow(width, 2))
-                return math.asin(width/hypotenuse) * (180/math.pi)
+                print("🌈")
+                length = abs(front_points[0][1] - back_points[0][1]) # front[0][1] should be y coords,
+                print("🌈🌈", length)
+                width = abs(front_points[0][0] - back_points[0][0])
+                print("🌈🌈🌈", width)
+
+                # hypotenuse = math.sqrt(math.pow(length, 2) + math.pow(width, 2))
+                hypotenuse = math.hypot(length, width)
+                print("🌈🌈🌈🌈🌈🌈", width/hypotenuse)
+                print("🌈🌈🌈🌈:", int(math.asin((width/hypotenuse)) * (180/math.pi)) % 360)
+                return (int(math.asin(width/hypotenuse) * (180/math.pi) + 180)) % 360, False
             
             else: 
                 p1 = (angle + 45) % 360
