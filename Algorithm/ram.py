@@ -256,12 +256,29 @@ class Ram():
             return 0
         return 0
 
-    ''' 
-    Returns the predicted desired orientation angle of the bot given all parameters, NOTE: the positive direction is counterclockwise
-    Precondition: our_position & enemy_position 
-    targeting method is where we set enemy_future position to. It defaults to self.enemy_position
-    '''
     def predict_desired_angle_and_distance(self):
+        ''' 
+        Predict the signed heading error (in degrees) from Huey to the enemy target point,
+        along with the Euclidean distance to that target point (in pixels).
+        
+        Coordinate conventions:
+        - `self.huey_orientation` is interpreted in "math coords" (x right, y up).
+        - Vision positions are stored in image coords (y down), so we convert positions to
+            math coords using `invert_y(...)` before computing angle/distance.
+        - Returned `angle_deg` is signed and continuous in [-180, 180]:
+            * positive => counterclockwise turn needed
+            * negative => clockwise turn needed
+
+        Safety/edge cases:
+        - If Huey is within `Ram.DANGER_ZONE` of the enemy, we force targeting to the enemy center.
+        - If Huey and the target point coincide (or the direction vector is ~0), returns (0, 0).
+
+        Preconditions:
+        - `self.huey_position`, `self.enemy_position` are valid (x, y) numpy arrays.
+        - `self.enemy_future_position` should be kept up-to-date by `get_enemy_orientation(...)`
+            when using targeting methods 2 or 3.
+        '''
+
         check_wall(self.enemy_position)
         check_wall(self.enemy_future_position)
         assert self.targeting_method == 1 or self.targeting_method == 2 or self.targeting_method == 3
@@ -338,13 +355,38 @@ class Ram():
 
         return forward_img, t
     
-    """
-    Returns enemy orientation and updates self.enemy_future_position as well. Returns the last 
-    known good orientation in a few cases: bots or bots[enemy] doesnt exits, no previous enemy positions, 
-    or if it is a bad value. If the distance between the last two positions is low enough, then we revert
-    to using the center of the bbox as enemy_future_position. 
-    """
+    
     def get_enemy_orientation(self, bots):
+        """
+        Estimate the enemy's heading from its recent motion and update `self.enemy_future_position`
+        to a target point on/near the enemy bbox.
+
+        Coordinate conventions:
+        - Positions (`self.enemy_position`, history) are in IMAGE coords (x right, y down).
+        - Orientation is computed in "math-like degrees" using atan2(-dy_img, dx) and normalized to [0, 360).
+        - The bbox projection uses `bbox_intersection()`, which expects the same IMAGE-coord convention.
+
+        Fallbacks / stability:
+        - If enemy/bbox is missing, or we have no prior positions, or we see invalid sentinel values
+            ([-1, -1]), returns `self.enemy_old_orientation` without changing orientation.
+        - If the frame-to-frame displacement is very small (`dist <= 2`), we treat the orientation as
+            unreliable and return the last known good orientation. We use a small velocity lookahead to
+            update `self.enemy_future_position` but still return `last_good`.
+
+        Side effects:
+        - Always resets `self.enemy_future_position` to the current enemy center at the start.
+        - Updates `self.enemy_future_position` to a projected bbox edge point (or a velocity lookahead)
+            when possible.
+        - Updates `self.enemy_old_orientation` when a new reliable orientation is computed.
+
+        Preconditions:
+        - `self.enemy_position` has been updated for the current frame before calling this method.
+        - `self.enemy_previous_positions` contains the previous frame's position (or more history).
+        - `bots["enemy"]["bbox"]` is a pair of corners: [(x1,y1), (x2,y2)].
+
+        Returns:
+        float: enemy orientation in degrees in [0, 360), or the last known good orientation on fallback.
+        """
         if self.targeting_method == 1:
             front = 1
         elif self.targeting_method == 2:
@@ -373,7 +415,6 @@ class Ram():
         # This is what controls whether we use a side of a bbox or velocity based
         if dist <= 2:
             # If bbox missing, we can still do a velocity-based future estimate
-            # SLOP: THIS IS PURELY TESTING CODE, AHJSDAKSJHJDLKASJd
             if len(self.enemy_previous_positions) > 0:
                 prev = self.enemy_previous_positions[-1]
                 cur = self.enemy_position
@@ -395,20 +436,11 @@ class Ram():
         orientation = (np.degrees(np.arctan2(-dy_img, dx)) + 360.0) % 360.0
 
         forward_img, t = self.bbox_intersection(
-            orientation, bots["enemy"]["bbox"], front = front
-        )
+            orientation, bots["enemy"]["bbox"], front = front)
 
         # TODO: Could add a weight like 0.8 or 1.2 times t for targeting
         self.enemy_future_position = cur_pos + t * forward_img
-        self.enemy_old_orientation = orientation      
-        if True:
-
-            print(f"🇳🇱enemy possy🇳🇱: {self.enemy_position}")
-            print(f"🏓ENEM FUT POS:🏓 {self.enemy_future_position}")
-            print(f"dx💩 {dx}💩")
-            print(f"dy💩 {dy_img}💩")
-            print(f"❤️traj: {orientation}❤️")
-        
+        self.enemy_old_orientation = orientation
         return orientation
 
 
@@ -462,10 +494,6 @@ class Ram():
             return self.huey_move(self.recover_speed, self.recover_turn)
         else:
             self.recovering_until = 0
-
-        # print(f"💅POPOS:💅 {self.huey_position}")
-        # print(f"🛸ORORIE:🛸 {self.huey_orientation}")
-        # print(f"🦒🦒🦒GIRTH {self.huey_girth}")
 
         backup = self.check_arena_edge(can_recover)
         if backup == 1:
