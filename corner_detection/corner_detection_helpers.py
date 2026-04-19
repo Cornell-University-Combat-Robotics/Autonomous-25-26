@@ -247,7 +247,7 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
 
     return np.array([front_array, back_array], dtype=object)
 
-def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagonals: list, sides: list, huey_bbox, prev_flipped:int, is_flipped: int) -> float:
+def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagonals: list, sides: list, huey_bbox, prev_flipped:int, is_flipped: int) -> (float, bool):
     """
     Handles orientation calculation when only 2 points are detected by cases.
     Case 1: 2 Front or 2 Back corners are found
@@ -266,6 +266,9 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
             - Else return average of two potentials
     """
     IS_VALID_ORIE = prev_flipped == is_flipped
+    print(f"IS_VALID_ORIE: {IS_VALID_ORIE}")
+    print(f"🦭PREV ORIE: {previous_orientation}")
+
     # we update prev_flipped in corner_detection_main
 
     front_points = centroid_points[0]
@@ -296,12 +299,12 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
         angle1 = (line_angle + 90) % 360 # Perpendicular possibilities
         angle2 = (line_angle - 90) % 360
         
-        return pick_closest_angle(angle1, angle2, direction_angle)
+        return pick_closest_angle(angle1, angle2, direction_angle), True
 
     # CASE 2: 1 Front and 1 Back Corner detected.
     elif len(front_points) == 1 and len(back_points) == 1:
         if len(diagonals) == 0:
-            diagonal_avg = 76
+            diagonal_avg = 93
             sides_avg = 67 # TODO: arbitrary default
         else:
             diagonal_avg = diagonals[0]
@@ -316,17 +319,21 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
         # CASE 2.1: Both corners are on the same side
         if (corner_distance < cutoff):
             # print(f"🌫️🌫️🌫️🌫️🌫️CORNERS ON SAME SIDE: {angle} degrees")
-            return angle
+            return angle, True
         
         # CASE 2.2: The corners are diagonal
         else:
-            p1 = (angle + 45) % 360
-            p2 = (angle - 45) % 360
             # print(f"🌈🌈🌈CORNERS ON DIFFERENT SIDE: {p1} or {p2} degrees🌈🌈🌈")
-            if IS_VALID_ORIE:
-                return pick_closest_angle(p1, p2, previous_orientation)
-            else: # take midorie
-                return (p1 + p2)/2
+            if not IS_VALID_ORIE: # take midorie
+                length = front_points[0][1] - back_points[0][1] # front[0][1] should be y coords,
+                width = front_points[0][0] - back_points[0][0]
+                hypotenuse = math.sqrt(math.pow(length, 2) + math.pow(width, 2))
+                return math.asin(width/hypotenuse) * (180/math.pi)
+            
+            else: 
+                p1 = (angle + 45) % 360
+                p2 = (angle - 45) % 360
+                return pick_closest_angle(p1, p2, previous_orientation), False
 
     raise ValueError(f"Invalid point configuration: Front={len(front_points)}, Back={len(back_points)}")
 

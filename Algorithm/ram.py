@@ -56,8 +56,6 @@ class Ram():
             self.enemy_position = np.array(enemy_position if enemy_position is not None else (0.0, 0.0), dtype=float)
             self.huey_girth = 67
             
-            self.huey_girth = 67
-            
         else:
             self.huey_position = init_values(bots, self.ARENA_WIDTH, is_pos=True, is_huey=True)
             self.huey_old_position = init_values(bots, self.ARENA_WIDTH, is_pos=True, is_huey=True)
@@ -264,7 +262,7 @@ class Ram():
         return angle * (Ram.MAX_TURN / 180.0), 1-(np.sign(angle) * (angle) * (Ram.MAX_SPEED / 180.0))
 
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
-    def ram_ram(self, bots: dict[str, any] = None, can_recover: bool = True, fps = 50, key=None):
+    def ram_ram(self, bots: dict[str, any] = None, can_recover: bool = True, fps = 120, key=None, diagonal_counter=0):
         if self.is_recovering or self.is_backing:
             self.HISTORY_BUFFER = fps
         else:
@@ -321,8 +319,8 @@ class Ram():
             self.is_recovering = False
             return self.huey_move(self.BACK_UP_SPEED, self.BACK_UP_TURN)
         self.is_backing = False
-            
-        if (self.check_previous_position_and_orientation(can_recover)):
+        print("🦫",diagonal_counter)
+        if (self.check_previous_position_and_orientation(can_recover) or diagonal_counter > fps/4):
             if (bots and bots["huey"] and len(bots["huey"]) > 0):
                 self.huey_position = np.array(bots['huey'].get('center'))
                 self.huey_previous_positions.append(self.huey_position)

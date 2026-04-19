@@ -83,8 +83,8 @@ else: # VIDEO_TESTING
 folder = os.getcwd() + "/main_files"
 # camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-# camera_number = folder + "/test_videos/diagona_huey.mp4"
-camera_number = folder + "/test_videos/huey_backs.mp4"
+camera_number = folder + "/test_videos/diagona_huey.mp4"
+# camera_number = folder + "/test_videos/huey_backs.mp4"
 # camera_number = 1
 # camera_number = 0
 
@@ -319,7 +319,7 @@ def main():
 
                     with rs.log_timing("Algorithm"):
                         move_dictionary = algorithm.ram_ram(
-                            detected_bots_with_data, CAN_RECOVER, fps=FRAME_RATE, key=key)
+                            detected_bots_with_data, CAN_RECOVER, fps=FRAME_RATE, key=key, diagonal_counter=corner_detection.diagonal_counter)
 
                     # 14. Transmitting the motor values to Huey's if we're using a live video
                     with rs.log_timing("Transmission"):
