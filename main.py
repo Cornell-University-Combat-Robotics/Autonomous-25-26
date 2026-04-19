@@ -35,12 +35,12 @@ from sensors.imu_class import IMUReadError
 
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
-WARP_AND_COLOR_PICKING = False
+WARP_AND_COLOR_PICKING = True
 DISPLAY_SCALE = 0.5                # Display frame smaller for selection with 1080p video, 1.0 default
 
 COMP = False
 LIVE_TESTING = True
-CAN_RECOVER = False
+CAN_RECOVER = True
 BLACKOUT = True                    # Filter out enemy bot intersection w/Huey
 SHEET_RUNTIME = True               # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 rs = RuntimeSheet(use=SHEET_RUNTIME)
@@ -54,9 +54,39 @@ DISPLAY_ANGLES = True              # Only use when SHOW_FRAME is True
 SHOW_HUD = True                    # Show heads-up display with FPS, speed, turn, frame number
 SHOW_QUANTIZED_HUEY = True         # Display the quantized bounding box of Huey in separate window
 
-# MODEL_NAME = "SmallComp"         # Used for Feb comp, best accuracy if you have the compute for it.
-# MODEL_NAME = "NanoSizeVariant"   # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
-MODEL_NAME = "Nano320Temp"         # Model trained with Huey images from matches, trained at 320 image size
+# MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
+JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
+WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
+# Display frame smaller for selection with 1080p video, 1.0 default
+DISPLAY_SCALE = 0.5
+IS_TRANSMITTING = True         # True to send transmissions to live Huey via Arduino
+WEAPON_ON = False               # True if weapon motor should be on
+SHOW_FRAME = True               # Show camera feed frames
+DISPLAY_ANGLES = True           # Only use when SHOW_FRAME is True
+# Process every captured frame, False -> cap at FRAME_RATE
+IS_ORIGINAL_FPS = True
+# FPS used for algo stuff, update to expected FPS on your system.
+FRAME_RATE = 120
+# Show heads-up display with FPS, speed, turn, frame number
+SHOW_HUD = True
+# Display the quantized bounding box of Huey in separate window
+SHOW_QUANTIZED_HUEY = True
+# True to use color quantization, should always be True
+COLOR_QUANTIZATION = True
+CAN_RECOVER = False              # True to use recovery
+# True to run frame capture in a seperate thread, always false for videos
+CAMERA_STREAM = True
+# Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
+SHEET_RUNTIME = True
+# Save bounding box images every BBOX_SAVE_FREQUENCY iterations
+SAVE_BBOXES = False
+# How often to save bounding box images (every n iterations)
+BBOX_SAVE_FREQUENCY = 10
+
+# MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
+# MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
+# Model trained with Huey images from matches, trained at 320 image size
+MODEL_NAME = "Nano320Temp"
 
 # Image size for object detection model, lower number -> faster, slightly worse accuracy.
 # 640 default, 416 fast, must be multiple of 32. Don't go below 320.
@@ -428,10 +458,7 @@ def main():
                     # Update Frame Buffer
                     frame_buffer.append({ "main": main_display_img, "huey": huey_display_img})
                     rs.dump()
-                
-                else:
-                    # print("Waiting" + str (iteration))
-                    time.sleep(0.001)
+            
 
         # Start the Perception Thread
         perception_thread = threading.Thread(target=perception_pipeline, daemon=True)

@@ -8,8 +8,11 @@ class CameraStream:
     def __init__(self, src):
         # Use CAP_DSHOW if on Windows, if on Mac use AVFoundation, otherwise use default
         if platform.system() == "Windows":
-            print("Using DSHOW for Windows")
-            self.cap = cv2.VideoCapture(src, cv2.CAP_DSHOW)
+            # print("Using DSHOW for Windows")
+            # self.cap = cv2.VideoCapture(src, cv2.CAP_DSHOW)
+            print(
+                "Temporarily using default backend for Windows (not DSHOW) due to issues.")
+            self.cap = cv2.VideoCapture(src)
         elif platform.system() == "Darwin":
             print("Using AVFoundation for Mac")
             self.cap = cv2.VideoCapture(src, cv2.CAP_AVFOUNDATION)
@@ -43,7 +46,8 @@ class CameraStream:
         # Print FPS, frame width, frame height of self.cap object
         print(f"Capture FPS: {self.cap.get(cv2.CAP_PROP_FPS)}")
         print(f"Capture Frame Width: {self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)}")
-        print(f"Capture Frame Height: {self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}")
+        print(
+            f"Capture Frame Height: {self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}")
 
     def start(self):
         # Using daemon=True so the thread stops when main.py exits
