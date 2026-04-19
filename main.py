@@ -39,8 +39,8 @@ WARP_AND_COLOR_PICKING = False
 DISPLAY_SCALE = 0.5                # Display frame smaller for selection with 1080p video, 1.0 default
 
 COMP = False
-LIVE_TESTING = False
-CAN_RECOVER = True
+LIVE_TESTING = True
+CAN_RECOVER = False
 BLACKOUT = True                    # Filter out enemy bot intersection w/Huey
 SHEET_RUNTIME = True               # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
 rs = RuntimeSheet(use=SHEET_RUNTIME)
@@ -88,14 +88,14 @@ folder = os.getcwd() + "/main_files"
 # camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
-camera_number = folder + "/test_videos/orbital_huey.mp4"
+# camera_number = folder + "/test_videos/orbital_huey.mp4"
 # camera_number = folder + "/test_videos/blink224_huey.mp4"
 # camera_number = 1
-# camera_number = 0
+camera_number = 0
 
 # Set to webcam if capturing frames in main loop.
-camera_type = "Video"
-# camera_type = "Webcam"
+# camera_type = "Video"
+camera_type = "Webcam"
 
 # ------------------------------ QUANTIZATION SETTINGS ------------------------------
 
@@ -176,7 +176,7 @@ def main():
         # Initialize transmission TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
             ser, motor_group, weapon_motor_group = get_motor_groups(
-                JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
+                False, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
             # if WEAPON_ON:
             #     weapon_motor_group.move(1)
 
