@@ -33,7 +33,7 @@ from warp_main import warp_map
 
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
-WARP_AND_COLOR_PICKING = False
+WARP_AND_COLOR_PICKING = True
 DISPLAY_SCALE = 0.5                # Display frame smaller for selection with 1080p video, 1.0 default
 
 COMP = False
@@ -46,7 +46,7 @@ SAVE_BBOXES = False                # Save bounding box images every BBOX_SAVE_FR
 BBOX_SAVE_FREQUENCY = 10           # How often to save bounding box images (every n iterations)
 
 # Drive mode
-NORMAL_DRIVE = True                # True: keep current dual-channel motor_group (speed+turn). False: use per-motor skid-steer like separate_drive.py.
+NORMAL_DRIVE = False                # True: keep current dual-channel motor_group (speed+turn). False: use per-motor skid-steer like separate_drive.py.
 
 # Cosmetics
 SHOW_FRAME = True                  # Show camera feed frames
@@ -81,6 +81,8 @@ else: # VIDEO_TESTING
     IS_ORIGINAL_FPS = False         # Process every captured frame, False -> cap at FRAME_RATE, only TRUE for Live
     FRAME_RATE = 60                 # Manually set frame rate for videos
     CAMERA_STREAM = False           # True to run frame capture in a seperate thread, always false for videos
+
+IS_TRANSMITTING = True
 
 # ------------------------------ CAMERA/VIDEOS ------------------------------
 
@@ -179,10 +181,10 @@ def main():
         if IS_TRANSMITTING:
             if NORMAL_DRIVE:
                 ser, motor_group, weapon_motor_group = get_motor_groups(
-                    JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
+                    False, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
             else:
                 ser, left_motor, right_motor, weapon_motor_group = get_separate_motor_groups(
-                    JANK_CONTROLLER, left_motor_channel, right_motor_channel, weapon_motor_channel)
+                    False , left_motor_channel, right_motor_channel, weapon_motor_channel)
             # if WEAPON_ON:
             #     weapon_motor_group.move(1)
 
@@ -366,11 +368,11 @@ def main():
                                 warped_frame, detected_bots)
                             if SHOW_HUD:
                                 # Uncomment this to get all the stats
-                                # warped_frame = draw_hud(
-                                    # warped_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
-                                # Uncomment this to get only frame rate:
                                 warped_frame = draw_hud(
-                                    warped_frame, iteration=iteration)
+                                    warped_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
+                                # Uncomment this to get only frame rate:
+                                # warped_frame = draw_hud(
+                                #     warped_frame, iteration=iteration)
 
                             # Call display_angles with show=False to get the image without displaying
                             main_display_img = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing,

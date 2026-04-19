@@ -1,6 +1,6 @@
 import time
-from serial_conn import OurSerial
-
+# from serial_conn import OurSerial
+from transmission.serial_conn import OurSerial
 
 class Motor():
     """ 
