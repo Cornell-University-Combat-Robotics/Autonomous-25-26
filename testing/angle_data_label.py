@@ -5,7 +5,7 @@ import math
 import numpy as np
 
 # Settings
-DATA_SET_NAME = "test_data"   # Name of your dataset folder in "testing_data"
+DATA_SET_NAME = "purple_huey"   # Name of your dataset folder in "testing_data"
 MANUAL_CENTER = False         # Allows you to select the center of the bot by hand 
 
 # --- Change this to your folder path ---

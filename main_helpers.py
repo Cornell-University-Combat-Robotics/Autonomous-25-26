@@ -154,7 +154,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
     first_run_ml = quantize(first_run_ml, selected_colors,
                             show=False, is_flipped=False)
     corner_detection.set_bots(first_run_ml)
-    first_run_orientation = corner_detection.corner_detection_main(threshold_set=True, previous_orientations=[])
+    first_run_orientation = corner_detection.corner_detection_main(threshold_set=False, previous_orientations=[])
 
     if first_run_orientation and first_run_orientation["huey"] and first_run_orientation["enemy"]:
         # Ensure single enemy
@@ -369,7 +369,17 @@ def draw_hud(image, fps10=None, move_dictionary=None, iteration=None, playback_s
     line_height = 28
 
     # Calculate number of lines to display
-    num_lines = 4
+    num_lines = 0
+    if fps10 is not None:
+        num_lines += 1
+    if move_dictionary is not None:
+        num_lines += 2
+    if iteration is not None:
+        num_lines += 1
+
+
+
+    # num_lines = 4
     if playback_speed is not None:
         num_lines += 1
 

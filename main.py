@@ -11,7 +11,6 @@ from time import perf_counter as ptime
 
 from camera_stream import CameraStream
 from runtimesheet.runtimesheet import RuntimeSheet
-import matplotlib.pyplot as plt
 from algorithm.ram import Ram
 from corner_detection.corner_detection import RobotCornerDetection
 from main_helpers import (
@@ -28,31 +27,59 @@ from main_helpers import (
     initialize_quantization,
     quantize
 )
-from warp_main import warp
 from warp_main import get_warp_maps
 from warp_main import warp_map
 
 # ------------------------------ GLOBAL VARIABLES ------------------------------
 
+WARP_AND_COLOR_PICKING = True
+DISPLAY_SCALE = 0.5                # Display frame smaller for selection with 1080p video, 1.0 default
+
+COMP = False
+LIVE_TESTING = True
+CAN_RECOVER = True
+BLACKOUT = True                    # Filter out enemy bot intersection w/Huey
+SHEET_RUNTIME = True               # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
+rs = RuntimeSheet(use=SHEET_RUNTIME)
+SAVE_BBOXES = False                # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
+BBOX_SAVE_FREQUENCY = 10           # How often to save bounding box images (every n iterations)
+
+# Cosmetics
+SHOW_FRAME = True                  # Show camera feed frames
+DISPLAY_ANGLES = True              # Only use when SHOW_FRAME is True
+SHOW_HUD = True                    # Show heads-up display with FPS, speed, turn, frame number
+SHOW_QUANTIZED_HUEY = True         # Display the quantized bounding box of Huey in separate window
+
 # MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
 JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
 WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
-DISPLAY_SCALE = 0.8             # Display frame smaller for selection with 1080p video, 1.0 default
-IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
+# Display frame smaller for selection with 1080p video, 1.0 default
+DISPLAY_SCALE = 0.5
+IS_TRANSMITTING = True         # True to send transmissions to live Huey via Arduino
 WEAPON_ON = False               # True if weapon motor should be on
 SHOW_FRAME = True               # Show camera feed frames
 DISPLAY_ANGLES = True           # Only use when SHOW_FRAME is True
-IS_ORIGINAL_FPS = True          # Process every captured frame, False -> cap at FRAME_RATE
-FRAME_RATE = 120                # FPS used for algo stuff, update to expected FPS on your system.
-SHOW_HUD = True                 # Show heads-up display with FPS, speed, turn, frame number
-SHOW_QUANTIZED_HUEY = True     # Display the quantized bounding box of Huey in separate window
-COLOR_QUANTIZATION = True       # True to use color quantization, should always be True
-CAN_RECOVER = True              # True to use recovery
-CAMERA_STREAM = True           # True if using live camera stream, False if using a video file
-SHEET_RUNTIME = True            # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
-SAVE_BBOXES = False             # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
-BBOX_SAVE_FREQUENCY = 10        # How often to save bounding box images (every n iterations)
-TARGETING_METHOD = 1            # How we target the enemy (1,2 or 3 for now)
+# Process every captured frame, False -> cap at FRAME_RATE
+IS_ORIGINAL_FPS = True
+# FPS used for algo stuff, update to expected FPS on your system.
+FRAME_RATE = 120
+# Show heads-up display with FPS, speed, turn, frame number
+SHOW_HUD = True
+# Display the quantized bounding box of Huey in separate window
+SHOW_QUANTIZED_HUEY = True
+# True to use color quantization, should always be True
+COLOR_QUANTIZATION = True
+CAN_RECOVER = False              # True to use recovery
+# True to run frame capture in a seperate thread, always false for videos
+CAMERA_STREAM = True
+# Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
+SHEET_RUNTIME = True
+# Save bounding box images every BBOX_SAVE_FREQUENCY iterations
+SAVE_BBOXES = False
+# How often to save bounding box images (every n iterations)
+BBOX_SAVE_FREQUENCY = 10
+# Where we target the enemy. 1 is center, 2 is front bbox, 3 is back bbox
+TARGETING_METHOD = 1
 
 # MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
 # MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
@@ -62,13 +89,33 @@ MODEL_NAME = "Nano320Temp"
 # Image size for object detection model, lower number -> faster, slightly worse accuracy.
 # 640 default, 416 fast, must be multiple of 32. Don't go below 320.
 OD_IMG_SIZE = 320
-
 # If model can't be found or gives a bug, use convert_models.py to regenerate the model w/ above parameters
 
-folder = os.getcwd() + "/main_files"
+if COMP or LIVE_TESTING:
+    IS_TRANSMITTING = True         # True to send transmissions to live Huey via Arduino    
+    IS_ORIGINAL_FPS = True         # Process every captured frame, False -> cap at FRAME_RATE, only TRUE for Live
+    FRAME_RATE = 120               # Used in recovery/algo  
+    CAMERA_STREAM = True           # True to run frame capture in a seperate thread, always false for videos
 
-# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+    if COMP:
+        WEAPON_ON = True   
+
+    else: # LIVE_TESTING
+        WEAPON_ON = False
+
+else: # VIDEO_TESTING
+    IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
+    WEAPON_ON = False
+    IS_ORIGINAL_FPS = False         # Process every captured frame, False -> cap at FRAME_RATE, only TRUE for Live
+    FRAME_RATE = 60                 # Manually set frame rate for videos
+    CAMERA_STREAM = False           # True to run frame capture in a seperate thread, always false for videos
+
+# ------------------------------ CAMERA/VIDEOS ------------------------------
+
+folder = os.getcwd() + "/main_files"
+camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
+# camera_number = folder + "/test_videos/huey_in_n_out.mp4"
 # camera_number = folder + "/test_videos/orbital_huey.mp4"
 # camera_number = 1
 camera_number = 0
@@ -77,23 +124,25 @@ camera_number = 0
 # camera_type = "Video"
 camera_type = "Webcam"
 
+# ------------------------------ QUANTIZATION SETTINGS ------------------------------
+
 quant_settings_file = "quant_settings.json"
 with open(quant_settings_file, "r") as f:
     all_settings = json.load(f)
 
 # Quantization Settings
-quantization_settings = None
-# quantization_settings = all_settings["Green Huey"]
+# quantization_settings = None
+quantization_settings = all_settings["Green Huey"]
+# quantization_settings = None
+quantization_settings = all_settings["Green Huey"]
 # quantization_settings = all_settings["Purple Huey"]
+
+# ------------------------------ BEFORE THE MATCH ------------------------------
 
 if IS_TRANSMITTING:
     speed_motor_channel = 1
     turn_motor_channel = 3
     weapon_motor_channel = 4
-
-rs = RuntimeSheet(use=SHEET_RUNTIME)
-
-# ------------------------------ BEFORE THE MATCH ------------------------------
 
 # Threading globals
 frame_buffer = deque(maxlen=1)
@@ -101,7 +150,6 @@ stop_event = threading.Event()
 # Shared state for controls passed from UI thread to Perception thread
 shared_state = {"key": None, "flipped": None,
                 "paused": False, "skip_frame": False, "weapon_on": WEAPON_ON}
-
 
 def main():
     stream = None
@@ -140,14 +188,13 @@ def main():
         map_x, map_y = get_warp_maps(homography_matrix)
 
         # Initialize color quantization cv2
-        if COLOR_QUANTIZATION:
-            initialize_quantization()
+        initialize_quantization()
 
         # Get predictor, if anything goes wrong here, call Aaron #TODO: Document better
         predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
 
         # Initialize corner detection
-        corner_detection = RobotCornerDetection(selected_colors, False, False)
+        corner_detection = RobotCornerDetection(selected_colors, False, False, BLACKOUT=BLACKOUT, thresh=0.4, frame_rate = FRAME_RATE)
 
         # Initialize transmission TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
@@ -158,11 +205,16 @@ def main():
 
         cv2.destroyAllWindows()
 
-        # Initialize algorithm
-        if WARP_AND_COLOR_PICKING:
-            algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors, targeting_method = TARGETING_METHOD)
-        else:
-            algorithm = Ram(targeting_method=TARGETING_METHOD)
+        # # Initialize algorithm
+        # if WARP_AND_COLOR_PICKING:
+        #     algorithm = first_run(predictor, warped_frame,
+        #                           SHOW_FRAME, corner_detection, selected_colors, targeting_method = TARGETING_METHOD)
+        # else:
+        #     algorithm = Ram(targeting_method = TARGETING_METHOD)
+
+        algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors, targeting_method = TARGETING_METHOD)
+
+        ### TODO: call dynamic threshold here
 
         # Initialize BBox save directory
         if SAVE_BBOXES:
@@ -212,6 +264,7 @@ def main():
                 time_elapsed = ptime() - prev
 
                 rs.start_iter()
+                # TODO: Fix frame rate logic
                 if (IS_ORIGINAL_FPS or time_elapsed > 1.0 / FRAME_RATE) and (not CAMERA_STREAM or stream.frameCount() > last_frame):
                     prev = ptime()
                     iteration += 1
@@ -268,9 +321,8 @@ def main():
 
                     # 11.5 Quantize Colors
                     with rs.log_timing("Color Quantization"):
-                        if COLOR_QUANTIZATION:
-                            detected_bots = quantize(
-                                detected_bots, selected_colors, show=False, is_flipped=is_flipped, settings=quantization_settings)
+                        detected_bots = quantize(
+                            detected_bots, selected_colors, show=False, is_flipped=is_flipped, settings=quantization_settings)
 
                     if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
                         for bot in range(len(detected_bots["bots"])):
@@ -320,8 +372,12 @@ def main():
                             warped_frame = predictor.show_predictions(
                                 warped_frame, detected_bots)
                             if SHOW_HUD:
+                                # Uncomment this to get all the stats
+                                # warped_frame = draw_hud(
+                                    # warped_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
+                                # Uncomment this to get only frame rate:
                                 warped_frame = draw_hud(
-                                    warped_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
+                                    warped_frame, iteration=iteration)
 
                             # Call display_angles with show=False to get the image without displaying
                             main_display_img = display_angles(detected_bots_with_data, move_dictionary, warped_frame, enemy_orientation= algorithm.enemy_orientation,enemy_future_position=algorithm.enemy_future_position,is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing,
@@ -339,16 +395,12 @@ def main():
                             main_display_img = display_frame
 
                     # Update Frame Buffer
-                    frame_buffer.append({
-                        "main": main_display_img,
-                        "huey": huey_display_img
-                    })
-
+                    frame_buffer.append({ "main": main_display_img, "huey": huey_display_img})
                     rs.dump()
+            
 
         # Start the Perception Thread
-        perception_thread = threading.Thread(
-            target=perception_pipeline, daemon=True)
+        perception_thread = threading.Thread(target=perception_pipeline, daemon=True)
         perception_thread.start()
 
         # ----------------------------------------------------------------------
@@ -360,6 +412,8 @@ def main():
                 if frames["main"] is not None and SHOW_FRAME:
                     name = "Battle with Predictions" if DISPLAY_ANGLES else "Bounding boxes (no angles)"
                     cv2.imshow(name, frames["main"])
+                    # cv2.waitKey(0)
+                    # cv2.destroyAllWindows()
 
                 if frames["huey"] is not None and SHOW_QUANTIZED_HUEY:
                     cv2.imshow("Quantized Huey", frames["huey"])

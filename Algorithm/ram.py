@@ -6,6 +6,8 @@ from line_profiler import profile
 
 import numpy as np
 
+from .pid import *
+
 from .ram_helper import (
     check_wall,
     clamp,
@@ -106,6 +108,13 @@ class Ram():
         # delta time
         self.delta_t = 0.001
 
+        # THIS WORKS IN TESTBOX
+        # self.turn_pid = PIDController(kp=0.008, ki=0.000, kd=0.0005, output_limits=(-1.0, 1.0))
+        # self.speed_pid = PIDController(kp=0.003, ki=0.000, kd=0.000, output_limits=(-1.0,1.0))
+        
+        self.turn_pid = PIDController(kp=0.008, ki=0.000, kd=0.0005, output_limits=(-1.0, 1.0))
+        self.speed_pid = PIDController(kp=0.003, ki=0.000, kd=0.000, output_limits=(-1.0,1.0))
+
         #recovery
         self.recovering_until = 2.0
         self.recover_speed = 0.5
@@ -139,7 +148,9 @@ class Ram():
 
     def check_previous_position_and_orientation(self, can_recover: bool = True):
         if not can_recover:
-            self.is_recovering=False
+            self.is_recovering = False
+            self.is_backing = False
+            self.moving_forward = 0
             return False
         
         counter_pos = 0
@@ -155,14 +166,18 @@ class Ram():
         #         counter_orientation += 1
 
         if counter_pos >= self.BACK_UP_THRESHOLD:
-            self.is_recovering=True
+            self.is_recovering = True
+            self.is_backing = False
             return True
-        self.is_recovering=False
+        self.is_recovering = False
+        self.is_backing = False
         return False
     
     def check_arena_edge(self, can_recover: bool = True):
         if not can_recover:
             self.is_recovering=False
+            self.is_backing = False
+            self.moving_forward = 0
             return False
         counter_pos = 0
         counter_orientation = 0
@@ -467,12 +482,14 @@ class Ram():
         # print(f"🛸ORORIE:🛸 {self.huey_orientation}")
         # print(f"🦒🦒🦒GIRTH {self.huey_girth}")
 
-        backup = self.check_arena_edge()
+        backup = self.check_arena_edge(can_recover)
         if backup == 1:
             self.is_backing = True
+            self.is_recovering = False
             return self.huey_move(self.FORWARD_SPEED, self.FORWARD_TURN)
         elif backup == -1:
             self.is_backing = True
+            self.is_recovering = False
             return self.huey_move(self.BACK_UP_SPEED, self.BACK_UP_TURN)
         self.is_backing = False
             
@@ -509,26 +526,52 @@ class Ram():
             return self.huey_move(self.huey_old_speed, self.huey_old_turn)
 
         if bots["enemy"]:
-            # self.enemy_position = np.array(bots['enemy']['center']) # probably issue here? 
-            turn, speed = self.predict_desired_turn_and_speed()
-            self.huey_old_turn, self.huey_old_speed = turn, speed
+            self.enemy_position = np.array(bots['enemy']['center'])
+            error_angle, distance = self.predict_desired_turn_and_speed()
         
-            # PID Shenanigans. Only use PID for the turn values
-            if self.USE_PID and self.delta_t != 0:
-                if self.delta_t > 0:
-                    d_orientation = ((self.huey_orientation - self.huey_previous_orientations[-1] + 180) % 360 ) - 180
-                    d_time = self.delta_t * 180.0
-                    derivative = d_orientation / d_time
-                else:
-                    derivative = 0
+            if self.USE_PID and self.delta_t > 0:
+                # 1. Calculate Turn using PID
+                turn = self.turn_pid.update(error_angle, self.delta_t)
                 
-                pid_output = (turn * 0.8) + (derivative * 0.04 * -1)
-                turn = clamp(pid_output, -1, 1)
+                # 2. Calculate Base Speed using PID
+                ramming_distance = distance + 100 # 100 pixels is the "overshoot"
+                base_speed = self.speed_pid.update(ramming_distance, self.delta_t)
+                
+                # 3. Angle Attenuation (The "Weapon First" logic)
+                clamped_angle = clamp(error_angle, -90, 90)
+                angle_rad = math.radians(clamped_angle)
+                
+                # Using cosine gives a smooth curve. Squaring it makes the drop-off 
+                # sharper, heavily penalizing driving when not perfectly aligned.
+                alignment_factor = math.cos(angle_rad) ** 2 
+                
+                # Final speed is the PID speed scaled by how well we are aimed
+                speed = base_speed * alignment_factor
+                
+            else:
+                # Fallback if PID is off
+                turn = clamp(error_angle * (Ram.MAX_TURN / 180.0), -1, 1)
+                speed = 1 - (abs(error_angle) * (Ram.MAX_SPEED / 180.0))
+                speed = clamp(speed, -1, 1)
 
+            self.huey_old_turn, self.huey_old_speed = turn, speed
             return self.huey_move(speed, turn)
+            
         else:
-            print("enemy bot not detected, previous position appended")
+            # enemy bot not detected, previous position appended
+            self.enemy_previous_positions.append(self.enemy_previous_positions[-1])
             self.enemy_position = self.enemy_previous_positions[-1]
-            turn, speed = self.predict_desired_turn_and_speed()
+            
+            error_angle, distance = self.predict_desired_turn_and_speed()
+            
+            if self.USE_PID and self.delta_t > 0:
+                turn = self.turn_pid.update(error_angle, self.delta_t)
+                base_speed = self.speed_pid.update(distance + 100, self.delta_t)
+                alignment_factor = math.cos(math.radians(clamp(error_angle, -90, 90))) ** 2
+                speed = base_speed * alignment_factor
+            else:
+                turn = clamp(error_angle * (Ram.MAX_TURN / 180.0), -1, 1)
+                speed = clamp(1 - (abs(error_angle) * (Ram.MAX_SPEED / 180.0)), -1, 1)
+            
             self.huey_old_turn, self.huey_old_speed = turn, speed
             return self.huey_move(speed, turn)
