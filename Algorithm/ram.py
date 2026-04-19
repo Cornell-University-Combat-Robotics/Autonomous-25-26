@@ -261,7 +261,7 @@ class Ram():
     Precondition: our_position & enemy_position 
     targeting method is where we set enemy_future position to. It defaults to self.enemy_position
     '''
-    def predict_desired_turn_and_speed(self):
+    def predict_desired_angle_and_distance(self):
         check_wall(self.enemy_position)
         check_wall(self.enemy_future_position)
         assert self.targeting_method == 1 or self.targeting_method == 2 or self.targeting_method == 3
@@ -285,38 +285,23 @@ class Ram():
         if (np.array_equal(huey_position_copy, enemy_future_position)):
             return (0, 0)
         
-        # return the angle in degrees
-        huey_orientation_rad = np.radians(self.huey_orientation)
-        orientation = np.array([math.cos(huey_orientation_rad), math.sin(huey_orientation_rad)])
-        enemy_future_position = invert_y(enemy_future_position)
-        huey_position_invert = invert_y(huey_position_copy)
-        direction = enemy_future_position - huey_position_invert
-        
-        # # CORRECT OLD CODE GO BACK TO THIS
-        # # calculate the angle between the bot and the enemy
-        # ratio = np.dot(direction, orientation) / \
-        #     (np.linalg.norm(direction) * np.linalg.norm(orientation))
-        # ratio = clamp(ratio, -1, 1)
-        # angle = np.degrees(np.arccos(ratio))
-        # sign = np.sign(np.cross(orientation, direction))
-        # angle *= sign
-        # return angle * (Ram.MAX_TURN / 180.0), 1-(np.sign(angle) * (angle) * (Ram.MAX_SPEED / 180.0))
+        theta = np.radians(self.huey_orientation)
+        forward = np.array([math.cos(theta), math.sin(theta)])  # math coords
 
-        # SLOP: TESTIGN THIS CODE ITS OLD
-        direction_norm = np.linalg.norm(direction)
-        if direction_norm < 1e-6:
+        ef = invert_y(enemy_future_position)
+        hp = invert_y(huey_position_copy)
+        direction = ef - hp
+        
+        dist_px = float(np.linalg.norm(direction))
+        if dist_px < 1e-6:
             return (0, 0)
 
-        dot = float(np.dot(orientation, direction))
-        cross = float(orientation[0] * direction[1] - orientation[1] * direction[0])
+        dot = float(np.dot(forward, direction))
+        cross = float(forward[0] * direction[1] - forward[1] * direction[0])
 
-        angle_rad = math.atan2(cross, dot)                           # signed, continuous [-pi, pi]
-        angle_deg = math.degrees(angle_rad)
-
-        turn = clamp(angle_deg * Ram.MAX_TURN / 180.0, -1.0, 1.0)
-        speed = 1.0 - min(1.0, abs(angle_deg) * Ram.MAX_TURN / 180.0)
-        return turn, speed
-
+        angle_deg = math.degrees(math.atan2(cross, dot))  # [-180, 180]
+        return angle_deg, dist_px
+    
     def bbox_intersection(self, orientation: float, bbox, front=1):
         """
         Given motion components in IMAGE coords (dx, dy_img) and an axis-aligned bbox (two corners),
@@ -527,7 +512,7 @@ class Ram():
 
         if bots["enemy"]:
             self.enemy_position = np.array(bots['enemy']['center'])
-            error_angle, distance = self.predict_desired_turn_and_speed()
+            error_angle, distance = self.predict_desired_angle_and_distance()
         
             if self.USE_PID and self.delta_t > 0:
                 # 1. Calculate Turn using PID
@@ -562,7 +547,7 @@ class Ram():
             self.enemy_previous_positions.append(self.enemy_previous_positions[-1])
             self.enemy_position = self.enemy_previous_positions[-1]
             
-            error_angle, distance = self.predict_desired_turn_and_speed()
+            error_angle, distance = self.predict_desired_angle_and_distance()
             
             if self.USE_PID and self.delta_t > 0:
                 turn = self.turn_pid.update(error_angle, self.delta_t)
