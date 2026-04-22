@@ -92,13 +92,27 @@ class RobotCornerDetection:
         except Exception as e:
             print(f"Unexpected error in detect_our_robot_main: {e}")
             return None
-
+    
+    def four_good(self): 
+        return 1
+    
+    def non_diag_good(self):
+        return 1
+    
+    def confidence(self, corners):
+        if corners == 4 and self.four_good():
+            return 1
+        if corners == 2 and self.non_diag_good():
+            return 1
+        return 0
+    
     def corner_detection_main(self, previous_orientations: list = [], threshold_set: bool=True, is_flipped:int = 1) -> dict | None:
         """
         Main function for detecting corners and orientation of the robot.
 
         Returns:
             dict: A dictionary containing details of the robot and enemy robots.
+            confidence: 0 or 1, meaning whether we are confident in the orientation
         """
         try:
             print(f"🐬diagona counter: {self.diagonal_counter}")

@@ -397,7 +397,7 @@ def distance(point1: tuple, point2: tuple) -> float:
     Returns: float: The Euclidean distance.
     """
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
-
+# THREE CORNERS
 def get_missing_point(points: list) -> list:
     """
     Computes the missing point to form a complete set of red and blue points.
