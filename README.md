@@ -1,6 +1,6 @@
 # Autonomous 25-26
 
-Autonomous perception, decision-making, and control stack for Cornell Combat Robotics' robot **Huey**.
+Autonomous perception, decision-making, and control stack for Combat Robotics @ Cornell's robot **Huey**.
 
 - Huey NHRL page: [https://www.nhrl.io/wiki/index.php/Huey](https://www.nhrl.io/wiki/index.php/Huey)
 ![Huey Robot Image](docs/images/HueyImage.png)
