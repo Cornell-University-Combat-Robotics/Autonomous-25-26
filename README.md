@@ -3,17 +3,7 @@
 Autonomous perception, decision-making, and control stack for Cornell Combat Robotics' robot **Huey**.
 
 - Huey NHRL page: [https://www.nhrl.io/wiki/index.php/Huey](https://www.nhrl.io/wiki/index.php/Huey)
-- Team task board: [Cornell UCR Autonomous Board](https://github.com/orgs/Cornell-University-Combat-Robotics/projects/2/views/1)
-
-## Robot Image
-
-Add a photo or match screenshot here:
-
-```md
-![Huey Robot](docs/images/huey.jpg)
-```
-
-Suggested path: `docs/images/huey.jpg`
+![Huey Robot Image](docs/images/HueyImage.png)
 
 ## What This Repository Does
 
