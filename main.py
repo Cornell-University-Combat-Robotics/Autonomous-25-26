@@ -88,7 +88,7 @@ if MODE == "comp" or MODE == "live":
 elif MODE == "video":
     IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
     WEAPON_ON = False
-    IS_ORIGINAL_FPS = False         # Process every captured frame, False -> cap at FRAME_RATE, only TRUE for Live
+    IS_ORIGINAL_FPS = True         # Process every captured frame, False -> cap at FRAME_RATE, only TRUE for Live
     FRAME_RATE = 60                 # Manually set frame rate for videos
     CAMERA_STREAM = False           # True to run frame capture in a seperate thread, always false for videos
 
@@ -137,6 +137,7 @@ if IS_TRANSMITTING:
 # Threading globals
 frame_buffer = deque(maxlen=1)
 stop_event = threading.Event()
+shared_state_lock = threading.Lock()
 # Shared state for controls passed from UI thread to Perception thread
 shared_state = {"key": None, "flipped": None,
                 "paused": False, "skip_frame": False, "weapon_on": WEAPON_ON}
@@ -232,14 +233,15 @@ def main():
                 if not CAMERA_STREAM and not cap.isOpened():
                     break
 
-                # Handle Pause (Simple spin wait)
-                if shared_state["paused"]:
-                    if shared_state["skip_frame"]:
+                # Handle pause state with synchronized reads/writes.
+                with shared_state_lock:
+                    is_paused = shared_state["paused"]
+                    should_skip_one = shared_state["skip_frame"]
+                    if is_paused and should_skip_one:
                         shared_state["skip_frame"] = False
-                        # Proceed to process one frame
-                    else:
-                        time.sleep(0.05)
-                        continue
+                if is_paused and not should_skip_one:
+                    time.sleep(0.01)
+                    continue
 
                 time_elapsed = ptime() - prev
 
@@ -273,9 +275,12 @@ def main():
                             break
 
                     # Get inputs from Shared State
-                    key = shared_state["key"]
-                    is_flipped = -1 if shared_state["flipped"] else 1
-                    weapon_on_this_frame = shared_state["weapon_on"]
+                    with shared_state_lock:
+                        key = shared_state["key"]
+                        is_flipped = -1 if shared_state["flipped"] else 1
+                        weapon_on_this_frame = shared_state["weapon_on"]
+                        # Clear transient key so one press is consumed once.
+                        shared_state["key"] = None
 
                     # Warp image to homography matrix using maps
                     with rs.log_timing("Warp"):
@@ -375,7 +380,7 @@ def main():
                 if frames["huey"] is not None and SHOW_QUANTIZED_HUEY:
                     cv2.imshow("Quantized Huey", frames["huey"])
 
-            # pollKey handles the GUI event loop
+            # waitKeyEx(1) pumps GUI events reliably and captures key presses.
             key = cv2.pollKey()
 
             if key != -1:
@@ -384,27 +389,35 @@ def main():
                     stop_event.set()
                 elif key_8bit == ord("f"):
                     print("Backup flipped key pressed")
-                    if shared_state["flipped"] is None:
-                        shared_state["flipped"] = True
-                    else:
-                        shared_state["flipped"] = not shared_state["flipped"]
-                    if shared_state["paused"]:
-                        shared_state["skip_frame"] = True
+                    with shared_state_lock:
+                        if shared_state["flipped"] is None:
+                            shared_state["flipped"] = True
+                        else:
+                            shared_state["flipped"] = not shared_state["flipped"]
+                        if shared_state["paused"]:
+                            shared_state["skip_frame"] = True
                 elif key_8bit == ord("p"):
-                    shared_state["paused"] = not shared_state["paused"]
-                    shared_state["skip_frame"] = False
+                    with shared_state_lock:
+                        shared_state["paused"] = not shared_state["paused"]
+                        shared_state["skip_frame"] = False
+                        paused_now = shared_state["paused"]
                     print(
-                        f"Playback {'paused' if shared_state['paused'] else 'resumed'}")
+                        f"Playback {'paused' if paused_now else 'resumed'}")
                 elif key_8bit == ord("w"):
-                    shared_state["weapon_on"] = not shared_state["weapon_on"]
+                    with shared_state_lock:
+                        shared_state["weapon_on"] = not shared_state["weapon_on"]
+                        weapon_now = shared_state["weapon_on"]
                     print(
-                        f"Weapon {'ON' if shared_state['weapon_on'] else 'OFF'}")
-                elif shared_state["paused"]:
-                    # Any other key while paused skips one frame
-                    shared_state["skip_frame"] = True
+                        f"Weapon {'ON' if weapon_now else 'OFF'}")
+                else:
+                    with shared_state_lock:
+                        if shared_state["paused"]:
+                            # Any other key while paused skips one frame.
+                            shared_state["skip_frame"] = True
 
-            # Pass key to perception thread (resetting it to None if no key pressed is handled by waitKey returning 255)
-            shared_state["key"] = key if key != -1 else None
+                # Pass key to perception thread for algorithm hooks.
+                with shared_state_lock:
+                    shared_state["key"] = key_8bit
 
             # Check if thread died
             if not perception_thread.is_alive():
