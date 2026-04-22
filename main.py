@@ -30,97 +30,91 @@ from main_helpers import (
 from warp_main import get_warp_maps
 from warp_main import warp_map
 
-# ------------------------------ GLOBAL VARIABLES ------------------------------
+# ------------------------------ GLOBAL SETTINGS ------------------------------
+# Keep one option active per setting. Commented lines directly below are common alternatives.
 
-WARP_AND_COLOR_PICKING = True
-DISPLAY_SCALE = 0.5                # Display frame smaller for selection with 1080p video, 1.0 default
+# Run mode (uncomment exactly one)
+# MODE = "comp"
+# MODE = "live"
+MODE = "video"
+# MODE = "custom"
 
-COMP = False
-LIVE_TESTING = True
-CAN_RECOVER = True
-BLACKOUT = True                    # Filter out enemy bot intersection w/Huey
-SHEET_RUNTIME = True               # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
-rs = RuntimeSheet(use=SHEET_RUNTIME)
-SAVE_BBOXES = False                # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
-BBOX_SAVE_FREQUENCY = 10           # How often to save bounding box images (every n iterations)
+# Core behavior
+WARP_AND_COLOR_PICKING = False
+DISPLAY_SCALE = 0.5  # 1.0 for full-size display, 0.5 for easier 1080p selection
+CAN_RECOVER = False
+BLACKOUT = True
+COLOR_QUANTIZATION = True  # Should almost always stay True
+CAMERA_STREAM = True     # Frame capture thread (must be False for videos)
 
-# Cosmetics
-SHOW_FRAME = True                  # Show camera feed frames
-DISPLAY_ANGLES = True              # Only use when SHOW_FRAME is True
-SHOW_HUD = True                    # Show heads-up display with FPS, speed, turn, frame number
-SHOW_QUANTIZED_HUEY = True         # Display the quantized bounding box of Huey in separate window
-
-# MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
-JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
-# Display frame smaller for selection with 1080p video, 1.0 default
-DISPLAY_SCALE = 0.5
-IS_TRANSMITTING = True         # True to send transmissions to live Huey via Arduino
-WEAPON_ON = False               # True if weapon motor should be on
-SHOW_FRAME = True               # Show camera feed frames
-DISPLAY_ANGLES = True           # Only use when SHOW_FRAME is True
-# Process every captured frame, False -> cap at FRAME_RATE
-IS_ORIGINAL_FPS = True
-# FPS used for algo stuff, update to expected FPS on your system.
-FRAME_RATE = 120
-# Show heads-up display with FPS, speed, turn, frame number
-SHOW_HUD = True
-# Display the quantized bounding box of Huey in separate window
-SHOW_QUANTIZED_HUEY = True
-# True to use color quantization, should always be True
-COLOR_QUANTIZATION = True
-CAN_RECOVER = False              # True to use recovery
-# True to run frame capture in a seperate thread, always false for videos
-CAMERA_STREAM = True
-# Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
+# Logging / debug outputs
 SHEET_RUNTIME = True
-# Save bounding box images every BBOX_SAVE_FREQUENCY iterations
-SAVE_BBOXES = False
-# How often to save bounding box images (every n iterations)
-BBOX_SAVE_FREQUENCY = 10
+rs = RuntimeSheet(use=SHEET_RUNTIME)
 
-# MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
-# MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
-# Model trained with Huey images from matches, trained at 320 image size
-MODEL_NAME = "Nano320Temp"
+# Display toggles
+SHOW_FRAME = True
+DISPLAY_ANGLES = True  # Only applies when SHOW_FRAME is True
+SHOW_HUD = True
+SHOW_QUANTIZED_HUEY = True
 
-# Image size for object detection model, lower number -> faster, slightly worse accuracy.
-# 640 default, 416 fast, must be multiple of 32. Don't go below 320.
-OD_IMG_SIZE = 320
-# If model can't be found or gives a bug, use convert_models.py to regenerate the model w/ above parameters
+# Hardware / controls
+JANK_CONTROLLER = False  # Deprecated backup controller path
+IS_TRANSMITTING = False
+WEAPON_ON = False
 
-if COMP or LIVE_TESTING:
+# Frame timing
+IS_ORIGINAL_FPS = True
+FRAME_RATE = 120
+# FRAME_RATE = 60  # Common for video testing
+
+# Model selection
+# MODEL_NAME = "SmallComp"       # Best accuracy if compute allows
+# MODEL_NAME = "NanoSizeVariant" # Faster, slightly lower accuracy
+MODEL_NAME = "Nano320Temp"       # Trained with match images at 320 size
+OD_IMG_SIZE = 320                # Must be multiple of 32, avoid below 320
+
+if MODE == "comp" or MODE == "live":
     IS_TRANSMITTING = True         # True to send transmissions to live Huey via Arduino    
     IS_ORIGINAL_FPS = True         # Process every captured frame, False -> cap at FRAME_RATE, only TRUE for Live
     FRAME_RATE = 120               # Used in recovery/algo  
     CAMERA_STREAM = True           # True to run frame capture in a seperate thread, always false for videos
 
-    if COMP:
+    if MODE == "comp":
         WEAPON_ON = True   
 
-    else: # LIVE_TESTING
+    else: # MODE == "live"
         WEAPON_ON = False
 
-else: # VIDEO_TESTING
+elif MODE == "video":
     IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
     WEAPON_ON = False
     IS_ORIGINAL_FPS = False         # Process every captured frame, False -> cap at FRAME_RATE, only TRUE for Live
     FRAME_RATE = 60                 # Manually set frame rate for videos
     CAMERA_STREAM = False           # True to run frame capture in a seperate thread, always false for videos
 
-# ------------------------------ CAMERA/VIDEOS ------------------------------
+elif MODE == "custom":
+    # Custom mode allows you to specify all settings manually
+    pass
+
+else:
+    raise ValueError(f"Invalid MODE '{MODE}'. Expected 'comp', 'live', 'video', or 'custom'.")
+
+# ------------------------------ CAMERA / VIDEO INPUT ------------------------------
 
 folder = os.getcwd() + "/main_files"
-camera_number = folder + "/test_videos/huey_vs_prince.mp4"
-# camera_number = folder + "/test_videos/huey_hell.mp4"
+# Video options (uncomment one for MODE = "video")
+# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
 # camera_number = folder + "/test_videos/orbital_huey.mp4"
+
+# Webcam index (used for MODE = "live" or MODE = "comp")
+# camera_number = 0
 # camera_number = 1
-camera_number = 0
 
 # Set to webcam if capturing frames in main loop.
-# camera_type = "Video"
-camera_type = "Webcam"
+camera_type = "Video"
+# camera_type = "Webcam"
 
 # ------------------------------ QUANTIZATION SETTINGS ------------------------------
 
@@ -129,10 +123,8 @@ with open(quant_settings_file, "r") as f:
     all_settings = json.load(f)
 
 # Quantization Settings
-# quantization_settings = None
-quantization_settings = all_settings["Green Huey"]
-# quantization_settings = None
-quantization_settings = all_settings["Green Huey"]
+quantization_settings = None
+# quantization_settings = all_settings["Green Huey"]
 # quantization_settings = all_settings["Purple Huey"]
 
 # ------------------------------ BEFORE THE MATCH ------------------------------
@@ -214,16 +206,6 @@ def main():
 
         ### TODO: call dynamic threshold here
 
-        # Initialize BBox save directory
-        if SAVE_BBOXES:
-            if not os.path.exists("bbox_output"):
-                os.makedirs("bbox_output")
-            # Make a new directory in bbox_output based on time.time
-            bb_output_dir = f"bbox_output/{int(time.time())}"
-            os.makedirs(bb_output_dir)
-        else:
-            bb_output_dir = None
-
         # ----------------------------------------------------------------------
         # 8. Match begins
         if CAMERA_STREAM:
@@ -267,13 +249,6 @@ def main():
                     prev = ptime()
                     iteration += 1
 
-                    # Save bboxes every BBOX_SAVE_FREQUENCY iterations if SAVE_BBOXES is True
-                    if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
-                        os.makedirs(
-                            f"{bb_output_dir}/frame_{iteration}", exist_ok=True)
-                        frame_save_dir = os.path.join(
-                            bb_output_dir, f"frame_{iteration}")
-
                     # Logs average of last 10 FPS
                     if SHEET_RUNTIME:
                         if iteration > 11:
@@ -311,22 +286,10 @@ def main():
                     with rs.log_timing("Object Detection"):
                         detected_bots = predictor.predict(warped_frame)
 
-                    if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
-                        for bot in range(len(detected_bots["bots"])):
-                            if detected_bots["bots"][bot]["img"] is not None:
-                                cv2.imwrite(
-                                    f"{frame_save_dir}/detected_bot_{bot}.png", detected_bots["bots"][bot]["img"])
-
                     # 11.5 Quantize Colors
                     with rs.log_timing("Color Quantization"):
                         detected_bots = quantize(
                             detected_bots, selected_colors, show=False, is_flipped=is_flipped, settings=quantization_settings)
-
-                    if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
-                        for bot in range(len(detected_bots["bots"])):
-                            if detected_bots["bots"][bot]["img"] is not None:
-                                cv2.imwrite(
-                                    f"{frame_save_dir}/quantized_bot_{bot}.png", detected_bots["bots"][bot]["img"])
 
                     # 12. Run Object Detection's results through Corner Detection
                     with rs.log_timing("Corner Detection"):
@@ -380,10 +343,6 @@ def main():
                             # Call display_angles with show=False to get the image without displaying
                             main_display_img = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing,
                                                               against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped=is_flipped, weapon_on=weapon_on_this_frame, centroids=corner_detection.centroids, show=False)
-
-                            if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
-                                cv2.imwrite(
-                                    f"{frame_save_dir}/final_image_{iteration}.png", main_display_img)
 
                         elif SHOW_FRAME:
                             display_frame = warped_frame
