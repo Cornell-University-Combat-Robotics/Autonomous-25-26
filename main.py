@@ -339,11 +339,11 @@ def main():
                                 warped_frame, detected_bots)
                             if SHOW_HUD:
                                 # Uncomment this to get all the stats
-                                # warped_frame = draw_hud(
-                                    # warped_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
-                                # Uncomment this to get only frame rate:
                                 warped_frame = draw_hud(
-                                    warped_frame, iteration=iteration)
+                                    warped_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
+                                # Uncomment this to get only frame rate:
+                                # warped_frame = draw_hud(
+                                #     warped_frame, iteration=iteration)
 
                             # Call display_angles with show=False to get the image without displaying
                             main_display_img = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing,
@@ -359,6 +359,10 @@ def main():
                     # Update Frame Buffer
                     frame_buffer.append({ "main": main_display_img, "huey": huey_display_img})
                     rs.dump()
+                else:
+                    # Prevent hot-spin while waiting for next frame/time budget.
+                    # Without this, the loop burns CPU doing no useful work.
+                    time.sleep(0.001)
             
 
         # Start the Perception Thread
