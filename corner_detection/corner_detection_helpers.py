@@ -118,7 +118,7 @@ def dynamic_threshold(self, threshold_set, bot_color_percentages):
             print("Initial Threshold (2+ robots): " + str(self.huey_color_percentage_threshold))
         # Case 1.2: If we see only 1 robot. We use the static threshold because that robot could be us or not
         else:
-            self.huey_color_percentage_threshold = max(bot_color_percentages[0] - 0.075, MIN_THRESHOLD)
+            self.huey_color_percentage_threshold = MIN_THRESHOLD
             print("Initial Threshold (1 robot): " + str(self.huey_color_percentage_threshold))
     
     # Case 2: Updating threshold and running sum using queue
