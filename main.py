@@ -53,30 +53,6 @@ CAMERA_STREAM = True     # Frame capture thread (must be False for videos)
 # Logging / debug outputs
 SHEET_RUNTIME = True
 rs = RuntimeSheet(use=SHEET_RUNTIME)
-SAVE_BBOXES = False                # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
-BBOX_SAVE_FREQUENCY = 10           # How often to save bounding box images (every n iterations)
-IMU_ENABLED = True              # True if IMU is connected
-
-# Cosmetics
-SHOW_FRAME = True                  # Show camera feed frames
-DISPLAY_ANGLES = True              # Only use when SHOW_FRAME is True
-SHOW_HUD = True                    # Show heads-up display with FPS, speed, turn, frame number
-SHOW_QUANTIZED_HUEY = True         # Display the quantized bounding box of Huey in separate window
-
-# MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
-JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
-# Display frame smaller for selection with 1080p video, 1.0 default
-DISPLAY_SCALE = 0.5
-IS_TRANSMITTING = True         # True to send transmissions to live Huey via Arduino
-WEAPON_ON = False               # True if weapon motor should be on
-SHOW_FRAME = True               # Show camera feed frames
-DISPLAY_ANGLES = True           # Only use when SHOW_FRAME is True
-# Process every captured frame, False -> cap at FRAME_RATE
-IS_ORIGINAL_FPS = True
-# FPS used for algo stuff, update to expected FPS on your system.
-FRAME_RATE = 120
-# Show heads-up display with FPS, speed, turn, frame number
 
 # Display toggles
 SHOW_FRAME = True
