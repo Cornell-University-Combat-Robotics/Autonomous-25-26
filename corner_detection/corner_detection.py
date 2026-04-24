@@ -1,17 +1,15 @@
 import os
 import cv2
 import numpy as np
-from .corner_detection_helpers import find_our_bot, find_centroids, compute_angle_between_midpoints, two_corners, math, deque, calc_diagonal_and_side_length
+from .corner_detection_helpers import find_our_bot, find_centroids, compute_angle_between_midpoints, two_corners, math, deque, calc_diagonal_and_side_length, compute_blackout_box, is_overlap, dynamic_threshold
 
 class RobotCornerDetection:
     """
     A class for detecting the corners and orientation of robots in images
     based on their unique colors and shapes.
     """
-    
     LENGTH_BUFFER = 20
-
-    def __init__(self, selected_colors: list, display_final_image: bool = False, display_possible_hueys: bool = False, color_percentage_rows = []):
+    def __init__(self, selected_colors: list, display_final_image: bool = False, display_possible_hueys: bool = False, BLACKOUT=True, thresh = 0.4, frame_rate = 120):
         """
         Initializes the RobotCornerDetection class.
 
@@ -31,7 +29,7 @@ class RobotCornerDetection:
         self.display_final_image = display_final_image
         self.display_possible_hueys = display_possible_hueys
         self.huey_color_percentage_threshold = -1
-        self.color_percentage_rows = color_percentage_rows
+        self.color_percentage_rows = []
         self.centroids = []
         
         # Note: These are actually floats/int but we need them to be mutable
@@ -42,12 +40,16 @@ class RobotCornerDetection:
         self.left_diff = []
         self.right_diff = []
         self.ratio = []
-
+        self.thresh = thresh
+        self.BLACKOUT = BLACKOUT
+        self.dynamic_threshold_window = 60 #frame_rate//2 # Time/Number of Frames for the dynamic threshold for FindOurBot
+        self.threshold_queue = deque(maxlen = self.dynamic_threshold_window)
+        self.running_sum = 0 # running sum of midpoints for threshold logic
 
     def set_bots(self, bots: dict):
         self.bots = bots
     
-    def detect_our_robot_main(self, bot_images: list[np.ndarray], threshold_set=False) -> np.ndarray:
+    def detect_our_robot_main(self, bot_images: list[np.ndarray], threshold_set=True) -> np.ndarray:
         """
         Detects the image containing our robot between two or more given images.
 
@@ -90,7 +92,7 @@ class RobotCornerDetection:
             print(f"Unexpected error in detect_our_robot_main: {e}")
             return None
 
-    def corner_detection_main(self, previous_orientations: list = [], threshold_set: bool=False) -> dict | None:
+    def corner_detection_main(self, previous_orientations: list = [], threshold_set: bool=True) -> dict | None:
         """
         Main function for detecting corners and orientation of the robot.
 
@@ -114,6 +116,7 @@ class RobotCornerDetection:
                     "bbox": huey_bbox,
                     "center": np.mean(huey_bbox, axis=0), # center of the bot with respect to the entire arena
                     "orientation": None,
+                    "corners": 0,
                 }
 
                 # Enemy bots are all except the identified bot
@@ -126,14 +129,21 @@ class RobotCornerDetection:
                                 "center": np.mean(bot_data["bbox"], axis=0),
                             }
                             break
-
-                centroid_points = find_centroids(image, self.selected_colors)
-                self.centroids = centroid_points
+                    
+                    # Compute blackout overlapped part and create csv
+                    if self.BLACKOUT and enemy_bots and enemy_bots["bbox"] and huey and huey["bbox"] and is_overlap(huey["bbox"],enemy_bots["bbox"]):
+                        image = compute_blackout_box(image, huey["bbox"], enemy_bots["bbox"], thresh = self.thresh)
+                        
+                    centroid_points, num_corners = find_centroids(image, self.selected_colors)
+                    self.centroids = centroid_points
                 
                 # Every time we calculate 4 points, calculate diagonal and side length in the case of 1 front 1 back corner in the future
                 calc_diagonal_and_side_length(self.centroids, self.diag_len, self.side_len, self.num_lens)
-                        
-                if (len(centroid_points[0]) + len(centroid_points[1]) == 2):
+
+                print(f"corners: {num_corners}")
+                huey["corners"] = num_corners
+                
+                if (num_corners == 2):
                     if previous_orientations is not None and len(previous_orientations) > 0:
                         previous_orientation = previous_orientations[-1] # why index 0...
                         huey["orientation"] = two_corners(centroid_points, previous_orientation, self.diag_len, self.side_len)
@@ -143,7 +153,7 @@ class RobotCornerDetection:
                         huey["orientation"] = None
                     return {"huey": huey, "enemy": enemy_bots}
 
-                elif (len(centroid_points[0]) + len(centroid_points[1]) < 2):
+                elif (num_corners < 2):
                     print("Less than 2 corners found")
                     return {"huey": huey, "enemy": enemy_bots}
 
