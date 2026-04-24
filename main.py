@@ -312,7 +312,8 @@ def main():
                     # 11. Run the Warped Image through Object Detection
                     # Internal timings (Preprocess, Inference, etc.) are handled inside predict()
                     with rs.log_timing("Object Detection"):
-                        detected_bots = predictor.predict(warped_frame)
+                        # detected_bots = predictor.predict(warped_frame)
+                        detected_bots = predictor.track(warped_frame)
 
                     # 11.5 Quantize Colors
                     with rs.log_timing("Color Quantization"):

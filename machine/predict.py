@@ -97,6 +97,75 @@ class YoloModel(TemplateModel):
 
         output = {"bots": robots, "housebot": housebots}
         return output
+    
+
+    def track(self, img, show=False, rs=None):
+        # Max_det = max number of detections, 3 for housebot + 2 bots. 
+        # Stops YOLO from hallucinating extra bots when confidence is low. 
+        # Iou=0.8 to prevent multiple detections on same bot.
+        predict_kwargs = {
+            "verbose": False, 
+            "imgsz": self.img_size, 
+            "max_det": 3, 
+            "iou": 0.8
+        }
+        
+        if self.device is not None:
+            predict_kwargs["device"] = self.device
+
+        # USE .track() INSTEAD OF CALLING THE MODEL DIRECTLY
+        # persist=True is required to link detections across video frames.
+        # tracker="bytetrack.yaml" is usually the best default, but you can also try "botsort.yaml"
+        results = self.model.track(img, persist=True, tracker="bytetrack.yaml", **predict_kwargs)
+
+        result = results[0]
+
+        # 1. BATCH EXTRACT EVERYTHING TO CPU ONCE
+        # Added safety checks in case no boxes are detected in a frame
+        if result.boxes is None or len(result.boxes) == 0:
+             return {"bots": [], "housebot": []}
+
+        boxes_xyxy = result.boxes.xyxy.cpu().numpy()
+        boxes_xywh = result.boxes.xywh.cpu().numpy()
+        boxes_cls = result.boxes.cls.cpu().numpy()
+        
+        # EXTRACT TRACK IDs
+        # If tracking just initialized or fails for a box, it might return None, so we handle that safely.
+        if result.boxes.id is not None:
+            boxes_id = result.boxes.id.cpu().numpy()
+        else:
+            boxes_id = [None] * len(boxes_xyxy)
+
+        robots = []
+        housebots = []
+
+        # 2. Iterate over the NumPy arrays (much faster)
+        for i in range(len(boxes_xyxy)):
+            x1, y1, x2, y2 = boxes_xyxy[i]
+            cx, cy, _, _ = boxes_xywh[i]
+            cls = boxes_cls[i]
+            track_id = boxes_id[i]
+
+            # 3. Clip coordinates safely
+            x1_c, y1_c = max(0, x1), max(0, y1)
+            x2_c, y2_c = min(700, x2), min(700, y2)
+
+            cropped_img = img[int(y1_c): int(y2_c), int(x1_c): int(x2_c)]
+
+            data = {
+                "track_id": track_id,  # Now you have a persistent ID to track specific bots
+                "bbox": [[x1_c, y1_c], [x2_c, y2_c]],
+                "center": [cx, cy],
+                "img": cropped_img
+            }
+
+            if cls == 0:
+                housebots.append(data)
+            else:
+                robots.append(data)
+
+        output = {"bots": robots, "housebot": housebots}
+        return output
 
     def show_predictions(self, img, bots_dict):
         for label, bots in bots_dict.items():
