@@ -43,13 +43,14 @@ MODE = "video"
 # MODE = "custom"
 
 # Core behavior
-WARP_AND_COLOR_PICKING = False
+WARP_AND_COLOR_PICKING = True
 DISPLAY_SCALE = 0.5  # 1.0 for full-size display, 0.5 for easier 1080p selection
 CAN_RECOVER = False
 BLACKOUT = True
 COLOR_QUANTIZATION = True  # Should almost always stay True
 CAMERA_STREAM = False     # Frame capture thread (must be False for videos)
 IMU_ENABLED = False     # Set to True to enable IMU integration (if hardware is available)
+USE_TRACKING = True       # Use tracking-based predictor instead of running detection on every frame (requires more resources)
 
 # Logging / debug outputs
 SHEET_RUNTIME = True
@@ -92,7 +93,7 @@ if MODE == "comp" or MODE == "live":
 elif MODE == "video":
     IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
     WEAPON_ON = False
-    IS_ORIGINAL_FPS = False         # Process every captured frame, False -> cap at FRAME_RATE, only TRUE for Live
+    IS_ORIGINAL_FPS = True         # Process every captured frame, False -> cap at FRAME_RATE, only TRUE for Live
     FRAME_RATE = 60                 # Manually set frame rate for videos
     CAMERA_STREAM = False           # True to run frame capture in a seperate thread, always false for videos
 
@@ -107,10 +108,10 @@ else:
 
 folder = os.getcwd() + "/main_files"
 # Video options (uncomment one for MODE = "video")
-camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
-# camera_number = folder + "/test_videos/orbital_huey.mp4"
+camera_number = folder + "/test_videos/orbital_huey.mp4"
 
 # Webcam index (used for MODE = "live" or MODE = "comp")
 # camera_number = 0
@@ -312,8 +313,10 @@ def main():
                     # 11. Run the Warped Image through Object Detection
                     # Internal timings (Preprocess, Inference, etc.) are handled inside predict()
                     with rs.log_timing("Object Detection"):
-                        # detected_bots = predictor.predict(warped_frame)
-                        detected_bots = predictor.track(warped_frame)
+                        if USE_TRACKING:
+                            detected_bots = predictor.track(warped_frame)
+                        else:
+                            detected_bots = predictor.predict(warped_frame)
 
                     # 11.5 Quantize Colors
                     with rs.log_timing("Color Quantization"):
