@@ -48,7 +48,8 @@ DISPLAY_SCALE = 0.5  # 1.0 for full-size display, 0.5 for easier 1080p selection
 CAN_RECOVER = False
 BLACKOUT = True
 COLOR_QUANTIZATION = True  # Should almost always stay True
-CAMERA_STREAM = True     # Frame capture thread (must be False for videos)
+CAMERA_STREAM = False     # Frame capture thread (must be False for videos)
+IMU_ENABLED = False     # Set to True to enable IMU integration (if hardware is available)
 
 # Logging / debug outputs
 SHEET_RUNTIME = True
@@ -106,8 +107,8 @@ else:
 
 folder = os.getcwd() + "/main_files"
 # Video options (uncomment one for MODE = "video")
-# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
-camera_number = folder + "/test_videos/huey_hell.mp4"
+camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+# camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
 # camera_number = folder + "/test_videos/orbital_huey.mp4"
 
@@ -126,8 +127,8 @@ with open(quant_settings_file, "r") as f:
     all_settings = json.load(f)
 
 # Quantization Settings
-quantization_settings = None
-# quantization_settings = all_settings["Green Huey"]
+# quantization_settings = None
+quantization_settings = all_settings["Green Huey"]
 # quantization_settings = all_settings["Purple Huey"]
 
 # ------------------------------ BEFORE THE MATCH ------------------------------
