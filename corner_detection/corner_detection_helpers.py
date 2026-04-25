@@ -267,8 +267,8 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
             - Else return average of two potentials
     """
     IS_VALID_ORIE = prev_flipped == is_flipped
-    # print(f"IS_VALID_ORIE: {IS_VALID_ORIE}")
-    # print(f"🦭PREV ORIE: {previous_orientation}")
+    print(f"IS_VALID_ORIE: {IS_VALID_ORIE}")
+    print(f"🦭PREV ORIE: {previous_orientation}")
 
     # we update prev_flipped in corner_detection_main
 
@@ -324,7 +324,7 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
         
         # CASE 2.2: The corners are diagonal
         else:
-            # print(f"🌈🌈🌈CORNERS ON DIFFERENT SIDE: {p1} or {p2} degrees🌈🌈🌈")
+            print(f"🌈🌈🌈CORNERS ON DIFFERENT SIDE: {p1} or {p2} degrees🌈🌈🌈")
             if not IS_VALID_ORIE: # take midorie
                 length = front_points[0][1] - back_points[0][1] # front[0][1] should be y coords,
                 width = front_points[0][0] - back_points[0][0]

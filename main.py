@@ -38,8 +38,8 @@ from sensors.imu_class import IMUReadError
 
 # Run mode (uncomment exactly one)
 # MODE = "comp"
-# MODE = "live"
-MODE = "video"
+MODE = "live"
+# MODE = "video"
 # MODE = "custom"
 
 # Core behavior
@@ -48,8 +48,8 @@ DISPLAY_SCALE = 0.5  # 1.0 for full-size display, 0.5 for easier 1080p selection
 CAN_RECOVER = True
 BLACKOUT = True
 COLOR_QUANTIZATION = True  # Should almost always stay True
-CAMERA_STREAM = False     # Frame capture thread (must be False for videos)
-IMU_ENABLED = False     # Set to True to enable IMU integration (if hardware is available)
+CAMERA_STREAM = True     # Frame capture thread (must be False for videos)
+IMU_ENABLED = True     # Set to True to enable IMU integration (if hardware is available)
 
 # Logging / debug outputs
 SHEET_RUNTIME = True
@@ -110,10 +110,10 @@ folder = os.getcwd() + "/main_files"
 # camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
-camera_number = folder + "/test_videos/blink224_huey.mp4"
+# camera_number = folder + "/test_videos/blink224_huey.mp4"
 
 # Webcam index (used for MODE = "live" or MODE = "comp")
-# camera_number = 0
+camera_number = 0
 # camera_number = 1
 
 # Set to webcam if capturing frames in main loop.
@@ -299,6 +299,7 @@ def main():
                     if IMU_ENABLED:
                         try:
                             cali_yaw = imu_sensor.get_yaw_uncali()
+                            q.append(cali_yaw)
                         except IMUReadError as ex:
                             # print(f"🟥 Error: {ex}") xd rawr
                             pass
@@ -350,15 +351,16 @@ def main():
                             # print("detected bots with data: ", detected_bots_with_data)
                             
                             # if detected_bots_with_data.get("huey") is not None and detected_bots_with_data.get("huey") != {}:
-                            if q and q.count(q[0]) != 15:
+                            print(q)
+                            if q and q.count(q[0]) != 15: 
                                 print(q)
-                                if detected_bots_with_data.get("huey"):
-                                    if (detected_bots_with_data.get("huey").get("orientation") is not None) and detected_bots_with_data.get("huey").get("corners") == 4:
+                                if detected_bots_with_data and detected_bots_with_data.get("huey"):
+                                    if (detected_bots_with_data.get("huey").get("ori fuck this is important too what the hell?entation") is not None) and detected_bots_with_data.get("huey").get("corners") >= 3:
                                         #print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
                                         imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
                                         print("CALLIBRATING")
                                         yaw = 0
-                                    else:
+                                    if (detected_bots_with_data.get("huey").get("orientation") is not None) and (detected_bots_with_data.get("huey").get("corners") <= 1 or detected_bots_with_data.is_diagonal ):
                                         yaw = imu_sensor.get_yaw_continuous()
                                         detected_bots_with_data["huey"]["orientation"] = yaw
                                         print(f"yaw = {yaw}")

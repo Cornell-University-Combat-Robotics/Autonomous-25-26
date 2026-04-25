@@ -31,6 +31,7 @@ class RobotCornerDetection:
         self.huey_color_percentage_threshold = -1
         self.color_percentage_rows = []
         self.diagonal_counter = 0
+        self.is_diagonal = False
         self.centroids = []
         
         # Note: These are actually floats/int but we need them to be mutable
@@ -150,6 +151,7 @@ class RobotCornerDetection:
                     if previous_orientations is not None and len(previous_orientations) > 0:
                         previous_orientation = previous_orientations[-1]
                         calc_orientation, IS_NOT_DIAGONAL = two_corners(centroid_points, previous_orientation, self.diag_len, self.side_len, huey["bbox"], self.prev_flipped, is_flipped=is_flipped)
+                        self.is_diagonal = not IS_NOT_DIAGONAL
                         if IS_NOT_DIAGONAL:
                             self.diagonal_counter = 0
                             huey["orientation"] = calc_orientation
@@ -163,10 +165,12 @@ class RobotCornerDetection:
 
                 elif (num_corners < 2):
                     print("Less than 2 corners found")
+                    self.is_diagonal = False
                     self.diagonal_counter += 1
                     return {"huey": huey, "enemy": enemy_bots}
                 
                 # Four corners
+                self.is_diagonal = False
                 self.diagonal_counter = 0
                 front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5
                 back_midpoint = (centroid_points[1][0] + centroid_points[1][1]) * 0.5
