@@ -107,18 +107,18 @@ else:
 
 folder = os.getcwd() + "/main_files"
 # Video options (uncomment one for MODE = "video")
-camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
 # camera_number = folder + "/test_videos/orbital_huey.mp4"
 
 # Webcam index (used for MODE = "live" or MODE = "comp")
-# camera_number = 0
+camera_number = 0
 # camera_number = 1
 
 # Set to webcam if capturing frames in main loop.
-camera_type = "Video"
-# camera_type = "Webcam"
+# camera_type = "Video"
+camera_type = "Webcam"
 
 # ------------------------------ QUANTIZATION SETTINGS ------------------------------
 
@@ -190,7 +190,9 @@ def main():
 
         if IMU_ENABLED:
             imu_sensor = IMU_sensor()
+            q = deque(maxlen=15)
             cali_yaw = 0
+            q.append(0)
 
         # Initialize corner detection
         corner_detection = RobotCornerDetection(selected_colors, False, False, BLACKOUT=BLACKOUT, thresh=0.4, frame_rate = FRAME_RATE)
@@ -348,17 +350,19 @@ def main():
                             # print("detected bots with data: ", detected_bots_with_data)
                             
                             # if detected_bots_with_data.get("huey") is not None and detected_bots_with_data.get("huey") != {}:
-                            if detected_bots_with_data.get("huey"):
-                                if (detected_bots_with_data.get("huey").get("orientation") is not None) and detected_bots_with_data.get("huey").get("corners") == 4:
-                                    #print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
-                                    imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
-                                    print("CALLIBRATING")
-                                    yaw = 0
-                                else:
-                                    yaw = imu_sensor.get_yaw_continuous()
-                                    detected_bots_with_data["huey"]["orientation"] = yaw
-                                    print(f"yaw = {yaw}")
-                                    draw_yaw_text(warped_frame,yaw,is_flipped)
+                            if q and q.count(q[0]) != 15:
+                                print(q)
+                                if detected_bots_with_data.get("huey"):
+                                    if (detected_bots_with_data.get("huey").get("orientation") is not None) and detected_bots_with_data.get("huey").get("corners") == 4:
+                                        #print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
+                                        imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
+                                        print("CALLIBRATING")
+                                        yaw = 0
+                                    else:
+                                        yaw = imu_sensor.get_yaw_continuous()
+                                        detected_bots_with_data["huey"]["orientation"] = yaw
+                                        print(f"yaw = {yaw}")
+                                        draw_yaw_text(warped_frame,yaw,is_flipped)
                             # is_flipped = imu_sensor.get_upside_down_continuous()
                             print(f"flipped = {is_flipped}")
                             # print("detected bots with data: ", detected_bots_with_data)
