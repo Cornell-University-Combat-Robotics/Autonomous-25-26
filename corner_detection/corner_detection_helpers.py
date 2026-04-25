@@ -267,8 +267,8 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
             - Else return average of two potentials
     """
     IS_VALID_ORIE = prev_flipped == is_flipped
-    print(f"IS_VALID_ORIE: {IS_VALID_ORIE}")
-    print(f"🦭PREV ORIE: {previous_orientation}")
+    # print(f"IS_VALID_ORIE: {IS_VALID_ORIE}")
+    # print(f"🦭PREV ORIE: {previous_orientation}")
 
     # we update prev_flipped in corner_detection_main
 

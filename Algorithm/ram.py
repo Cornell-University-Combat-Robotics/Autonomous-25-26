@@ -332,7 +332,7 @@ class Ram():
             self.is_recovering = False
             return self.huey_move(self.BACK_UP_SPEED, self.BACK_UP_TURN)
         self.is_backing = False
-        print("🦫",diagonal_counter)
+        # print("🦫",diagonal_counter)
         if (self.check_previous_position_and_orientation(can_recover) or diagonal_counter > fps/4):
             if (bots and bots["huey"] and len(bots["huey"]) > 0):
                 self.huey_position = np.array(bots['huey'].get('center'))

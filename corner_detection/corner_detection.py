@@ -143,7 +143,7 @@ class RobotCornerDetection:
                 # Every time we calculate 4 points, calculate diagonal and side length in the case of 1 front 1 back corner in the future
                 calc_diagonal_and_side_length(self.centroids, self.diag_len, self.side_len, self.num_lens)
 
-                print(f"corners: {num_corners}")
+                # print(f"corners: {num_corners}")
                 huey["corners"] = num_corners
                 
                 if (num_corners == 2):
