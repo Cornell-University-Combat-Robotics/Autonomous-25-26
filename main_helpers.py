@@ -155,7 +155,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
     first_run_ml = quantize(first_run_ml, selected_colors,
                             show=False, is_flipped=False)
     corner_detection.set_bots(first_run_ml)
-    first_run_orientation = corner_detection.corner_detection_main(threshold_set=False, previous_orientations=[])
+    first_run_orientation, confidence = corner_detection.corner_detection_main(threshold_set=False, previous_orientations=[])
 
     if first_run_orientation and first_run_orientation["huey"] and first_run_orientation["enemy"]:
         # Ensure single enemy

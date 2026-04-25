@@ -206,14 +206,17 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
     # 5. Extract top 2 centroids
     centroids = []
     for contour in sorted_contours:
-        if len(centroids) >= 2:
-            break
-            
-        M = cv2.moments(contour)
-        if M["m00"] != 0:
-            cx = int(M["m10"] / M["m00"])
-            cy = int(M["m01"] / M["m00"])
-            centroids.append((cx, cy))
+        area = cv2.contourArea(contour)
+        print("Area", area)
+        if area > 20:
+            if len(centroids) >= 2:
+                break
+                
+            M = cv2.moments(contour)
+            if M["m00"] != 0:
+                cx = int(M["m10"] / M["m00"])
+                cy = int(M["m01"] / M["m00"])
+                centroids.append((cx, cy))
             
     return centroids
 
@@ -225,6 +228,7 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
 
     Returns: list: A list containing centroids for the front and back corners.
     """
+    three = False
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     centroid_front = find_centroids_per_color("front", image, hsv_image, selected_colors)
     centroid_back = find_centroids_per_color("back", image, hsv_image, selected_colors)
@@ -233,9 +237,11 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     if len(centroid_front) == 1 and len(centroid_back) == 2:
         points = [centroid_front, centroid_back]
         centroid_front, centroid_back = get_missing_point(points)
+        three = three or True
     elif len(centroid_back) == 1 and len(centroid_front) == 2:
         points = [centroid_front, centroid_back]
         centroid_front, centroid_back = get_missing_point(points)
+        three = three or True
 
     # # Ensure we have exactly 2 points for front and back
     # if len(centroid_front) < 2 or len(centroid_back) < 2:
@@ -245,7 +251,7 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     front_array = np.array(centroid_front[:2])  # Take first 2 points if more exist
     back_array = np.array(centroid_back[:2])    # Take first 2 points if more exist
 
-    return np.array([front_array, back_array], dtype=object)
+    return np.array([front_array, back_array], dtype=object), three
 
 def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagonals: list, sides: list, huey_bbox, prev_flipped:int, is_flipped: int) -> (float, bool):
     """

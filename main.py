@@ -36,7 +36,7 @@ WARP_AND_COLOR_PICKING = False
 DISPLAY_SCALE = 0.5                # Display frame smaller for selection with 1080p video, 1.0 default
 
 COMP = False
-LIVE_TESTING = True
+LIVE_TESTING = False
 CAN_RECOVER = True
 BLACKOUT = True                    # Filter out enemy bot intersection w/Huey
 SHEET_RUNTIME = True               # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
@@ -82,16 +82,16 @@ else: # VIDEO_TESTING
 # ------------------------------ CAMERA/VIDEOS ------------------------------
 
 folder = os.getcwd() + "/main_files"
-# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/diagona_huey.mp4"
 # camera_number = folder + "/test_videos/huey_backs.mp4"
 # camera_number = 1
-camera_number = 0
+# camera_number = 0
 
 # Set to webcam if capturing frames in main loop.
-# camera_type = "Video"
-camera_type = "Webcam"
+camera_type = "Video"
+# camera_type = "Webcam"
 
 # ------------------------------ QUANTIZATION SETTINGS ------------------------------
 
@@ -300,7 +300,9 @@ def main():
                     # 12. Run Object Detection's results through Corner Detection
                     with rs.log_timing("Corner Detection"):
                         corner_detection.set_bots(detected_bots)
-                        detected_bots_with_data, confidence = corner_detection.corner_detection_main(algorithm.huey_previous_orientations, is_flipped=is_flipped)
+                        print("called corner main")
+                        detected_bots_with_data, confidence = corner_detection.corner_detection_main(algorithm.huey_previous_orientations, is_flipped=is_flipped, tolerance=20)
+                        print("Confidence 😤😤😤: ", confidence)
 
                     # Prepare Quantized Huey Image (for display buffer)
                     huey_display_img = None
