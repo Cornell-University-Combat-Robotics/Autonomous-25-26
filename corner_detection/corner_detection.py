@@ -101,7 +101,6 @@ class RobotCornerDetection:
             dict: A dictionary containing details of the robot and enemy robots.
         """
         try:
-            print(f"🐬diagona counter: {self.diagonal_counter}")
             bot_images = [bot["img"] for bot in self.bots["bots"]]
             image = self.detect_our_robot_main(bot_images, threshold_set)
 
@@ -158,8 +157,6 @@ class RobotCornerDetection:
                             self.diagonal_counter += 1
                             huey["orientation"] = previous_orientation
                         self.prev_flipped = is_flipped
-                        # print(f"PREV ORIENT: 🌸🐋💛 {previous_orientation}")
-                        # print(f"Current ORIENT: 💛🐋🌸 { huey["orientation"]}")
                     else:
                         huey["orientation"] = None
                     return {"huey": huey, "enemy": enemy_bots}
@@ -169,7 +166,7 @@ class RobotCornerDetection:
                     self.diagonal_counter += 1
                     return {"huey": huey, "enemy": enemy_bots}
                 
-                print("FOURNER4️⃣")
+                # Four corners
                 self.diagonal_counter = 0
                 front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5
                 back_midpoint = (centroid_points[1][0] + centroid_points[1][1]) * 0.5

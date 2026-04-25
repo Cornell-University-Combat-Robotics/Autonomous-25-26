@@ -123,7 +123,7 @@ def dynamic_threshold(self, threshold_set, bot_color_percentages):
     
     # Case 2: Updating threshold and running sum using queue
     elif threshold_set and len(bot_color_percentages) >= 2:
-        # print("💀 DYNAMIC THRESHOLD")
+        # Dynamic Threshold
         huey_color_percentage = bot_color_percentages[-1]
         enemy_color_percentage = bot_color_percentages[-2]
 
