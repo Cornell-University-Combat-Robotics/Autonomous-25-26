@@ -238,14 +238,14 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
             end_point = (int(start_x + 300 * dx), int(start_y + 300 * dy))
             cv2.arrowedLine(image, (start_x, start_y), end_point, (255, 0, 0), 2)
 
-            # Huey's corner points
-            x_shift = int(detected_bots_with_data["huey"]['bbox'][0][0])
-            y_shift = int(detected_bots_with_data["huey"]['bbox'][0][1])
+            # # Huey's corner points
+            # x_shift = int(detected_bots_with_data["huey"]['bbox'][0][0])
+            # y_shift = int(detected_bots_with_data["huey"]['bbox'][0][1])
 
-            for i in range(len(centroids)):
-                color = (255, 255, 0) if i == 0 else (0, 255, 255)
-                for p in centroids[i]:
-                    cv2.circle(image, (p[0] + x_shift, p[1] + y_shift), 8, color, -1)
+            # for i in range(len(centroids)):
+            #     color = (255, 255, 0) if i == 0 else (0, 255, 255)
+            #     for p in centroids[i]:
+            #         cv2.circle(image, (p[0] + x_shift, p[1] + y_shift), 8, color, -1)
 
             # RED line: Huey's Desired Orientation according to Algorithm
             if move_dictionary and (move_dictionary["turn"]):
@@ -304,6 +304,22 @@ def quantize(detected_bots, selected_colors, show, is_flipped=False, settings=No
         bot["img"] = quantize_robot_colors(bot["img"], bgr_colors, thresh_lab=threshold,keep_background=False, show=show, custom_weights=custom_weights)
 
     return detected_bots
+
+def draw_yaw_text(image, yaw_value,unflipped, valid=True):
+    """Draws the yaw value in degrees onto the OpenCV image window."""
+    print(f"unflipped: {unflipped}")
+    if yaw_value is None:
+        return
+    
+    cv2.putText(
+        image,
+        f"Yaw: {yaw_value:.2f} deg, Unflipped: {unflipped:.2f} deg, Valid sensor: {valid}",
+        (20, 40),                      # top-left
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1.2,
+        (0, 255, 255),                 # yellow
+        3
+    )
 
 
 def draw_hud(image, fps10=None, move_dictionary=None, iteration=None, playback_speed=None):

@@ -1,115 +1,102 @@
-/*
-    ESP-NOW Broadcast Slave
-    Lucas Saavedra Vaz - 2024
-
-    This sketch demonstrates how to receive broadcast messages from a master device using the ESP-NOW protocol.
-
-    The master device will broadcast a message every 5 seconds to all devices within the network.
-
-    The slave devices will receive the broadcasted messages. If they are not from a known master, they will be registered as a new master
-    using a callback function.
-*/
-
 #include "ESP32_NOW.h"
 #include "WiFi.h"
+#include <esp_mac.h>
 
-#include <esp_mac.h>  // For the MAC2STR and MACSTR macros
-
-#include <vector>
-
-/* Definitions */
+/* ================= CONFIG ================= */
 
 #define ESPNOW_WIFI_CHANNEL 6
 
-/* Classes */
+/* ================= DATA STRUCT ================= */
 
-// Creating a new class that inherits from the ESP_NOW_Peer class is required.
+// MUST match sender EXACTLY
+struct Packet {
+  float gr, gi, gj, gk;
+  float gx, gy, gz;
+  float t;
+};
+
+/* ================= PEER CLASS ================= */
 
 class ESP_NOW_Peer_Class : public ESP_NOW_Peer {
 public:
-  // Constructor of the class
-  ESP_NOW_Peer_Class(const uint8_t *mac_addr, uint8_t channel, wifi_interface_t iface, const uint8_t *lmk) : ESP_NOW_Peer(mac_addr, channel, iface, lmk) {}
+  ESP_NOW_Peer_Class(const uint8_t *mac_addr, uint8_t channel, wifi_interface_t iface, const uint8_t *lmk)
+    : ESP_NOW_Peer(mac_addr, channel, iface, lmk) {}
 
-  // Destructor of the class
-  ~ESP_NOW_Peer_Class() {}
-
-  // Function to register the master peer
   bool add_peer() {
-    if (!add()) {
-      log_e("Failed to register the broadcast peer");
-      return false;
-    }
-    return true;
+    return add();
   }
 
-  // Function to print the received messages from the master
   void onReceive(const uint8_t *data, size_t len, bool broadcast) {
-    //Serial.printf("Received a message from master " MACSTR " (%s)\n", MAC2STR(addr()), broadcast ? "broadcast" : "unicast");
-    Serial.printf("%s\n",data);
+
+    if (len != sizeof(Packet)) {
+      Serial.printf("Bad packet size: %d\n", len);
+      return;
+    }
+
+    Packet p;
+    memcpy(&p, data, sizeof(Packet));
+
+    Serial.printf(
+    "{\"acc\": {\"x\": %.2f, \"y\": %.2f, \"z\": %.2f}, \"rot\": {\"r\": %.2f, \"i\": %.2f, \"j\": %.2f, \"k\": %.2f}, \"temp\": {\"t\": %.2f}}\n",
+    p.gx, p.gy, p.gz,
+    p.gr, p.gi, p.gj, p.gk,
+    p.t
+  );
   }
 };
 
-/* Global Variables */
+/* ================= GLOBAL ================= */
 
-// List of all the masters. It will be populated when a new master is registered
-std::vector<ESP_NOW_Peer_Class> masters;
+ESP_NOW_Peer_Class *master_peer = nullptr;
 
-/* Callbacks */
+/* ================= CALLBACK ================= */
 
-// Callback called when an unknown peer sends a message
+// Called when unknown device sends broadcast
 void register_new_master(const esp_now_recv_info_t *info, const uint8_t *data, int len, void *arg) {
-  if (memcmp(info->des_addr, ESP_NOW.BROADCAST_ADDR, 6) == 0) {
-    Serial.printf("Unknown peer " MACSTR " sent a broadcast message\n", MAC2STR(info->src_addr));
-    Serial.println("Registering the peer as a master");
 
-    ESP_NOW_Peer_Class new_master(info->src_addr, ESPNOW_WIFI_CHANNEL, WIFI_IF_STA, NULL);
-
-    masters.push_back(new_master);
-    if (!masters.back().add_peer()) {
-      Serial.println("Failed to register the new master");
-      return;
-    }
-  } else {
-    // The slave will only receive broadcast messages
-    log_v("Received a unicast message from " MACSTR, MAC2STR(info->src_addr));
-    log_v("Igorning the message");
+  if (memcmp(info->des_addr, ESP_NOW.BROADCAST_ADDR, 6) != 0) {
+    return;
   }
+
+  Serial.printf("New master: " MACSTR "\n", MAC2STR(info->src_addr));
+
+  // Create peer
+  master_peer = new ESP_NOW_Peer_Class(info->src_addr, ESPNOW_WIFI_CHANNEL, WIFI_IF_STA, NULL);
+
+  if (!master_peer->add_peer()) {
+    Serial.println("Failed to add peer");
+    return;
+  }
+
+  Serial.println("Master registered");
 }
 
-/* Main */
+/* ================= SETUP ================= */
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial) {
-    delay(10);
-  }
+  setCpuFrequencyMhz(80);
 
-  // Initialize the Wi-Fi module
   WiFi.mode(WIFI_STA);
   WiFi.setChannel(ESPNOW_WIFI_CHANNEL);
+
   while (!WiFi.STA.started()) {
-    delay(100);
+    delay(50);
   }
 
-  Serial.println("ESP-NOW Example - Broadcast Slave");
-  Serial.println("Wi-Fi parameters:");
-  Serial.println("  Mode: STA");
-  Serial.println("  MAC Address: " + WiFi.macAddress());
-  Serial.printf("  Channel: %d\n", ESPNOW_WIFI_CHANNEL);
+  Serial.println("Receiver ready");
 
-  // Initialize the ESP-NOW protocol
   if (!ESP_NOW.begin()) {
-    Serial.println("Failed to initialize ESP-NOW");
-    Serial.println("Reeboting in 5 seconds...");
-    delay(5000);
+    Serial.println("ESP-NOW init failed");
     ESP.restart();
   }
 
-  // Register the new peer callback
   ESP_NOW.onNewPeer(register_new_master, NULL);
 
-  Serial.println("Setup complete. Waiting for a master to broadcast a message...");
+  Serial.println("Waiting for data...");
 }
+
+/* ================= LOOP ================= */
 
 void loop() {
   delay(1000);
