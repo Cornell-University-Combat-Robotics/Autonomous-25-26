@@ -36,7 +36,7 @@ WARP_AND_COLOR_PICKING = False
 DISPLAY_SCALE = 0.5                # Display frame smaller for selection with 1080p video, 1.0 default
 
 COMP = False
-LIVE_TESTING = True
+LIVE_TESTING = False
 CAN_RECOVER = True
 BLACKOUT = True                    # Filter out enemy bot intersection w/Huey
 SHEET_RUNTIME = True               # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
@@ -70,7 +70,6 @@ if COMP or LIVE_TESTING:
 
     else: # LIVE_TESTING
         WEAPON_ON = False
-        IS_TRANSMITTING = False
 
 else: # VIDEO_TESTING
     IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
@@ -84,14 +83,14 @@ else: # VIDEO_TESTING
 folder = os.getcwd() + "/main_files"
 # camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-# camera_number = folder + "/test_videos/diagona_huey.mp4"
+camera_number = folder + "/test_videos/diagona_huey.mp4"
 # camera_number = folder + "/test_videos/huey_backs.mp4"
 # camera_number = 1
-camera_number = 0
+# camera_number = 0
 
 # Set to webcam if capturing frames in main loop.
-# camera_type = "Video"
-camera_type = "Webcam"
+camera_type = "Video"
+# camera_type = "Webcam"
 
 # ------------------------------ QUANTIZATION SETTINGS ------------------------------
 
