@@ -108,9 +108,10 @@ else:
 folder = os.getcwd() + "/main_files"
 # Video options (uncomment one for MODE = "video")
 # camera_number = folder + "/test_videos/huey_vs_prince.mp4"
-# camera_number = folder + "/test_videos/huey_hell.mp4"
+camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
-camera_number = folder + "/test_videos/blink224_huey.mp4"
+# camera_number = folder + "/test_videos/blink224_huey.mp4"
+# camera_number = folder + "/test_videos/blink224_huey.mp4"
 
 # Webcam index (used for MODE = "live" or MODE = "comp")
 # camera_number = 0
