@@ -95,10 +95,10 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Tr
         # Say we can't find huey if the bot's are below the huey threshold (for recovery)
         if len(bot_color_percentages) == 1 and bot_color_percentages[-1] < self.huey_color_percentage_threshold:
             our_bot_image = None
-            print("💔 check A")
+            # print("💔 check A")
         elif len(bot_color_percentages) > 1 and bot_color_percentages[-1] < min(MIN_THRESHOLD, self.huey_color_percentage_threshold):
             our_bot_image = None
-            print("💛 check B")
+            # print("💛 check B")
         
         return our_bot_image
     
@@ -123,7 +123,7 @@ def dynamic_threshold(self, threshold_set, bot_color_percentages):
     
     # Case 2: Updating threshold and running sum using queue
     elif threshold_set and len(bot_color_percentages) >= 2:
-        # print("💀 DYNAMIC THRESHOLD")
+        # Dynamic Threshold
         huey_color_percentage = bot_color_percentages[-1]
         enemy_color_percentage = bot_color_percentages[-2]
 
@@ -248,55 +248,93 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
 
     return np.array([front_array, back_array], dtype=object), num_corners
 
-def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagonals: list, sides: list) -> float:
+def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagonals: list, sides: list, huey_bbox, prev_flipped:int, is_flipped: int) -> (float, bool):
     """
-    Handles orientation calculation when only 2 points are detected.
+    Handles orientation calculation when only 2 points are detected by cases.
+    Case 1: 2 Front or 2 Back corners are found
+        - Finds the two possible angles
+        - Finds the angle of the line between the center of Huey's bbox and the 
+          midpoint of the 2 corners found.
+        - Chooses the closer possible angle based on
+          
+    Case 2:
+        Case 2.1: Same-Side Corners
+        - Only one potential orientation: returns angle corr. front --> back
+        Case 2.2: Diagonal Corners
+        - Two potential orientations:
+            - If valid orientation (i.e. not recently flipped), 
+            return closest angle to prev  
+            - Else return average of two potentials
     """
+    IS_VALID_ORIE = prev_flipped == is_flipped
+    # print(f"IS_VALID_ORIE: {IS_VALID_ORIE}")
+    # print(f"🦭PREV ORIE: {previous_orientation}")
+
+    # we update prev_flipped in corner_detection_main
 
     front_points = centroid_points[0]
     back_points = centroid_points[1]
 
-    # CASE 1: Only 2 Front Corners detected OR Only 2 Back Corners detected
+    hx_min, hy_min, hx_max, hy_max = norm_from_bbox(huey_bbox)
+    huey_center = ((hx_max - hx_min) / 2, (hy_max - hy_min) / 2)
 
+    # CASE 1: Only 2 Front Corners detected OR Only 2 Back Corners detected
     if len(front_points) == 2 or len(back_points) == 2:
         # Correctly pick the points based on which list has 2
-        points = front_points if len(front_points) == 2 else back_points
-
+        
+        points, frnt = (front_points, True) if len(front_points) == 2 else (back_points, False)
+        
         point1, point2 = points[0], points[1]
         dx = point2[0] - point1[0]
         dy = -(point2[1] - point1[1]) # Flip Y for image coordinates
         
         line_angle = math.degrees(math.atan2(dy, dx))
 
+        midpoint = [(a + b) / 2 for a, b in zip(point1, point2)]
+        dy_math = -(midpoint[1] - huey_center[1])
+        dx = (midpoint[0] - huey_center[0])
+        direction_angle = (np.degrees(np.arctan2(dy_math, dx)) + 360.0) % 360.0
+        if not frnt:
+            direction_angle = (direction_angle + 180) % 360
+        
         angle1 = (line_angle + 90) % 360 # Perpendicular possibilities
         angle2 = (line_angle - 90) % 360
         
-        return pick_closest_angle(angle1, angle2, previous_orientation)
+        return pick_closest_angle(angle1, angle2, direction_angle), True
 
     # CASE 2: 1 Front and 1 Back Corner detected.
     elif len(front_points) == 1 and len(back_points) == 1:
-        if len(diagonals) > 0:
+        if len(diagonals) == 0:
+            diagonal_avg = 93
+            sides_avg = 67 # TODO: arbitrary default
+        else:
             diagonal_avg = diagonals[0]
             sides_avg = sides[0]
 
-            cutoff = (diagonal_avg + sides_avg)/2
-            corner_distance = distance(front_points[0], back_points[0])
-            dx = front_points[0][0] - back_points[0][0]
-            dy = -(front_points[0][1] - back_points[0][1])
-            angle = math.atan2(dy,dx) * (180/math.pi)
+        cutoff = (diagonal_avg + sides_avg)/2
+        corner_distance = distance(front_points[0], back_points[0])
+        dx = front_points[0][0] - back_points[0][0]
+        dy = -(front_points[0][1] - back_points[0][1])
+        angle = math.atan2(dy,dx) * (180/math.pi)
+        
+        # CASE 2.1: Both corners are on the same side
+        if (corner_distance < cutoff):
+            # print(f"🌫️🌫️🌫️🌫️🌫️CORNERS ON SAME SIDE: {angle} degrees")
+            return angle, True
+        
+        # CASE 2.2: The corners are diagonal
+        else:
+            # print(f"🌈🌈🌈CORNERS ON DIFFERENT SIDE: {p1} or {p2} degrees🌈🌈🌈")
+            if not IS_VALID_ORIE: # take midorie
+                length = front_points[0][1] - back_points[0][1] # front[0][1] should be y coords,
+                width = front_points[0][0] - back_points[0][0]
+                hypotenuse = math.sqrt(math.pow(length, 2) + math.pow(width, 2))
+                return math.asin(width/hypotenuse) * (180/math.pi)
             
-            # CASE 2.1: Both corners are on the same side
-            if (corner_distance < cutoff):
-                # print(f"🌫️🌫️🌫️🌫️🌫️CORNERS ON SAME SIDE: {angle} degrees")
-                return angle
-            
-            # CASE 2.2: The corners are diagonal
-            else:
+            else: 
                 p1 = (angle + 45) % 360
                 p2 = (angle - 45) % 360
-                # print(f"🌈🌈🌈CORNERS ON DIFFERENT SIDE: {p1} or {p2} degrees🌈🌈🌈")
-                
-                return pick_closest_angle(p1, p2, previous_orientation)
+                return pick_closest_angle(p1, p2, previous_orientation), False
 
     raise ValueError(f"Invalid point configuration: Front={len(front_points)}, Back={len(back_points)}")
 
@@ -338,7 +376,8 @@ def pick_closest_angle(angle1: float, angle2: float, target: float) -> float:
     """Helper to find which candidate is closer to the previous orientation."""
     def get_diff(a, b):
         return abs((a - b + 180) % 360 - 180)
-    
+
+
     return angle1 if get_diff(angle1, target) < get_diff(angle2, target) else angle2
 
 def distance(point1: tuple, point2: tuple) -> float:

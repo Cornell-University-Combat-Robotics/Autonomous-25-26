@@ -247,19 +247,6 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
             #     for p in centroids[i]:
             #         cv2.circle(image, (p[0] + x_shift, p[1] + y_shift), 8, color, -1)
 
-                # for i in range(len(centroids)):
-                # color = (255, 255, 0) if i == 0 else (0, 255, 255)
-                # for p, c in centroids[i]:
-                #     if p == 0 and i == 0: # FRONT L
-                #         color = (255, 255, 0)
-                #     if p == 0 and i == 1: # FRONT R
-                #         color = (255, 255, 100)
-                #     if p == 1 and i == 0: # BACK L
-                #         color = (100, 255, 255)
-                #     if p == 1 and i == 1: # BACK R
-                #         color = (0, 255, 255)
-                #     cv2.circle(image, (c[0] + x_shift, c[1] + y_shift), 8, color, -1)
-
             # RED line: Huey's Desired Orientation according to Algorithm
             if move_dictionary and (move_dictionary["turn"]):
                 turn = move_dictionary["turn"]  # angle in degrees / 180
