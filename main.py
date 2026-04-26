@@ -398,7 +398,7 @@ def main():
                             motor_group.move(speed*is_flipped, turn * -1)
                             if WEAPON_ON:
                                 weapon_motor_group.move(
-                                    1 if weapon_on_this_frame else 0)
+                                    0.8 if weapon_on_this_frame else 0)
 
                     # Prepare Main Display Image
                     main_display_img = None
