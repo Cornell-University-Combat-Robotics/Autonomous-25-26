@@ -280,15 +280,22 @@ def initialize_quantization():
 
 def quantize(detected_bots, selected_colors, show, is_flipped=False, settings=None):
     
-    #Settings if no custom settings are input:
+    print(f"Is flipped: {is_flipped}")
+
+    # Settings if no custom settings are input:
     custom_weights = None
     if(is_flipped == 1):
         threshold = 18
     else:
         threshold = 22
 
+    # Settings if we DO have custom settings
     if settings:
         threshold = settings['threshold']
+
+        if(is_flipped == -1):
+            threshold *= 1.2 #If we are flipped, increase threshold by 20% of current threshold
+
         custom_weights = settings['quantization_weights']
 
     colors_hsv_1x = np.array(selected_colors).reshape(1, -1, 3)
