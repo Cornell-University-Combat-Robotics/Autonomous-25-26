@@ -146,6 +146,7 @@ class RobotCornerDetection:
 
                 # print(f"corners: {num_corners}")
                 huey["corners"] = num_corners
+                print(f"CORNERS = {huey["corners"]}")
                 
                 if (num_corners == 2):
                     if previous_orientations is not None and len(previous_orientations) > 0:
@@ -167,6 +168,7 @@ class RobotCornerDetection:
                     print("Less than 2 corners found")
                     self.is_diagonal = False
                     self.diagonal_counter += 1
+                    print(f"😂CORERS WHEN NUM COENRERS LESS THAN 2 {huey["corners"]}")
                     return {"huey": huey, "enemy": enemy_bots}
                 
                 # Four corners

@@ -43,9 +43,9 @@ MODE = "live"
 # MODE = "custom"
 
 # Core behavior
-WARP_AND_COLOR_PICKING = True
+WARP_AND_COLOR_PICKING = False
 DISPLAY_SCALE = 0.5  # 1.0 for full-size display, 0.5 for easier 1080p selection
-CAN_RECOVER = True
+CAN_RECOVER = False
 BLACKOUT = True
 COLOR_QUANTIZATION = True  # Should almost always stay True
 CAMERA_STREAM = True     # Frame capture thread (must be False for videos)
@@ -351,16 +351,17 @@ def main():
                             # print("detected bots with data: ", detected_bots_with_data)
                             
                             # if detected_bots_with_data.get("huey") is not None and detected_bots_with_data.get("huey") != {}:
-                            print(q)
+                            # print(q)
                             if q and q.count(q[0]) != 15: 
-                                print(q)
                                 if detected_bots_with_data and detected_bots_with_data.get("huey"):
+                                    print(f"DETECTED BOTS WITH DATA {detected_bots_with_data.get("huey")}")
                                     if (detected_bots_with_data.get("huey").get("orientation") is not None) and detected_bots_with_data.get("huey").get("corners") >= 3:
                                         #print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
                                         imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
                                         print("CALLIBRATING")
                                         yaw = 0
-                                    if (detected_bots_with_data.get("huey").get("orientation") is not None) and (detected_bots_with_data.get("huey").get("corners") <= 1 or detected_bots_with_data.is_diagonal ):
+                                    if (detected_bots_with_data.get("huey")) and (detected_bots_with_data.get("huey").get("corners") <= 1 or corner_detection.is_diagonal ):
+                                        print(f"USING SENSORS USING SENSORS USING SENSORS")
                                         yaw = imu_sensor.get_yaw_continuous()
                                         detected_bots_with_data["huey"]["orientation"] = yaw
                                         print(f"yaw = {yaw}")

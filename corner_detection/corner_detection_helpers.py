@@ -324,8 +324,9 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
         
         # CASE 2.2: The corners are diagonal
         else:
-            print(f"🌈🌈🌈CORNERS ON DIFFERENT SIDE: {p1} or {p2} degrees🌈🌈🌈")
+            
             if not IS_VALID_ORIE: # take midorie
+                print(f"💀MIDORIE")
                 length = front_points[0][1] - back_points[0][1] # front[0][1] should be y coords,
                 width = front_points[0][0] - back_points[0][0]
                 hypotenuse = math.sqrt(math.pow(length, 2) + math.pow(width, 2))
@@ -334,6 +335,7 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
             else: 
                 p1 = (angle + 45) % 360
                 p2 = (angle - 45) % 360
+                print(f"🌈🌈🌈CORNERS ON DIFFERENT SIDE: {p1} or {p2} degrees🌈🌈🌈")
                 return pick_closest_angle(p1, p2, previous_orientation), False
 
     raise ValueError(f"Invalid point configuration: Front={len(front_points)}, Back={len(back_points)}")
