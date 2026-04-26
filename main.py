@@ -355,7 +355,7 @@ def main():
                             if q and q.count(q[0]) != 15: 
                                 print(q)
                                 if detected_bots_with_data and detected_bots_with_data.get("huey"):
-                                    if (detected_bots_with_data.get("huey").get("ori fuck this is important too what the hell?entation") is not None) and detected_bots_with_data.get("huey").get("corners") >= 3:
+                                    if (detected_bots_with_data.get("huey").get("orientation") is not None) and detected_bots_with_data.get("huey").get("corners") >= 3:
                                         #print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
                                         imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
                                         print("CALLIBRATING")
