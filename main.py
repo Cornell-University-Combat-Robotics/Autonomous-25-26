@@ -37,8 +37,8 @@ from sensors.imu_class import IMUReadError
 # Keep one option active per setting. Commented lines directly below are common alternatives.
 
 # Run mode (uncomment exactly one)
-# MODE = "comp"
-MODE = "live"
+MODE = "comp"
+# MODE = "live"
 # MODE = "video"
 # MODE = "custom"
 
@@ -63,7 +63,7 @@ SHOW_QUANTIZED_HUEY = True
 
 # Hardware / controls
 JANK_CONTROLLER = False  # Deprecated backup controller path
-IS_TRANSMITTING = False
+IS_TRANSMITTING = True
 WEAPON_ON = False
 
 # Frame timing
@@ -146,6 +146,10 @@ shared_state_lock = threading.Lock()
 shared_state = {"key": None, "flipped": None,
                 "paused": False, "skip_frame": False, "weapon_on": WEAPON_ON}
 
+prev_sensor_val = 0
+curr_sensor_val = 0
+total_sensor_val = 0
+
 def main():
     stream = None
     try:
@@ -191,9 +195,7 @@ def main():
         if IMU_ENABLED:
             imu_sensor = IMU_sensor()
             cali_yaw = 0
-            prev_sensor_val = 0
-            curr_sensor_val = 0
-            total_sensor_val = 0
+        
 
         # Initialize corner detection
         corner_detection = RobotCornerDetection(selected_colors, False, False, BLACKOUT=BLACKOUT, thresh=0.4, frame_rate = FRAME_RATE)
@@ -232,6 +234,8 @@ def main():
         # This is all of our processing code minus the display of the images.
         # Any image displays should modify the frame that is returned at the end of the loop.
         def perception_pipeline():
+            global prev_sensor_val, curr_sensor_val, total_sensor_val
+
             prev = ptime()
             last_frame = 0
             iteration = 0
@@ -406,7 +410,7 @@ def main():
                             motor_group.move(speed*is_flipped, turn * -1)
                             if WEAPON_ON:
                                 weapon_motor_group.move(
-                                    0.8 if weapon_on_this_frame else 0)
+                                    0.3 if weapon_on_this_frame else 0) # 0.8 before
 
                     # Prepare Main Display Image
                     main_display_img = None
