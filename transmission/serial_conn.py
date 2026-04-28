@@ -25,7 +25,7 @@ class OurSerial():
 
     """
 
-    def __init__(self, baudrate=115200, timeout=1, port=None):
+    def __init__(self, baudrate=115200, timeout=1, port=None, auto_select_iouusb=False):
         """
         Parameters
         ----------
@@ -37,10 +37,73 @@ class OurSerial():
             port arduino is connected to. If None, then calls choose_port for port selection
         """
 
+        if port is None and auto_select_iouusb:
+            port = self.auto_select_iouusb_port()
         if port is None:
             port = self.choose_port()
         self.ser = serial.Serial(port, baudrate, timeout=timeout)
         time.sleep(2)  # Wait for the serial connection to initialize
+
+    @staticmethod
+    def _port_search_text(port):
+        fields = [
+            port.device,
+            port.name,
+            port.description,
+            port.hwid,
+            port.manufacturer,
+            port.product,
+            port.interface,
+            port.location,
+            str(port),
+        ]
+        return " ".join(str(field) for field in fields if field)
+
+    @classmethod
+    def _transmission_port_score(cls, port):
+        text = cls._port_search_text(port).lower()
+        score = 0
+
+        if "iousb" in text:
+            score += 100
+        if "arduino" in text:
+            score += 40
+        if "usbmodem" in text or "usbserial" in text:
+            score += 25
+        if "cu.usb" in text or "tty.usb" in text:
+            score += 10
+        if "bluetooth" in text:
+            score -= 100
+
+        return score
+
+    @classmethod
+    def auto_select_iouusb_port(cls):
+        """
+        Selects the Arduino-style USB serial port used for transmission.
+
+        On macOS, PySerial often shows Arduino USB devices with an IOUSB*
+        description/HWID string while the actual serial path is /dev/cu.usb*.
+        """
+        available_ports = list(serial.tools.list_ports.comports())
+        scored_ports = [
+            (cls._transmission_port_score(port), port)
+            for port in available_ports
+        ]
+        candidates = [
+            (score, port)
+            for score, port in scored_ports
+            if score > 0 and "iousb" in cls._port_search_text(port).lower()
+        ]
+
+        if not candidates:
+            print("AUTOSELECT_TRANSMISSION did not find an IOUSB transmission port.")
+            return None
+
+        candidates.sort(key=lambda item: item[0], reverse=True)
+        _, selected_port = candidates[0]
+        print(f"Auto-selected transmission port: {selected_port.device} ({selected_port})")
+        return selected_port.device
 
     def choose_port(self):
         """ 

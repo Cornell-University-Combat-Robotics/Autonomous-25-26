@@ -64,6 +64,7 @@ SHOW_QUANTIZED_HUEY = True
 # Hardware / controls
 JANK_CONTROLLER = False  # Deprecated backup controller path
 IS_TRANSMITTING = False
+AUTOSELECT_TRANSMISSION = True  # Auto-select the Arduino port whose metadata contains IOUSB
 WEAPON_ON = False
 
 # Frame timing
@@ -200,7 +201,7 @@ def main():
         # Initialize transmission TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
             ser, motor_group, weapon_motor_group = get_motor_groups(
-                False, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
+                False, speed_motor_channel, turn_motor_channel, weapon_motor_channel, AUTOSELECT_TRANSMISSION)
             # if WEAPON_ON:
             #     weapon_motor_group.move(1)
 
