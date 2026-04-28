@@ -586,6 +586,7 @@ def compute_blackout_box(image, huey_bbox, enemy_bbox, thresh = BLACKOUT_THRESHO
     
     # Check on whether we should blackout at all
     if int_area > huey_area * thresh:
+        print("BLACKOUT IS HIGHER THAN 40%")
         return image, True
 
     # Arena to bbox cords
