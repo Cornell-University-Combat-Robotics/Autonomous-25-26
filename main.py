@@ -38,18 +38,18 @@ from sensors.imu_class import IMUReadError
 
 # Run mode (uncomment exactly one)
 # MODE = "comp"
-MODE = "live"
-# MODE = "video"
+# MODE = "live"
+MODE = "video"
 # MODE = "custom"
 
 # Core behavior
-WARP_AND_COLOR_PICKING = False
+WARP_AND_COLOR_PICKING = True
 DISPLAY_SCALE = 0.5  # 1.0 for full-size display, 0.5 for easier 1080p selection
 CAN_RECOVER = False
 BLACKOUT = True
 COLOR_QUANTIZATION = True  # Should almost always stay True
-CAMERA_STREAM = True     # Frame capture thread (must be False for videos)
-IMU_ENABLED = True     # Set to True to enable IMU integration (if hardware is available)
+CAMERA_STREAM = False     # Frame capture thread (must be False for videos)
+IMU_ENABLED = False     # Set to True to enable IMU integration (if hardware is available)
 
 # Logging / debug outputs
 SHEET_RUNTIME = True
@@ -107,13 +107,13 @@ else:
 
 folder = os.getcwd() + "/main_files"
 # Video options (uncomment one for MODE = "video")
-# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
 # camera_number = folder + "/test_videos/blink224_huey.mp4"
 
 # Webcam index (used for MODE = "live" or MODE = "comp")
-camera_number = 0
+# camera_number = 0
 # camera_number = 1
 
 # Set to webcam if capturing frames in main loop.
@@ -326,7 +326,7 @@ def main():
                     with rs.log_timing("Corner Detection"):
                         corner_detection.set_bots(detected_bots)
                         print("called corner main")
-                        detected_bots_with_data, confidence = corner_detection.corner_detection_main(algorithm.huey_previous_orientations, is_flipped=is_flipped, tolerance=20)
+                        detected_bots_with_data, confidence = corner_detection.corner_detection_main(algorithm.huey_previous_orientations, is_flipped=is_flipped, tolerance=15)
                         print("Confidence 😤😤😤: ", confidence)
 
                     # Prepare Quantized Huey Image (for display buffer)
