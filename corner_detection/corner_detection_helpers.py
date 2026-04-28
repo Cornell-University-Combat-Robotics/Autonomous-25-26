@@ -566,7 +566,7 @@ def compute_blackout_box(image, huey_bbox, enemy_bbox, thresh = BLACKOUT_THRESHO
     Returns: hueys image blacked out on the intersection if it was a small enough area
     """
     if image is None:
-        return None
+        return None, False
     # Huey x and y min and max
     hx_min, hy_min, hx_max, hy_max = norm_from_bbox(huey_bbox)
     # Enemy x and y min and max
@@ -586,7 +586,7 @@ def compute_blackout_box(image, huey_bbox, enemy_bbox, thresh = BLACKOUT_THRESHO
     
     # Check on whether we should blackout at all
     if int_area > huey_area * thresh:
-        return image
+        return image, True
 
     # Arena to bbox cords
     xmin = int(round(x_left  - hx_min))
@@ -602,9 +602,9 @@ def compute_blackout_box(image, huey_bbox, enemy_bbox, thresh = BLACKOUT_THRESHO
     ymax = max(0, min(H, ymax))
 
     if xmin >= xmax or ymin >= ymax:
-        return image
+        return image, False
 
     # I think numpy indexing is (y,x)
     image[ymin:ymax, xmin:xmax] = np.asarray([255,255,255])
-    return image
+    return image, False
 

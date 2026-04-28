@@ -127,9 +127,11 @@ class RobotCornerDetection:
         print("entered non diag good")
         return int(is_not_diagonal)
     
-    def confidence(self, corners, is_not_diagonal, tolerance=5):
+    def confidence(self, corners, is_not_diagonal, high_overlap, tolerance=5):
         print("entered conf")
-        if (corners == 4 or corners == 3) and self.four_good(tolerance):
+        if high_overlap:
+            return 0
+        elif (corners == 4 or corners == 3) and self.four_good(tolerance):
             return 1
         elif corners == 2 and self.non_diag_good(is_not_diagonal):
             return 1
@@ -145,6 +147,7 @@ class RobotCornerDetection:
             confidence: 0 or 1, meaning whether we are confident in the orientation
         """
         try:
+            high_overlap = False
             print(f"🐬diagona counter: {self.diagonal_counter}")
             bot_images = [bot["img"] for bot in self.bots["bots"]]
             print("devision search1")
@@ -179,7 +182,8 @@ class RobotCornerDetection:
                             break
                     # Compute blackout overlapped part and create csv
                     if self.BLACKOUT and enemy_bots and enemy_bots["bbox"] and huey and huey["bbox"] and is_overlap(huey["bbox"],enemy_bots["bbox"]):
-                        image = compute_blackout_box(image, huey["bbox"], enemy_bots["bbox"], thresh = self.thresh)
+                        image, high_overlap = compute_blackout_box(image, huey["bbox"], enemy_bots["bbox"], thresh = self.thresh)
+
                     print("devision search4")
                     centroid_points, three = find_centroids(image, self.selected_colors)
                     if three:
@@ -214,7 +218,7 @@ class RobotCornerDetection:
                         # print(f"Current ORIENT: 💛🐋🌸 { huey["orientation"]}")
                     else:
                         huey["orientation"] = None
-                    conf = self.confidence(self.corner_method, IS_NOT_DIAGONAL)
+                    conf = self.confidence(self.corner_method, IS_NOT_DIAGONAL, high_overlap, tolerance=5)
                     return {"huey": huey, "enemy": enemy_bots}, conf
 
                 elif (len(centroid_points[0]) + len(centroid_points[1]) < 2):
@@ -234,7 +238,7 @@ class RobotCornerDetection:
                 print("devision search13")
                 huey["orientation"] = compute_angle_between_midpoints(back_midpoint, front_midpoint)
                 result = {"huey": huey, "enemy": enemy_bots}
-                conf = self.confidence(self.corner_method, IS_NOT_DIAGONAL)
+                conf = self.confidence(self.corner_method, IS_NOT_DIAGONAL, high_overlap, tolerance=5)
                 return result, conf
             else:
                 # print("Image doesn't exist")
