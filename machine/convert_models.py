@@ -6,16 +6,17 @@ models_folder = "./machine/models/"
 
 # model_name = "SmallComp"
 # model_name = "NanoSizeVariant"
-model_name = "Nano320Temp"
+# model_name = "Nano320Temp"
 # model_name = "NanoSegHueyPrince"
+model_name = "StolenSeg2"
 
 # Smaller number -> Faster
-desired_model_input_size = 320
+desired_model_input_size = 640
 
 # CoreML for M-series macs, engine for NVIDIA gpus
-# desired_format = "coreml"
+desired_format = "coreml"
 # desired_format = "engine"
-desired_format = "onnx"
+# desired_format = "onnx"
 # desired_format = "openvino"
 
 base_model_extension = ".pt"

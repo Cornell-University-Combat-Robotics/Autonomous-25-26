@@ -81,12 +81,20 @@ class YoloModel(TemplateModel):
 
         robots = []
         housebots = []
+        class_names = getattr(result, "names", None) or getattr(self.model, "names", {})
 
         # 2. Iterate over the NumPy arrays (much faster)
         for i in range(len(boxes_xyxy)):
             x1, y1, x2, y2 = boxes_xyxy[i]
             cx, cy, _, _ = boxes_xywh[i]
-            cls = boxes_cls[i]
+            cls = int(boxes_cls[i])
+            if isinstance(class_names, dict):
+                class_name = str(class_names.get(cls, "")).lower()
+            elif cls < len(class_names):
+                class_name = str(class_names[cls]).lower()
+            else:
+                class_name = ""
+            normalized_class_name = class_name.replace("_", "").replace(" ", "")
 
             # 3. Clip coordinates safely
             x1_c, y1_c = max(0, x1), max(0, y1)
@@ -116,7 +124,7 @@ class YoloModel(TemplateModel):
                 "segment_points": segment_points
             }
 
-            if cls == 0:
+            if normalized_class_name == "housebot" or (not class_name and cls == 0):
                 housebots.append(data)
             else:
                 robots.append(data)

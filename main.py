@@ -75,8 +75,9 @@ FRAME_RATE = 120
 # Model selection
 # MODEL_NAME = "SmallComp"       # Best accuracy if compute allows
 # MODEL_NAME = "NanoSizeVariant" # Faster, slightly lower accuracy
-MODEL_NAME = "Nano320Temp"       # Trained with match images at 320 size
-OD_IMG_SIZE = 320                # Must be multiple of 32, avoid below 320
+# MODEL_NAME = "Nano320Temp"       # Trained with match images at 320 size
+MODEL_NAME = "StolenSeg2"
+OD_IMG_SIZE = 640                # Must be multiple of 32, avoid below 320
 
 if MODE == "comp" or MODE == "live":
     IS_TRANSMITTING = True         # True to send transmissions to live Huey via Arduino    
@@ -108,10 +109,10 @@ else:
 
 folder = os.getcwd() + "/main_files"
 # Video options (uncomment one for MODE = "video")
-camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
-# camera_number = folder + "/test_videos/orbital_huey.mp4"
+camera_number = folder + "/test_videos/orbital_huey.mp4"
 
 # Webcam index (used for MODE = "live" or MODE = "comp")
 # camera_number = 0
