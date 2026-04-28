@@ -6,6 +6,8 @@ from line_profiler import profile
 
 import numpy as np
 
+from .pid import *
+
 from .ram_helper import (
     check_wall,
     clamp,
@@ -88,6 +90,13 @@ class Ram():
         self.old_time = time.time()
         # delta time
         self.delta_t = 0.001
+
+        # THIS WORKS IN TESTBOX
+        # self.turn_pid = PIDController(kp=0.008, ki=0.000, kd=0.0005, output_limits=(-1.0, 1.0))
+        # self.speed_pid = PIDController(kp=0.003, ki=0.000, kd=0.000, output_limits=(-1.0,1.0))
+        
+        self.turn_pid = PIDController(kp=0.008, ki=0.000, kd=0.0005, output_limits=(-1.0, 1.0))
+        self.speed_pid = PIDController(kp=0.003, ki=0.000, kd=0.000, output_limits=(-1.0,1.0))
 
         #recovery
         self.recovering_until = 2.0
@@ -258,8 +267,12 @@ class Ram():
         ratio = clamp(ratio, -1, 1)
         angle = np.degrees(np.arccos(ratio))
         sign = np.sign(np.cross(orientation, direction))
-        angle *= sign
-        return angle * (Ram.MAX_TURN / 180.0), 1-(np.sign(angle) * (angle) * (Ram.MAX_SPEED / 180.0))
+        
+        # Raw errors
+        error_angle = angle * sign
+        distance = np.linalg.norm(direction)
+        
+        return error_angle, distance
 
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
     def ram_ram(self, bots: dict[str, any] = None, can_recover: bool = True, fps = 120, key=None, diagonal_counter=0):
@@ -352,25 +365,52 @@ class Ram():
             return self.huey_move(self.huey_old_speed, self.huey_old_turn)
 
         if bots["enemy"]:
-            self.enemy_position = np.array(bots['enemy']['center']) # probably issue here? 
-            turn, speed = self.predict_desired_turn_and_speed()
-            self.huey_old_turn, self.huey_old_speed = turn, speed
+            self.enemy_position = np.array(bots['enemy']['center'])
+            error_angle, distance = self.predict_desired_turn_and_speed()
         
-            # PID Shenanigans. Only use PID for the turn values
-            if self.USE_PID and self.delta_t != 0:
-                if self.delta_t > 0:
-                    derivative = (((self.huey_orientation - self.huey_previous_orientations[-1] + 180) % 360 ) -180) / (self.delta_t * 180.0)
-                else:
-                    derivative = 0
+            if self.USE_PID and self.delta_t > 0:
+                # 1. Calculate Turn using PID
+                turn = self.turn_pid.update(error_angle, self.delta_t)
                 
-                pid_output = (turn * 0.8) + (derivative * 0.04 * -1)
-                turn = clamp(pid_output, -1, 1)
+                # 2. Calculate Base Speed using PID
+                ramming_distance = distance + 100 # 100 pixels is the "overshoot"
+                base_speed = self.speed_pid.update(ramming_distance, self.delta_t)
+                
+                # 3. Angle Attenuation (The "Weapon First" logic)
+                clamped_angle = clamp(error_angle, -90, 90)
+                angle_rad = math.radians(clamped_angle)
+                
+                # Using cosine gives a smooth curve. Squaring it makes the drop-off 
+                # sharper, heavily penalizing driving when not perfectly aligned.
+                alignment_factor = math.cos(angle_rad) ** 2 
+                
+                # Final speed is the PID speed scaled by how well we are aimed
+                speed = base_speed * alignment_factor
+                
+            else:
+                # Fallback if PID is off
+                turn = clamp(error_angle * (Ram.MAX_TURN / 180.0), -1, 1)
+                speed = 1 - (abs(error_angle) * (Ram.MAX_SPEED / 180.0))
+                speed = clamp(speed, -1, 1)
 
+            self.huey_old_turn, self.huey_old_speed = turn, speed
             return self.huey_move(speed, turn)
+            
         else:
-            # print("enemy bot not detected, previous position appended")
+            # enemy bot not detected, previous position appended
             self.enemy_previous_positions.append(self.enemy_previous_positions[-1])
             self.enemy_position = self.enemy_previous_positions[-1]
-            turn, speed = self.predict_desired_turn_and_speed()
+            
+            error_angle, distance = self.predict_desired_turn_and_speed()
+            
+            if self.USE_PID and self.delta_t > 0:
+                turn = self.turn_pid.update(error_angle, self.delta_t)
+                base_speed = self.speed_pid.update(distance + 100, self.delta_t)
+                alignment_factor = math.cos(math.radians(clamp(error_angle, -90, 90))) ** 2
+                speed = base_speed * alignment_factor
+            else:
+                turn = clamp(error_angle * (Ram.MAX_TURN / 180.0), -1, 1)
+                speed = clamp(1 - (abs(error_angle) * (Ram.MAX_SPEED / 180.0)), -1, 1)
+            
             self.huey_old_turn, self.huey_old_speed = turn, speed
             return self.huey_move(speed, turn)

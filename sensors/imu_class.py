@@ -3,7 +3,8 @@ import json
 import time
 import math
 import serial.tools.list_ports
-
+import threading    
+from concurrent.futures import ThreadPoolExecutor
 
 class IMUReadError(Exception):
     """Base exception for IMU serial read issues"""
@@ -31,8 +32,15 @@ class IMU_sensor():
         self.roll = 0
         self.pitch = 0
         self.yaw = 0
+        self.dict_lock = threading.Lock()
+        self.error_lock = threading.Lock()
+        self.errorCounter = 0
+        self.goodTime = time.time()
         time.sleep(2)  # Wait for the serial connection to initialize
-    
+        self.get_continuous_dict()
+        self.cali_angle = 0
+        self.cali_lock = threading.Lock()
+
     def choose_port(self):
         """ 
         Allows user to determine what port the esp32 is on
@@ -53,7 +61,7 @@ class IMU_sensor():
             if len(available_ports) == 0:
                 print("No ports found")
             else:
-                print("Choose a port from the options below:")
+                print("Choose a port for the SENSORS/ESP from the options below:")
                 for i in range(len(available_ports)):
                     port = available_ports[i]
                     port_dic[str(i+1)] = port.device
@@ -92,12 +100,97 @@ class IMU_sensor():
         except json.decoder.JSONDecodeError as e:
             raise IMUReadError("IMU error: " + str(e))
  
+    def get_continuous_dict(self):
+        """
+        Continuously updates dict field with the latest reading from the IMU in a separate thread
+        Raises IMUReadError if there is an issue with reading from the IMU
+        """
+        def update_dict():
+            while True:
+                try:
+                    # print(f"error count: {self.errorCounter}")
+                    json_string = self.ser.readline().decode('utf-8').strip()
+                    new_dict = json.loads(json_string)
+                    with self.dict_lock:
+                        self.dict = new_dict
+                    with self.error_lock:
+                        self.errorCounter = 0
+                        self.goodTime = time.time()
+                except UnicodeDecodeError as e:
+                    # print("IMU error: " + str(e))
+                    with self.error_lock:
+                        self.errorCounter += 1
+                        # print(f"time since good: {time.time()-self.goodTime}")
+                except json.decoder.JSONDecodeError as e:
+                    # print("JSON error: " + str(e))
+                    with self.error_lock:
+                        self.errorCounter += 1
+                        # print(f"time since good: {time.time()-self.goodTime}")
+        thread = threading.Thread(target=update_dict, daemon=True)
+        thread.start()
+        
+    def check_valid(self, threshold):
+        with self.error_lock:
+            return time.time()-self.goodTime <= threshold
+
+    def calibrate_yaw(self, camera_read, sensor_read):
+        """
+        Calibrates the imu orientation to be aligned with the camera orientation
+        """
+        with self.cali_lock:
+            self.cali_angle = sensor_read - camera_read
+
+    def get_yaw_uncali(self):
+        """
+        Read the yaw value from continuously updated dict field
+        """
+        with self.dict_lock:
+            _, _, yaw = self.quaternion_to_euler(self.dict["rot"]["r"], self.dict["rot"]["i"], self.dict["rot"]["j"], self.dict["rot"]["k"])       
+        self.yaw = (yaw / math.pi) * 180
+        if self.yaw < 0:
+            self.yaw += 360
+            print(f"UNCALIBRATED YAW: {self.yaw}")
+        return self.yaw
+    
+    def get_yaw_continuous(self):
+        """
+        Read the yaw value from continuously updated dict field
+        """
+        with self.dict_lock:
+            _, _, yaw = self.quaternion_to_euler(self.dict["rot"]["r"], self.dict["rot"]["i"], self.dict["rot"]["j"], self.dict["rot"]["k"])       
+        self.yaw = (yaw / math.pi) * 180
+        if self.yaw < 0:
+            self.yaw += 360
+            # print(f"UNCALIBRATED YAW: {self.yaw}")
+        with self.cali_lock:
+            self.yaw = (self.yaw - self.cali_angle) % 360
+            # print(f"CALIBRATED YAW: {self.yaw}")
+        return self.yaw
+
+    def get_field_continuous(self, field, subfield):
+        """
+        Read [field][subfield] from continuously updated dict field
+        """
+        with self.dict_lock:
+            return self.dict[field][subfield]
+
+    
+    def get_upside_down_continuous(self):
+        """
+        Read the upside down value from continuously updated dict field
+        Returns: -1 if bot is upside down and 1 if the bot is right side up
+        """
+        with self.dict_lock:
+            gravity_z = self.dict["acc"]["z"]
+        return -1 if gravity_z >= 0 else 1
+
+
     def is_upside_down(self):
         """
         Returns: -1 if bot is upside down and 1 if the bot is right side up
         """
         self.get_dict()
-        return 1 if self.dict["accelerometer"]["gravity_z"] >= 0 else -1
+        return 1 if self.dict["acc"]["z"] >= 0 else -1
 
     def get_yaw(self):
         """
@@ -106,20 +199,25 @@ class IMU_sensor():
         """
         # try to get a new reading for yaw
         self.get_dict()
-        _, _, yaw = self.quaternion_to_euler(self.dict["game"]["r"], self.dict["game"]["i"], self.dict["game"]["j"], self.dict["game"]["k"])
+
+        _, _, yaw = self.quaternion_to_euler(self.dict["rot"]["r"], self.dict["rot"]["i"], self.dict["rot"]["j"], self.dict["rot"]["k"])       
         self.yaw = (yaw / math.pi) * 180
         if self.yaw < 0:
             self.yaw += 360        
         return self.yaw
             
-    def quaternion_to_euler(self, q_w, q_x, q_y, q_z):
+    def quaternion_to_euler(self, q_w, q_x, q_y, q_z, yaw_only=True):
+
+        self.yaw = math.atan2(2 * (q_w * q_z + q_x * q_y), 1 - 2 * (q_y**2 + q_z**2))
+        if yaw_only:
+            return 0, 0, self.yaw
         # Roll (x-axis rotation)
         self.roll = math.atan2(2 * (q_w * q_x + q_y * q_z), 1 - 2 * (q_x**2 + q_y**2))
     
         # Pitch (y-axis rotation)
+        # TS BREAKS BTW SO FIX IT IF YOU WANT PITCH, 2 * (q_w * q_y - q_z * q_x) > 1 which is outside of asin domain (rounding error)
         self.pitch = math.asin(2 * (q_w * q_y - q_z * q_x))
     
         # Yaw (z-axis rotation)
-        self.yaw = math.atan2(2 * (q_w * q_z + q_x * q_y), 1 - 2 * (q_y**2 + q_z**2))
              
         return self.roll, self.pitch, self.yaw

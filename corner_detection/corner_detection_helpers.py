@@ -118,12 +118,12 @@ def dynamic_threshold(self, threshold_set, bot_color_percentages):
             print("Initial Threshold (2+ robots): " + str(self.huey_color_percentage_threshold))
         # Case 1.2: If we see only 1 robot. We use the static threshold because that robot could be us or not
         else:
-            self.huey_color_percentage_threshold = max(bot_color_percentages[0] - 0.075, MIN_THRESHOLD)
+            self.huey_color_percentage_threshold = MIN_THRESHOLD
             print("Initial Threshold (1 robot): " + str(self.huey_color_percentage_threshold))
     
     # Case 2: Updating threshold and running sum using queue
     elif threshold_set and len(bot_color_percentages) >= 2:
-        # print("💀 DYNAMIC THRESHOLD")
+        # Dynamic Threshold
         huey_color_percentage = bot_color_percentages[-1]
         enemy_color_percentage = bot_color_percentages[-2]
 
@@ -232,6 +232,7 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     centroid_front = find_centroids_per_color("front", image, hsv_image, selected_colors)
     centroid_back = find_centroids_per_color("back", image, hsv_image, selected_colors)
+    num_corners = len(centroid_front) + len(centroid_back)
     #3 CORNERS LOGIC    
     # Check if we have incomplete points and use get_missing_point to fix it
     if len(centroid_front) == 1 and len(centroid_back) == 2:
@@ -329,23 +330,18 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
         
         # CASE 2.2: The corners are diagonal
         else:
-            # print(f"🌈🌈🌈CORNERS ON DIFFERENT SIDE: {p1} or {p2} degrees🌈🌈🌈")
+            
             if not IS_VALID_ORIE: # take midorie
-                print("🌈")
-                length = abs(front_points[0][1] - back_points[0][1]) # front[0][1] should be y coords,
-                print("🌈🌈", length)
-                width = abs(front_points[0][0] - back_points[0][0])
-                print("🌈🌈🌈", width)
-
-                # hypotenuse = math.sqrt(math.pow(length, 2) + math.pow(width, 2))
-                hypotenuse = math.hypot(length, width)
-                print("🌈🌈🌈🌈🌈🌈", width/hypotenuse)
-                print("🌈🌈🌈🌈:", int(math.asin((width/hypotenuse)) * (180/math.pi)) % 360)
-                return (int(math.asin(width/hypotenuse) * (180/math.pi) + 180)) % 360, False
+                print(f"💀MIDORIE")
+                length = front_points[0][1] - back_points[0][1] # front[0][1] should be y coords,
+                width = front_points[0][0] - back_points[0][0]
+                hypotenuse = math.sqrt(math.pow(length, 2) + math.pow(width, 2))
+                return math.asin(width/hypotenuse) * (180/math.pi)
             
             else: 
                 p1 = (angle + 45) % 360
                 p2 = (angle - 45) % 360
+                print(f"🌈🌈🌈CORNERS ON DIFFERENT SIDE: {p1} or {p2} degrees🌈🌈🌈")
                 return pick_closest_angle(p1, p2, previous_orientation), False
 
     raise ValueError(f"Invalid point configuration: Front={len(front_points)}, Back={len(back_points)}")

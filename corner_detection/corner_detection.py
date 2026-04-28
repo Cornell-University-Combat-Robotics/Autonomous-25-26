@@ -31,6 +31,7 @@ class RobotCornerDetection:
         self.huey_color_percentage_threshold = -1
         self.color_percentage_rows = []
         self.diagonal_counter = 0
+        self.is_diagonal = False
         self.centroids = []
         
         # Note: These are actually floats/int but we need them to be mutable
@@ -166,6 +167,7 @@ class RobotCornerDetection:
                     "bbox": huey_bbox,
                     "center": np.mean(huey_bbox, axis=0), # center of the bot with respect to the entire arena
                     "orientation": None,
+                    "corners": 0,
                 }
                 
                 print("devision search2")
@@ -224,6 +226,7 @@ class RobotCornerDetection:
                 elif (len(centroid_points[0]) + len(centroid_points[1]) < 2):
                     print("devision search11")
                     print("Less than 2 corners found")
+                    self.is_diagonal = False
                     self.diagonal_counter += 1
                     conf = 0
                     return {"huey": huey, "enemy": enemy_bots}, conf

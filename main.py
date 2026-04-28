@@ -25,69 +25,96 @@ from main_helpers import (
     read_prev_colors,
     read_prev_homography,
     initialize_quantization,
-    quantize
+    quantize,
+    draw_yaw_text
 )
 from warp_main import get_warp_maps
 from warp_main import warp_map
+from sensors.imu_class import IMU_sensor
+from sensors.imu_class import IMUReadError
 
-# ------------------------------ GLOBAL VARIABLES ------------------------------
+# ------------------------------ GLOBAL SETTINGS ------------------------------
+# Keep one option active per setting. Commented lines directly below are common alternatives.
 
+# Run mode (uncomment exactly one)
+# MODE = "comp"
+MODE = "live"
+# MODE = "video"
+# MODE = "custom"
+
+# Core behavior
 WARP_AND_COLOR_PICKING = False
-DISPLAY_SCALE = 0.5                # Display frame smaller for selection with 1080p video, 1.0 default
+DISPLAY_SCALE = 0.5  # 1.0 for full-size display, 0.5 for easier 1080p selection
+CAN_RECOVER = False
+BLACKOUT = True
+COLOR_QUANTIZATION = True  # Should almost always stay True
+CAMERA_STREAM = True     # Frame capture thread (must be False for videos)
+IMU_ENABLED = True     # Set to True to enable IMU integration (if hardware is available)
 
-COMP = False
-LIVE_TESTING = False
-CAN_RECOVER = True
-BLACKOUT = True                    # Filter out enemy bot intersection w/Huey
-SHEET_RUNTIME = True               # Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
+# Logging / debug outputs
+SHEET_RUNTIME = True
 rs = RuntimeSheet(use=SHEET_RUNTIME)
-SAVE_BBOXES = False                # Save bounding box images every BBOX_SAVE_FREQUENCY iterations
-BBOX_SAVE_FREQUENCY = 10           # How often to save bounding box images (every n iterations)
 
-# Cosmetics
-SHOW_FRAME = True                  # Show camera feed frames
-DISPLAY_ANGLES = True              # Only use when SHOW_FRAME is True
-SHOW_HUD = True                    # Show heads-up display with FPS, speed, turn, frame number
-SHOW_QUANTIZED_HUEY = True         # Display the quantized bounding box of Huey in separate window
+# Display toggles
+SHOW_FRAME = True
+DISPLAY_ANGLES = True  # Only applies when SHOW_FRAME is True
+SHOW_HUD = True
+SHOW_QUANTIZED_HUEY = True
 
-# MODEL_NAME = "SmallComp"         # Used for Feb comp, best accuracy if you have the compute for it.
-# MODEL_NAME = "NanoSizeVariant"   # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
-MODEL_NAME = "Nano320Temp"         # Model trained with Huey images from matches, trained at 320 image size
+# Hardware / controls
+JANK_CONTROLLER = False  # Deprecated backup controller path
+IS_TRANSMITTING = False
+WEAPON_ON = False
 
-# Image size for object detection model, lower number -> faster, slightly worse accuracy.
-# 640 default, 416 fast, must be multiple of 32. Don't go below 320.
-OD_IMG_SIZE = 320
-# If model can't be found or gives a bug, use convert_models.py to regenerate the model w/ above parameters
+# Frame timing
+IS_ORIGINAL_FPS = True
+FRAME_RATE = 120
+# FRAME_RATE = 60  # Common for video testing
 
-if COMP or LIVE_TESTING:
+# Model selection
+# MODEL_NAME = "SmallComp"       # Best accuracy if compute allows
+# MODEL_NAME = "NanoSizeVariant" # Faster, slightly lower accuracy
+MODEL_NAME = "Nano320Temp"       # Trained with match images at 320 size
+OD_IMG_SIZE = 320                # Must be multiple of 32, avoid below 320
+
+if MODE == "comp" or MODE == "live":
     IS_TRANSMITTING = True         # True to send transmissions to live Huey via Arduino    
     IS_ORIGINAL_FPS = True         # Process every captured frame, False -> cap at FRAME_RATE, only TRUE for Live
     FRAME_RATE = 120               # Used in recovery/algo  
     CAMERA_STREAM = True           # True to run frame capture in a seperate thread, always false for videos
 
-    if COMP:
+    if MODE == "comp":
         WEAPON_ON = True   
 
-    else: # LIVE_TESTING
+    else: # MODE == "live"
         WEAPON_ON = False
-        IS_TRANSMITTING = False
 
-else: # VIDEO_TESTING
+elif MODE == "video":
     IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
     WEAPON_ON = False
     IS_ORIGINAL_FPS = False         # Process every captured frame, False -> cap at FRAME_RATE, only TRUE for Live
     FRAME_RATE = 60                 # Manually set frame rate for videos
     CAMERA_STREAM = False           # True to run frame capture in a seperate thread, always false for videos
 
-# ------------------------------ CAMERA/VIDEOS ------------------------------
+elif MODE == "custom":
+    # Custom mode allows you to specify all settings manually
+    pass
+
+else:
+    raise ValueError(f"Invalid MODE '{MODE}'. Expected 'comp', 'live', 'video', or 'custom'.")
+
+# ------------------------------ CAMERA / VIDEO INPUT ------------------------------
 
 folder = os.getcwd() + "/main_files"
-camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+# Video options (uncomment one for MODE = "video")
+# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
-# camera_number = folder + "/test_videos/diagona_huey.mp4"
-# camera_number = folder + "/test_videos/huey_backs.mp4"
+# camera_number = folder + "/test_videos/huey_in_n_out.mp4"
+# camera_number = folder + "/test_videos/blink224_huey.mp4"
+
+# Webcam index (used for MODE = "live" or MODE = "comp")
+camera_number = 0
 # camera_number = 1
-# camera_number = 0
 
 # Set to webcam if capturing frames in main loop.
 camera_type = "Video"
@@ -114,6 +141,7 @@ if IS_TRANSMITTING:
 # Threading globals
 frame_buffer = deque(maxlen=1)
 stop_event = threading.Event()
+shared_state_lock = threading.Lock()
 # Shared state for controls passed from UI thread to Perception thread
 shared_state = {"key": None, "flipped": None,
                 "paused": False, "skip_frame": False, "weapon_on": WEAPON_ON}
@@ -160,6 +188,12 @@ def main():
         # Get predictor, if anything goes wrong here, call Aaron #TODO: Document better
         predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
 
+        if IMU_ENABLED:
+            imu_sensor = IMU_sensor()
+            q = deque(maxlen=15)
+            cali_yaw = 0
+            q.append(0)
+
         # Initialize corner detection
         corner_detection = RobotCornerDetection(selected_colors, False, False, BLACKOUT=BLACKOUT, thresh=0.4, frame_rate = FRAME_RATE)
 
@@ -182,16 +216,6 @@ def main():
         algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors)
 
         ### TODO: call dynamic threshold here
-
-        # Initialize BBox save directory
-        if SAVE_BBOXES:
-            if not os.path.exists("bbox_output"):
-                os.makedirs("bbox_output")
-            # Make a new directory in bbox_output based on time.time
-            bb_output_dir = f"bbox_output/{int(time.time())}"
-            os.makedirs(bb_output_dir)
-        else:
-            bb_output_dir = None
 
         # ----------------------------------------------------------------------
         # 8. Match begins
@@ -219,14 +243,15 @@ def main():
                 if not CAMERA_STREAM and not cap.isOpened():
                     break
 
-                # Handle Pause (Simple spin wait)
-                if shared_state["paused"]:
-                    if shared_state["skip_frame"]:
+                # Handle pause state with synchronized reads/writes.
+                with shared_state_lock:
+                    is_paused = shared_state["paused"]
+                    should_skip_one = shared_state["skip_frame"]
+                    if is_paused and should_skip_one:
                         shared_state["skip_frame"] = False
-                        # Proceed to process one frame
-                    else:
-                        time.sleep(0.05)
-                        continue
+                if is_paused and not should_skip_one:
+                    time.sleep(0.01)
+                    continue
 
                 time_elapsed = ptime() - prev
 
@@ -235,13 +260,6 @@ def main():
                 if (IS_ORIGINAL_FPS or time_elapsed > 1.0 / FRAME_RATE) and (not CAMERA_STREAM or stream.frameCount() > last_frame):
                     prev = ptime()
                     iteration += 1
-
-                    # Save bboxes every BBOX_SAVE_FREQUENCY iterations if SAVE_BBOXES is True
-                    if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
-                        os.makedirs(
-                            f"{bb_output_dir}/frame_{iteration}", exist_ok=True)
-                        frame_save_dir = os.path.join(
-                            bb_output_dir, f"frame_{iteration}")
 
                     # Logs average of last 10 FPS
                     if SHEET_RUNTIME:
@@ -267,35 +285,42 @@ def main():
                             break
 
                     # Get inputs from Shared State
-                    key = shared_state["key"]
-                    is_flipped = -1 if shared_state["flipped"] else 1
-                    weapon_on_this_frame = shared_state["weapon_on"]
+                    with shared_state_lock:
+                        key = shared_state["key"]
+                        is_flipped = -1 if shared_state["flipped"] else 1
+                        weapon_on_this_frame = shared_state["weapon_on"]
+                        # Clear transient key so one press is consumed once.
+                        shared_state["key"] = None
 
                     # Warp image to homography matrix using maps
                     with rs.log_timing("Warp"):
                         warped_frame = warp_map(frame, map_x, map_y)
+
+                    if IMU_ENABLED:
+                        try:
+                            cali_yaw = imu_sensor.get_yaw_uncali()
+                            q.append(cali_yaw)
+                        except IMUReadError as ex:
+                            # print(f"🟥 Error: {ex}") xd rawr
+                            pass
+                        except KeyError as ex:
+                            # print(f"🟥 Error: {ex}")
+                            pass
+                        except KeyboardInterrupt as e:
+                            raise(e)
+                        except Exception as e:
+                            print(f"error from imu: {e}")
+                            pass
 
                     # 11. Run the Warped Image through Object Detection
                     # Internal timings (Preprocess, Inference, etc.) are handled inside predict()
                     with rs.log_timing("Object Detection"):
                         detected_bots = predictor.predict(warped_frame)
 
-                    if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
-                        for bot in range(len(detected_bots["bots"])):
-                            if detected_bots["bots"][bot]["img"] is not None:
-                                cv2.imwrite(
-                                    f"{frame_save_dir}/detected_bot_{bot}.png", detected_bots["bots"][bot]["img"])
-
                     # 11.5 Quantize Colors
                     with rs.log_timing("Color Quantization"):
                         detected_bots = quantize(
                             detected_bots, selected_colors, show=False, is_flipped=is_flipped, settings=quantization_settings)
-
-                    if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
-                        for bot in range(len(detected_bots["bots"])):
-                            if detected_bots["bots"][bot]["img"] is not None:
-                                cv2.imwrite(
-                                    f"{frame_save_dir}/quantized_bot_{bot}.png", detected_bots["bots"][bot]["img"])
 
                     # 12. Run Object Detection's results through Corner Detection
                     with rs.log_timing("Corner Detection"):
@@ -319,10 +344,53 @@ def main():
                                             break
                             except Exception as e:
                                 pass
-                    # 13. Run corner detection data through Ram Ram
+
+                    is_flipped = 1
+
+                    if IMU_ENABLED:
+                        try:
+                            is_flipped = imu_sensor.get_upside_down_continuous()
+                            # print("detected bots with data: ", detected_bots_with_data)
+                            
+                            # if detected_bots_with_data.get("huey") is not None and detected_bots_with_data.get("huey") != {}:
+                            # print(q)
+                            if q and q.count(q[0]) != 15: 
+                                if detected_bots_with_data and detected_bots_with_data.get("huey"):
+                                    print(f"DETECTED BOTS WITH DATA {detected_bots_with_data.get("huey")}")
+                                    if (detected_bots_with_data.get("huey").get("orientation") is not None) and detected_bots_with_data.get("huey").get("corners") >= 3:
+                                        #print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
+                                        imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
+                                        print("CALLIBRATING")
+                                        yaw = 0
+                                    if (detected_bots_with_data.get("huey")) and (detected_bots_with_data.get("huey").get("corners") <= 1 or corner_detection.is_diagonal ):
+                                        print(f"USING SENSORS USING SENSORS USING SENSORS")
+                                        yaw = imu_sensor.get_yaw_continuous()
+                                        detected_bots_with_data["huey"]["orientation"] = yaw
+                                        print(f"yaw = {yaw}")
+                                        draw_yaw_text(warped_frame,yaw,is_flipped)
+                            # is_flipped = imu_sensor.get_upside_down_continuous()
+                            print(f"flipped = {is_flipped}")
+                            # print("detected bots with data: ", detected_bots_with_data)
+            
+                            # draw_yaw_text(warped_frame,yaw,is_flipped)
+                        except IMUReadError as ex:
+                            print(f"🟥 Error: {ex}")
+                            print(" 🟢 using cd orientation 🟢 ")
+                            pass
+                        except KeyError as ex:
+                            print(f"🟥 Error: {ex}")
+                            pass
+                        except Exception as ex:
+                            print("🦅 WTF is Happening 🦅")
+                            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                            message = template.format(type(ex).__name__, ex.args)
+                            print(message)
+                            raise(ex)        
+
                     with rs.log_timing("Algorithm"):
                         move_dictionary = algorithm.ram_ram(
-                            detected_bots_with_data, CAN_RECOVER, fps=FRAME_RATE, key=key, diagonal_counter=corner_detection.diagonal_counter)
+                            detected_bots_with_data, CAN_RECOVER, fps=FRAME_RATE, key=key)
+                        
 
                     # 14. Transmitting the motor values to Huey's if we're using a live video
                     with rs.log_timing("Transmission"):
@@ -332,7 +400,7 @@ def main():
                             motor_group.move(speed*is_flipped, turn * -1)
                             if WEAPON_ON:
                                 weapon_motor_group.move(
-                                    1 if weapon_on_this_frame else 0)
+                                    0.8 if weapon_on_this_frame else 0)
 
                     # Prepare Main Display Image
                     main_display_img = None
@@ -342,19 +410,15 @@ def main():
                                 warped_frame, detected_bots)
                             if SHOW_HUD:
                                 # Uncomment this to get all the stats
-                                # warped_frame = draw_hud(
-                                    # warped_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
-                                # Uncomment this to get only frame rate:
                                 warped_frame = draw_hud(
-                                    warped_frame, iteration=iteration)
+                                    warped_frame, fps10=fps10, move_dictionary=move_dictionary, iteration=iteration)
+                                # Uncomment this to get only frame rate:
+                                # warped_frame = draw_hud(
+                                #     warped_frame, iteration=iteration)
 
                             # Call display_angles with show=False to get the image without displaying
                             main_display_img = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing,
                                                               against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped=is_flipped, weapon_on=weapon_on_this_frame, centroids=corner_detection.centroids, show=False)
-
-                            if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
-                                cv2.imwrite(
-                                    f"{frame_save_dir}/final_image_{iteration}.png", main_display_img)
 
                         elif SHOW_FRAME:
                             display_frame = warped_frame
@@ -366,10 +430,11 @@ def main():
                     # Update Frame Buffer
                     frame_buffer.append({ "main": main_display_img, "huey": huey_display_img})
                     rs.dump()
-                
                 else:
-                    # print("Waiting" + str(iteration))
+                    # Prevent hot-spin while waiting for next frame/time budget.
+                    # Without this, the loop burns CPU doing no useful work.
                     time.sleep(0.001)
+            
 
         # Start the Perception Thread
         perception_thread = threading.Thread(target=perception_pipeline, daemon=True)
@@ -390,7 +455,7 @@ def main():
                 if frames["huey"] is not None and SHOW_QUANTIZED_HUEY:
                     cv2.imshow("Quantized Huey", frames["huey"])
 
-            # pollKey handles the GUI event loop
+            # waitKeyEx(1) pumps GUI events reliably and captures key presses.
             key = cv2.pollKey()
 
             if key != -1:
@@ -399,27 +464,35 @@ def main():
                     stop_event.set()
                 elif key_8bit == ord("f"):
                     print("Backup flipped key pressed")
-                    if shared_state["flipped"] is None:
-                        shared_state["flipped"] = True
-                    else:
-                        shared_state["flipped"] = not shared_state["flipped"]
-                    if shared_state["paused"]:
-                        shared_state["skip_frame"] = True
+                    with shared_state_lock:
+                        if shared_state["flipped"] is None:
+                            shared_state["flipped"] = True
+                        else:
+                            shared_state["flipped"] = not shared_state["flipped"]
+                        if shared_state["paused"]:
+                            shared_state["skip_frame"] = True
                 elif key_8bit == ord("p"):
-                    shared_state["paused"] = not shared_state["paused"]
-                    shared_state["skip_frame"] = False
+                    with shared_state_lock:
+                        shared_state["paused"] = not shared_state["paused"]
+                        shared_state["skip_frame"] = False
+                        paused_now = shared_state["paused"]
                     print(
-                        f"Playback {'paused' if shared_state['paused'] else 'resumed'}")
+                        f"Playback {'paused' if paused_now else 'resumed'}")
                 elif key_8bit == ord("w"):
-                    shared_state["weapon_on"] = not shared_state["weapon_on"]
+                    with shared_state_lock:
+                        shared_state["weapon_on"] = not shared_state["weapon_on"]
+                        weapon_now = shared_state["weapon_on"]
                     print(
-                        f"Weapon {'ON' if shared_state['weapon_on'] else 'OFF'}")
-                elif shared_state["paused"]:
-                    # Any other key while paused skips one frame
-                    shared_state["skip_frame"] = True
+                        f"Weapon {'ON' if weapon_now else 'OFF'}")
+                else:
+                    with shared_state_lock:
+                        if shared_state["paused"]:
+                            # Any other key while paused skips one frame.
+                            shared_state["skip_frame"] = True
 
-            # Pass key to perception thread (resetting it to None if no key pressed is handled by waitKey returning 255)
-            shared_state["key"] = key if key != -1 else None
+                # Pass key to perception thread for algorithm hooks.
+                with shared_state_lock:
+                    shared_state["key"] = key_8bit
 
             # Check if thread died
             if not perception_thread.is_alive():
