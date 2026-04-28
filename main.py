@@ -190,9 +190,10 @@ def main():
 
         if IMU_ENABLED:
             imu_sensor = IMU_sensor()
-            q = deque(maxlen=15)
             cali_yaw = 0
-            q.append(0)
+            prev_sensor_val = 0
+            curr_sensor_val = 0
+            total_sensor_val = 0
 
         # Initialize corner detection
         corner_detection = RobotCornerDetection(selected_colors, False, False, BLACKOUT=BLACKOUT, thresh=0.4, frame_rate = FRAME_RATE)
@@ -299,7 +300,14 @@ def main():
                     if IMU_ENABLED:
                         try:
                             cali_yaw = imu_sensor.get_yaw_uncali()
-                            q.append(cali_yaw)
+                            curr_sensor_val = cali_yaw
+                            if prev_sensor_val == curr_sensor_val:
+                                total_sensor_val += 1
+                            else:
+                                total_sensor_val = 0
+
+                            prev_sensor_val = curr_sensor_val
+
                         except IMUReadError as ex:
                             # print(f"🟥 Error: {ex}") xd rawr
                             pass
@@ -352,7 +360,7 @@ def main():
                             
                             # if detected_bots_with_data.get("huey") is not None and detected_bots_with_data.get("huey") != {}:
                             # print(q)
-                            if q and q.count(q[0]) != 15: 
+                            if total_sensor_val <= 200: 
                                 if detected_bots_with_data and detected_bots_with_data.get("huey"):
                                     print(f"DETECTED BOTS WITH DATA {detected_bots_with_data.get("huey")}")
                                     if (detected_bots_with_data.get("huey").get("orientation") is not None) and detected_bots_with_data.get("huey").get("corners") >= 3:
