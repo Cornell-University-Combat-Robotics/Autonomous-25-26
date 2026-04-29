@@ -52,75 +52,32 @@ class YoloModel(TemplateModel):
         self.img_size = image_size
         # compiled_model = core.compile_model(model=model, device_name=device.value)
 
-    def predict(self, img, show=False, rs=None):
-        # Max_det = max number of detections, 3 for housebot + 2 bots. Stops YOLO from hallucinating extra bots when confidence is low. Iou=0.8 to prevent multiple detections on same bot.
-        predict_kwargs = {"verbose": False, "task": self.model.task,
-                          "imgsz": self.img_size, "max_det": 5}
-        if self.device is not None:
-            predict_kwargs["device"] = self.device
-
-        results = self.model(img, **predict_kwargs)
-
-        result = results[0]
-
-        # 1. BATCH EXTRACT EVERYTHING TO CPU ONCE
-        # This is the secret sauce. .cpu().numpy() is faster than calling .tolist() inside a loop.
-        boxes_xyxy = result.boxes.xyxy.cpu().numpy()
-        boxes_xywh = result.boxes.xywh.cpu().numpy()
-        boxes_cls = result.boxes.cls.cpu().numpy()
-
-        robots = []
-        housebots = []
-
-        # 2. Iterate over the NumPy arrays (much faster)
-        for i in range(len(boxes_xyxy)):
-            x1, y1, x2, y2 = boxes_xyxy[i]
-            cx, cy, _, _ = boxes_xywh[i]
-            cls = boxes_cls[i]
-
-            # 3. Clip coordinates safely
-            x1_c, y1_c = max(0, x1), max(0, y1)
-            x2_c, y2_c = min(700, x2), min(700, y2)
-
-            cropped_img = img[int(y1_c): int(y2_c), int(x1_c): int(x2_c)]
-
-            data = {
-                "bbox": [[x1_c, y1_c], [x2_c, y2_c]],
-                "center": [cx, cy],
-                "img": cropped_img
-            }
-
-            if cls == 0:
-                housebots.append(data)
-            else:
-                robots.append(data)
-
-        output = {"bots": robots, "housebot": housebots}
-        return output
-    
-
-    def track(self, img, show=False, rs=None):
+    def predict(self, img, confidence_threshold=0.10, show=False, track=False, rs=None):
         # Max_det = max number of detections, 3 for housebot + 2 bots. 
         # Stops YOLO from hallucinating extra bots when confidence is low. 
         # Iou=0.8 to prevent multiple detections on same bot.
         predict_kwargs = {
             "verbose": False, 
+            "task": self.model.task,
             "imgsz": self.img_size, 
-            "max_det": 5
+            "max_det": 5,
+            "conf": confidence_threshold
         }
         
         if self.device is not None:
             predict_kwargs["device"] = self.device
 
-        # USE .track() INSTEAD OF CALLING THE MODEL DIRECTLY
-        # persist=True is required to link detections across video frames.
-        # tracker="bytetrack.yaml" is usually the best default, but you can also try "botsort.yaml"
-        results = self.model.track(img, persist=True, tracker="bytetrack.yaml", **predict_kwargs)
+        if track:
+            # persist=True is required to link detections across video frames.
+            # tracker="bytetrack.yaml" is usually the best default, but you can also try "botsort.yaml"
+            predict_kwargs.pop("task")
+            results = self.model.track(img, persist=True, tracker="bytetrack.yaml", **predict_kwargs)
+        else:
+            results = self.model(img, **predict_kwargs)
 
         result = results[0]
 
         # 1. BATCH EXTRACT EVERYTHING TO CPU ONCE
-        # Added safety checks in case no boxes are detected in a frame
         if result.boxes is None or len(result.boxes) == 0:
              return {"bots": [], "housebot": []}
 
@@ -128,9 +85,7 @@ class YoloModel(TemplateModel):
         boxes_xywh = result.boxes.xywh.cpu().numpy()
         boxes_cls = result.boxes.cls.cpu().numpy()
         
-        # EXTRACT TRACK IDs
-        # If tracking just initialized or fails for a box, it might return None, so we handle that safely.
-        if result.boxes.id is not None:
+        if track and result.boxes.id is not None:
             boxes_id = result.boxes.id.cpu().numpy()
         else:
             boxes_id = [None] * len(boxes_xyxy)
@@ -152,11 +107,12 @@ class YoloModel(TemplateModel):
             cropped_img = img[int(y1_c): int(y2_c), int(x1_c): int(x2_c)]
 
             data = {
-                "track_id": track_id,  # Now you have a persistent ID to track specific bots
                 "bbox": [[x1_c, y1_c], [x2_c, y2_c]],
                 "center": [cx, cy],
                 "img": cropped_img
             }
+            if track:
+                data["track_id"] = track_id
 
             if cls == 0:
                 housebots.append(data)
@@ -165,6 +121,9 @@ class YoloModel(TemplateModel):
 
         output = {"bots": robots, "housebot": housebots}
         return output
+
+    def track(self, img, show=False, rs=None):
+        return self.predict(img, show=show, track=True, rs=rs)
 
     def show_predictions(self, img, bots_dict):
         for label, bots in bots_dict.items():

@@ -43,14 +43,15 @@ MODE = "live"
 # MODE = "custom"
 
 # Core behavior
-WARP_AND_COLOR_PICKING = True
+WARP_AND_COLOR_PICKING = False
 DISPLAY_SCALE = 0.5  # 1.0 for full-size display, 0.5 for easier 1080p selection
 CAN_RECOVER = False
 BLACKOUT = True
 COLOR_QUANTIZATION = True  # Should almost always stay True
 CAMERA_STREAM = False     # Frame capture thread (must be False for videos)
 IMU_ENABLED = False     # Set to True to enable IMU integration (if hardware is available)
-USE_TRACKING = True       # Use tracking-based predictor instead of running detection on every frame (requires more resources)
+USE_TRACKING = False       # Use tracking-based predictor instead of running detection on every frame (requires more resources)
+DETECTION_CONFIDENCE = 0.02  # Ultralytics default is 0.25; lowered by 0.15 for more permissive detections
 
 # Logging / debug outputs
 SHEET_RUNTIME = True
@@ -79,7 +80,7 @@ MODEL_NAME = "Nano320Temp"       # Trained with match images at 320 size
 OD_IMG_SIZE = 320                # Must be multiple of 32, avoid below 320
 
 if MODE == "comp" or MODE == "live":
-    IS_TRANSMITTING = True         # True to send transmissions to live Huey via Arduino    
+    IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino    
     IS_ORIGINAL_FPS = True         # Process every captured frame, False -> cap at FRAME_RATE, only TRUE for Live
     FRAME_RATE = 120               # Used in recovery/algo  
     CAMERA_STREAM = True           # True to run frame capture in a seperate thread, always false for videos
@@ -331,10 +332,8 @@ def main():
                     # 11. Run the Warped Image through Object Detection
                     # Internal timings (Preprocess, Inference, etc.) are handled inside predict()
                     with rs.log_timing("Object Detection"):
-                        if USE_TRACKING:
-                            detected_bots = predictor.track(warped_frame)
-                        else:
-                            detected_bots = predictor.predict(warped_frame)
+                        detected_bots = predictor.predict(
+                            warped_frame, confidence_threshold=DETECTION_CONFIDENCE, track=USE_TRACKING)
 
                     # 11.5 Quantize Colors
                     with rs.log_timing("Color Quantization"):
@@ -373,7 +372,7 @@ def main():
                             # print(q)
                             if total_sensor_val <= 400: 
                                 if detected_bots_with_data and detected_bots_with_data.get("huey"):
-                                    print(f"DETECTED BOTS WITH DATA {detected_bots_with_data.get("huey")}")
+                                    print(f"DETECTED BOTS WITH DATA {detected_bots_with_data.get('huey')}")
                                     if (detected_bots_with_data.get("huey").get("orientation") is not None) and detected_bots_with_data.get("huey").get("corners") >= 3:
                                         #print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
                                         imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
