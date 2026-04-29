@@ -43,7 +43,7 @@ MODE = "live"
 # MODE = "custom"
 
 # Core behavior
-WARP_AND_COLOR_PICKING = False
+WARP_AND_COLOR_PICKING = True
 DISPLAY_SCALE = 0.5  # 1.0 for full-size display, 0.5 for easier 1080p selection
 CAN_RECOVER = False
 BLACKOUT = True
@@ -64,7 +64,7 @@ SHOW_QUANTIZED_HUEY = True
 
 # Hardware / controls
 JANK_CONTROLLER = False  # Deprecated backup controller path
-IS_TRANSMITTING = False
+IS_TRANSMITTING = True
 WEAPON_ON = False
 
 # Frame timing
@@ -149,6 +149,10 @@ shared_state_lock = threading.Lock()
 shared_state = {"key": None, "flipped": None,
                 "paused": False, "skip_frame": False, "weapon_on": WEAPON_ON}
 
+prev_sensor_val = 0
+curr_sensor_val = 0
+total_sensor_val = 0
+
 def main():
     stream = None
     try:
@@ -194,6 +198,7 @@ def main():
         if IMU_ENABLED:
             imu_sensor = IMU_sensor()
             cali_yaw = 0
+        
 
         # Initialize corner detection
         corner_detection = RobotCornerDetection(selected_colors, False, False, BLACKOUT=BLACKOUT, thresh=0.4, frame_rate = FRAME_RATE)
@@ -232,6 +237,8 @@ def main():
         # This is all of our processing code minus the display of the images.
         # Any image displays should modify the frame that is returned at the end of the loop.
         def perception_pipeline():
+            global prev_sensor_val, curr_sensor_val, total_sensor_val
+
             prev = ptime()
             last_frame = 0
             iteration = 0
@@ -300,6 +307,15 @@ def main():
                     if IMU_ENABLED:
                         try:
                             cali_yaw = imu_sensor.get_yaw_uncali()
+                            curr_sensor_val = cali_yaw
+                            print(f"Total sensor value: {total_sensor_val}")
+                            if prev_sensor_val == curr_sensor_val:
+                                total_sensor_val += 1
+                            else:
+                                total_sensor_val = 0
+
+                            prev_sensor_val = curr_sensor_val
+
                         except IMUReadError as ex:
                             # print(f"🟥 Error: {ex}") xd rawr
                             pass
@@ -328,7 +344,7 @@ def main():
                     # 12. Run Object Detection's results through Corner Detection
                     with rs.log_timing("Corner Detection"):
                         corner_detection.set_bots(detected_bots)
-                        detected_bots_with_data = corner_detection.corner_detection_main(algorithm.huey_previous_orientations)
+                        detected_bots_with_data = corner_detection.corner_detection_main(algorithm.huey_previous_orientations, is_flipped=is_flipped)
 
                     # Prepare Quantized Huey Image (for display buffer)
                     huey_display_img = None
@@ -354,17 +370,21 @@ def main():
                             # print("detected bots with data: ", detected_bots_with_data)
                             
                             # if detected_bots_with_data.get("huey") is not None and detected_bots_with_data.get("huey") != {}:
-                            if detected_bots_with_data.get("huey"):
-                                if (detected_bots_with_data.get("huey").get("orientation") is not None) and detected_bots_with_data.get("huey").get("corners") == 4:
-                                    #print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
-                                    imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
-                                    print("CALLIBRATING")
-                                    yaw = 0
-                                else:
-                                    yaw = imu_sensor.get_yaw_continuous()
-                                    detected_bots_with_data["huey"]["orientation"] = yaw
-                                    print(f"yaw = {yaw}")
-                                    draw_yaw_text(warped_frame,yaw,is_flipped)
+                            # print(q)
+                            if total_sensor_val <= 400: 
+                                if detected_bots_with_data and detected_bots_with_data.get("huey"):
+                                    print(f"DETECTED BOTS WITH DATA {detected_bots_with_data.get("huey")}")
+                                    if (detected_bots_with_data.get("huey").get("orientation") is not None) and detected_bots_with_data.get("huey").get("corners") >= 3:
+                                        #print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
+                                        imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
+                                        print("CALLIBRATING")
+                                        yaw = 0
+                                    if (detected_bots_with_data.get("huey")) and (detected_bots_with_data.get("huey").get("corners") <= 1 or corner_detection.is_diagonal ):
+                                        print(f"USING SENSORS USING SENSORS USING SENSORS")
+                                        yaw = imu_sensor.get_yaw_continuous()
+                                        detected_bots_with_data["huey"]["orientation"] = yaw
+                                        print(f"yaw = {yaw}")
+                                        draw_yaw_text(warped_frame,yaw,is_flipped)
                             # is_flipped = imu_sensor.get_upside_down_continuous()
                             print(f"flipped = {is_flipped}")
                             # print("detected bots with data: ", detected_bots_with_data)
@@ -397,7 +417,7 @@ def main():
                             motor_group.move(speed*is_flipped, turn * -1)
                             if WEAPON_ON:
                                 weapon_motor_group.move(
-                                    1 if weapon_on_this_frame else 0)
+                                    0.3 if weapon_on_this_frame else 0) # 0.8 before
 
                     # Prepare Main Display Image
                     main_display_img = None

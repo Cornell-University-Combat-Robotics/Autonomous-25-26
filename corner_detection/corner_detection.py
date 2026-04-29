@@ -30,21 +30,23 @@ class RobotCornerDetection:
         self.display_possible_hueys = display_possible_hueys
         self.huey_color_percentage_threshold = -1
         self.color_percentage_rows = []
+        self.diagonal_counter = 0
+        self.is_diagonal = False
         self.centroids = []
         
         # Note: These are actually floats/int but we need them to be mutable
         self.diag_len = []
         self.side_len = []
         self.num_lens = [0]
+        self.frame_rate = frame_rate
 
-        self.left_diff = []
-        self.right_diff = []
-        self.ratio = []
         self.thresh = thresh
         self.BLACKOUT = BLACKOUT
+        self.prev_flipped = 1 # track for two corner
         self.dynamic_threshold_window = 60 #frame_rate//2 # Time/Number of Frames for the dynamic threshold for FindOurBot
         self.threshold_queue = deque(maxlen = self.dynamic_threshold_window)
         self.running_sum = 0 # running sum of midpoints for threshold logic
+
 
     def set_bots(self, bots: dict):
         self.bots = bots
@@ -92,7 +94,7 @@ class RobotCornerDetection:
             print(f"Unexpected error in detect_our_robot_main: {e}")
             return None
 
-    def corner_detection_main(self, previous_orientations: list = [], threshold_set: bool=True) -> dict | None:
+    def corner_detection_main(self, previous_orientations: list = [], threshold_set: bool=True, is_flipped:int = 1) -> dict | None:
         """
         Main function for detecting corners and orientation of the robot.
 
@@ -100,9 +102,11 @@ class RobotCornerDetection:
             dict: A dictionary containing details of the robot and enemy robots.
         """
         try:
-            
             bot_images = [bot["img"] for bot in self.bots["bots"]]
             image = self.detect_our_robot_main(bot_images, threshold_set)
+
+            # if self.diagonal_counter > self.frame_rate/4:
+            #     self.diagonal_counter = 0
             
             if image is not None:
                 # Find the identified bot (our robot)
@@ -140,23 +144,36 @@ class RobotCornerDetection:
                 # Every time we calculate 4 points, calculate diagonal and side length in the case of 1 front 1 back corner in the future
                 calc_diagonal_and_side_length(self.centroids, self.diag_len, self.side_len, self.num_lens)
 
-                print(f"corners: {num_corners}")
+                # print(f"corners: {num_corners}")
                 huey["corners"] = num_corners
+                print(f"CORNERS = {huey["corners"]}")
                 
                 if (num_corners == 2):
                     if previous_orientations is not None and len(previous_orientations) > 0:
-                        previous_orientation = previous_orientations[-1] # why index 0...
-                        huey["orientation"] = two_corners(centroid_points, previous_orientation, self.diag_len, self.side_len)
-                        # print(f"PREV ORIENT: 🌸🐋💛 {previous_orientation}")
-                        # print(f"Current ORIENT: 💛🐋🌸 { huey["orientation"]}")
+                        previous_orientation = previous_orientations[-1]
+                        calc_orientation, IS_NOT_DIAGONAL = two_corners(centroid_points, previous_orientation, self.diag_len, self.side_len, huey["bbox"], self.prev_flipped, is_flipped=is_flipped)
+                        self.is_diagonal = not IS_NOT_DIAGONAL
+                        if IS_NOT_DIAGONAL:
+                            self.diagonal_counter = 0
+                            huey["orientation"] = calc_orientation
+                        else: # DIAGONAL
+                            self.diagonal_counter += 1
+                            huey["orientation"] = calc_orientation
+                        self.prev_flipped = is_flipped
                     else:
                         huey["orientation"] = None
                     return {"huey": huey, "enemy": enemy_bots}
 
                 elif (num_corners < 2):
                     print("Less than 2 corners found")
+                    self.is_diagonal = False
+                    self.diagonal_counter += 1
+                    print(f"😂CORERS WHEN NUM COENRERS LESS THAN 2 {huey["corners"]}")
                     return {"huey": huey, "enemy": enemy_bots}
-
+                
+                # Four corners
+                self.is_diagonal = False
+                self.diagonal_counter = 0
                 front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5
                 back_midpoint = (centroid_points[1][0] + centroid_points[1][1]) * 0.5
                 huey["orientation"] = compute_angle_between_midpoints(back_midpoint, front_midpoint)
