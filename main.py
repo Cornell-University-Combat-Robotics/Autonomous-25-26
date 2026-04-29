@@ -43,7 +43,7 @@ MODE = "live"
 # MODE = "custom"
 
 # Core behavior
-WARP_AND_COLOR_PICKING = False
+WARP_AND_COLOR_PICKING = True
 DISPLAY_SCALE = 0.5  # 1.0 for full-size display, 0.5 for easier 1080p selection
 CAN_RECOVER = False
 BLACKOUT = True
@@ -78,7 +78,7 @@ MODEL_NAME = "Nano320Temp"       # Trained with match images at 320 size
 OD_IMG_SIZE = 320                # Must be multiple of 32, avoid below 320
 
 if MODE == "comp" or MODE == "live":
-    IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino    
+    IS_TRANSMITTING = True         # True to send transmissions to live Huey via Arduino    
     IS_ORIGINAL_FPS = True         # Process every captured frame, False -> cap at FRAME_RATE, only TRUE for Live
     FRAME_RATE = 120               # Used in recovery/algo  
     CAMERA_STREAM = True           # True to run frame capture in a seperate thread, always false for videos
