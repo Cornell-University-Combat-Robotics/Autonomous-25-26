@@ -37,8 +37,8 @@ from sensors.imu_class import IMUReadError
 # Keep one option active per setting. Commented lines directly below are common alternatives.
 
 # Run mode (uncomment exactly one)
-MODE = "comp"
-# MODE = "live"
+# MODE = "comp"
+MODE = "live"
 # MODE = "video"
 # MODE = "custom"
 
@@ -78,7 +78,7 @@ MODEL_NAME = "Nano320Temp"       # Trained with match images at 320 size
 OD_IMG_SIZE = 320                # Must be multiple of 32, avoid below 320
 
 if MODE == "comp" or MODE == "live":
-    IS_TRANSMITTING = True         # True to send transmissions to live Huey via Arduino    
+    IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino    
     IS_ORIGINAL_FPS = True         # Process every captured frame, False -> cap at FRAME_RATE, only TRUE for Live
     FRAME_RATE = 120               # Used in recovery/algo  
     CAMERA_STREAM = True           # True to run frame capture in a seperate thread, always false for videos
@@ -305,6 +305,7 @@ def main():
                         try:
                             cali_yaw = imu_sensor.get_yaw_uncali()
                             curr_sensor_val = cali_yaw
+                            print(f"Total sensor value: {total_sensor_val}")
                             if prev_sensor_val == curr_sensor_val:
                                 total_sensor_val += 1
                             else:
@@ -364,7 +365,7 @@ def main():
                             
                             # if detected_bots_with_data.get("huey") is not None and detected_bots_with_data.get("huey") != {}:
                             # print(q)
-                            if total_sensor_val <= 200: 
+                            if total_sensor_val <= 400: 
                                 if detected_bots_with_data and detected_bots_with_data.get("huey"):
                                     print(f"DETECTED BOTS WITH DATA {detected_bots_with_data.get("huey")}")
                                     if (detected_bots_with_data.get("huey").get("orientation") is not None) and detected_bots_with_data.get("huey").get("corners") >= 3:

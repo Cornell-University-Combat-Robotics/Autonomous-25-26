@@ -158,7 +158,7 @@ class RobotCornerDetection:
                             huey["orientation"] = calc_orientation
                         else: # DIAGONAL
                             self.diagonal_counter += 1
-                            huey["orientation"] = previous_orientation
+                            huey["orientation"] = calc_orientation
                         self.prev_flipped = is_flipped
                     else:
                         huey["orientation"] = None
