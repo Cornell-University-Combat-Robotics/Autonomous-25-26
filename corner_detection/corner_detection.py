@@ -203,13 +203,17 @@ class RobotCornerDetection:
                 calc_diagonal_and_side_length(self.centroids, self.diag_len, self.side_len, self.num_lens)
                 
                 IS_NOT_DIAGONAL = False
+                # AARON CHANGE
+                detected_corner_count = len(centroid_points[0]) + len(centroid_points[1])
                         
-                if (len(centroid_points[0]) + len(centroid_points[1]) == 2):
+                # AARON CHANGE
+                if detected_corner_count == 2:
                     print("devision search6")
+                    # AARON CHANGE
+                    self.corner_method = 2
                     if previous_orientations is not None and len(previous_orientations) > 0:
                         previous_orientation = previous_orientations[-1]
                         calc_orientation, IS_NOT_DIAGONAL = two_corners(centroid_points, previous_orientation, self.diag_len, self.side_len, huey["bbox"], self.prev_flipped, is_flipped=is_flipped)
-                        self.corner_method = 2
                         print("devision search7")
                         if IS_NOT_DIAGONAL:
                             self.diagonal_counter = 0
@@ -226,14 +230,19 @@ class RobotCornerDetection:
                         # print(f"Current ORIENT: 💛🐋🌸 { huey["orientation"]}")
                     else:
                         huey["orientation"] = None
+                    # AARON CHANGE
+                    huey["corners"] = self.corner_method if self.corner_method is not None else 0
                     conf = self.confidence(self.corner_method, IS_NOT_DIAGONAL, high_overlap, tolerance)
                     return {"huey": huey, "enemy": enemy_bots}, conf
 
-                elif (len(centroid_points[0]) + len(centroid_points[1]) < 2):
+                # AARON CHANGE
+                elif detected_corner_count < 2:
                     print("devision search11")
                     print("Less than 2 corners found")
                     self.is_diagonal = False
                     self.diagonal_counter += 1
+                    # AARON CHANGE
+                    huey["corners"] = self.corner_method if self.corner_method is not None else 0
                     conf = 0
                     return {"huey": huey, "enemy": enemy_bots}, conf
                 
@@ -246,6 +255,8 @@ class RobotCornerDetection:
                 back_midpoint = (centroid_points[1][0] + centroid_points[1][1]) * 0.5
                 print("devision search13")
                 huey["orientation"] = compute_angle_between_midpoints(back_midpoint, front_midpoint)
+                # AARON CHANGE
+                huey["corners"] = self.corner_method if self.corner_method is not None else 0
                 result = {"huey": huey, "enemy": enemy_bots}
                 conf = self.confidence(self.corner_method, IS_NOT_DIAGONAL, high_overlap, tolerance)
                 return result, conf
