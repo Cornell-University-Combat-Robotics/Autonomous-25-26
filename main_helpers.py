@@ -298,7 +298,7 @@ def quantize(detected_bots, selected_colors, show, is_flipped=1, settings=None):
         threshold = settings['threshold']
 
         if(is_flipped == -1):
-            threshold *= 1.1 #If we are flipped, increase threshold by 20% of current threshold
+            threshold *= 1.1 #If we are flipped, increase threshold by 10% of current threshold
 
         custom_weights = settings['quantization_weights']
 
