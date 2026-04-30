@@ -12,7 +12,7 @@ main_files/homography_matrix.txt
 main_files/resized_image.png
 main_files/selected_colors.txt
 main_files/warped_frame.png
-testing/testing_data
+testing/testing_data/
 venv/
 testvenv/
 comp/
