@@ -213,10 +213,12 @@ class RobotCornerDetection:
                         print("devision search7")
                         if IS_NOT_DIAGONAL:
                             self.diagonal_counter = 0
+                            self.is_diagonal = False
                             huey["orientation"] = calc_orientation
                             print("devision search8")
                         else: # DIAGONAL
                             self.diagonal_counter += 1
+                            self.is_diagonal = True
                             huey["orientation"] = calc_orientation
                         self.prev_flipped = is_flipped
                         print("devision search10")
