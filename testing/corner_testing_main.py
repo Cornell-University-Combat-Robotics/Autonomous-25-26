@@ -20,7 +20,7 @@ from main_helpers import (
 
 #Settings
 DISPLAY_IMAGES = True           # Displays each image in window
-NO_ORIENTATION_SCORE = 30       # Angle that is equivelently bad to no orientation
+NO_ORIENTATION_SCORE = 25       # Angle that is equivelently bad to no orientation
 DATA_SET_NAME = "prince_full"   # Name of your dataset folder in "testing_data"
 COLOR_SELECT_IMG = "900.png"    # This should be the name of your image you want to do color selection on
 
@@ -94,7 +94,7 @@ def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, DISPLAY_IMAGE
                 ]
             }
             
-            quantized_bots = quantize(formated_image, selected_colors, show=False, is_flipped=False, settings=quant_settings) #Quantize with custom settings
+            quantized_bots = quantize(formated_image, selected_colors, show=False, is_flipped=1, settings=quant_settings) #Quantize with custom settings
             quantized_img = quantized_bots['bots'][0]['img']
 
             corner_detection.set_bots(quantized_bots)
