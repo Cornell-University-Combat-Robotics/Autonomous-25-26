@@ -123,7 +123,11 @@ def get_predictor(MODEL_NAME, OD_IMG_SIZE):
 
     elif ov.Core().get_available_devices() and "GPU" in ov.Core().get_available_devices():
         print(f"Using {MODEL_NAME} with OpenVINO on GPU for object detection.")
+<<<<<<< Updated upstream
         predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE, device="intel:gpu")
+=======
+        predictor = YoloModel(MODEL_NAME, "OpenVINO", OD_IMG_SIZE, device="gpu")
+>>>>>>> Stashed changes
 
     elif ov.Core().get_available_devices() and "CPU" in ov.Core().get_available_devices():
         print(f"Using {MODEL_NAME} with OpenVINO on CPU for object detection.")
@@ -184,7 +188,11 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
     return algorithm
 
 
+<<<<<<< Updated upstream
 def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False, weapon_on=False, centroids=[], is_confident=0, show=True):
+=======
+def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False, weapon_on=False, centroids=[], show=True):
+>>>>>>> Stashed changes
     if is_recovering:
         cv2.putText(image, "RECOVERING", (550, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
@@ -298,7 +306,7 @@ def quantize(detected_bots, selected_colors, show, is_flipped=1, settings=None):
         threshold = settings['threshold']
 
         if(is_flipped == -1):
-            threshold *= 1.2 #If we are flipped, increase threshold by 20% of current threshold
+            threshold *= 1.1 #If we are flipped, increase threshold by 20% of current threshold
 
         custom_weights = settings['quantization_weights']
 
