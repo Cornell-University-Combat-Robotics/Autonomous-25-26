@@ -213,10 +213,7 @@ class RobotCornerDetection:
                             print("devision search8")
                         else: # DIAGONAL
                             self.diagonal_counter += 1
-                            huey["orientation"] = previous_orientation
-                            print("devision search9")
-                        print("MAYBE???")
-                        print(": 3")
+                            huey["orientation"] = calc_orientation
                         self.prev_flipped = is_flipped
                         print("devision search10")
                         # print(f"PREV ORIENT: 🌸🐋💛 {previous_orientation}")

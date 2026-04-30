@@ -48,8 +48,10 @@ DISPLAY_SCALE = 0.5  # 1.0 for full-size display, 0.5 for easier 1080p selection
 CAN_RECOVER = True
 BLACKOUT = True
 COLOR_QUANTIZATION = True  # Should almost always stay True
-CAMERA_STREAM = True     # Frame capture thread (must be False for videos)
-IMU_ENABLED = True     # Set to True to enable IMU integration (if hardware is available)
+CAMERA_STREAM = False     # Frame capture thread (must be False for videos)
+IMU_ENABLED = False     # Set to True to enable IMU integration (if hardware is available)
+USE_TRACKING = False       # Use tracking-based predictor instead of running detection on every frame (requires more resources)
+DETECTION_CONFIDENCE = 0.25  # Ultralytics default is 0.25; Try lower values
 
 # Logging / debug outputs
 SHEET_RUNTIME = True
@@ -63,7 +65,7 @@ SHOW_QUANTIZED_HUEY = True
 
 # Hardware / controls
 JANK_CONTROLLER = False  # Deprecated backup controller path
-IS_TRANSMITTING = False
+IS_TRANSMITTING = True
 WEAPON_ON = False
 
 # Frame timing
@@ -78,7 +80,7 @@ MODEL_NAME = "Nano320Temp"       # Trained with match images at 320 size
 OD_IMG_SIZE = 320                # Must be multiple of 32, avoid below 320
 
 if MODE == "comp" or MODE == "live":
-    IS_TRANSMITTING = True         # True to send transmissions to live Huey via Arduino    
+    IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino    
     IS_ORIGINAL_FPS = True         # Process every captured frame, False -> cap at FRAME_RATE, only TRUE for Live
     FRAME_RATE = 120               # Used in recovery/algo  
     CAMERA_STREAM = True           # True to run frame capture in a seperate thread, always false for videos
@@ -107,10 +109,12 @@ else:
 
 folder = os.getcwd() + "/main_files"
 # Video options (uncomment one for MODE = "video")
+# camera_number = folder + "/test_videos/crude_rot_huey.mp4"
 # camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
-# camera_number = folder + "/test_videos/blink224_huey.mp4"
+# camera_number = folder + "/test_videos/cicero_corners_bzone.mov"
+# camera_number = folder + "/test_videos/orbital_huey.mp4"
 
 # Webcam index (used for MODE = "live" or MODE = "comp")
 camera_number = 0
@@ -145,6 +149,10 @@ shared_state_lock = threading.Lock()
 # Shared state for controls passed from UI thread to Perception thread
 shared_state = {"key": None, "flipped": None,
                 "paused": False, "skip_frame": False, "weapon_on": WEAPON_ON}
+
+prev_sensor_val = 0
+curr_sensor_val = 0
+total_sensor_val = 0
 
 def main():
     stream = None
@@ -190,9 +198,8 @@ def main():
 
         if IMU_ENABLED:
             imu_sensor = IMU_sensor()
-            q = deque(maxlen=15)
             cali_yaw = 0
-            q.append(0)
+        
 
         # Initialize corner detection
         corner_detection = RobotCornerDetection(selected_colors, False, False, BLACKOUT=BLACKOUT, thresh=0.4, frame_rate = FRAME_RATE)
@@ -231,6 +238,8 @@ def main():
         # This is all of our processing code minus the display of the images.
         # Any image displays should modify the frame that is returned at the end of the loop.
         def perception_pipeline():
+            global prev_sensor_val, curr_sensor_val, total_sensor_val
+
             prev = ptime()
             last_frame = 0
             iteration = 0
@@ -299,7 +308,15 @@ def main():
                     if IMU_ENABLED:
                         try:
                             cali_yaw = imu_sensor.get_yaw_uncali()
-                            q.append(cali_yaw)
+                            curr_sensor_val = cali_yaw
+                            print(f"Total sensor value: {total_sensor_val}")
+                            if prev_sensor_val == curr_sensor_val:
+                                total_sensor_val += 1
+                            else:
+                                total_sensor_val = 0
+
+                            prev_sensor_val = curr_sensor_val
+
                         except IMUReadError as ex:
                             # print(f"🟥 Error: {ex}") xd rawr
                             pass
@@ -315,7 +332,8 @@ def main():
                     # 11. Run the Warped Image through Object Detection
                     # Internal timings (Preprocess, Inference, etc.) are handled inside predict()
                     with rs.log_timing("Object Detection"):
-                        detected_bots = predictor.predict(warped_frame)
+                        detected_bots = predictor.predict(
+                            warped_frame, confidence_threshold=DETECTION_CONFIDENCE, track=USE_TRACKING)
 
                     # 11.5 Quantize Colors
                     with rs.log_timing("Color Quantization"):
@@ -354,9 +372,9 @@ def main():
                             
                             # if detected_bots_with_data.get("huey") is not None and detected_bots_with_data.get("huey") != {}:
                             # print(q)
-                            if q and q.count(q[0]) != 15: 
+                            if total_sensor_val <= 400: 
                                 if detected_bots_with_data and detected_bots_with_data.get("huey"):
-                                    print(f"DETECTED BOTS WITH DATA {detected_bots_with_data.get("huey")}")
+                                    print(f"DETECTED BOTS WITH DATA {detected_bots_with_data.get('huey')}")
                                     if (detected_bots_with_data.get("huey").get("orientation") is not None) and detected_bots_with_data.get("huey").get("corners") >= 3:
                                         #print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
                                         imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
@@ -400,7 +418,7 @@ def main():
                             motor_group.move(speed*is_flipped, turn * -1)
                             if WEAPON_ON:
                                 weapon_motor_group.move(
-                                    0.8 if weapon_on_this_frame else 0)
+                                    0.3 if weapon_on_this_frame else 0) # 0.8 before
 
                     # Prepare Main Display Image
                     main_display_img = None

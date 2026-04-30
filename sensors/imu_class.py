@@ -182,7 +182,7 @@ class IMU_sensor():
         """
         with self.dict_lock:
             gravity_z = self.dict["acc"]["z"]
-        return -1 if gravity_z >= 0 else 1
+        return 1 if gravity_z >= 0 else -1
 
 
     def is_upside_down(self):
