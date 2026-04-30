@@ -184,13 +184,17 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
     return algorithm
 
 
-def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False, weapon_on=False, centroids=[], show=True):
+def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False, weapon_on=False, centroids=[], is_confident=0, show=True):
     if is_recovering:
         cv2.putText(image, "RECOVERING", (550, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
     if is_flipped == -1:
         cv2.putText(image, "FLIPPED", (550, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 255, 0), 2)
+    if is_confident == 1:
+        cv2.putText(image, "CORNER CONFIDENT", (25, image.shape[0] - 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.67, (255, 19, 240), 2)
+        
     if is_backing:
         if moving_forward > 0:
             cv2.putText(image, "FORWARD: " + against_wall, (450, 50),

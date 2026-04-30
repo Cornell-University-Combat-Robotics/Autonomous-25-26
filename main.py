@@ -38,8 +38,8 @@ from sensors.imu_class import IMUReadError
 
 # Run mode (uncomment exactly one)
 # MODE = "comp"
-MODE = "live"
-# MODE = "video"
+# MODE = "live"
+MODE = "video"
 # MODE = "custom"
 
 # Core behavior
@@ -80,7 +80,7 @@ MODEL_NAME = "Nano320Temp"       # Trained with match images at 320 size
 OD_IMG_SIZE = 320                # Must be multiple of 32, avoid below 320
 
 if MODE == "comp" or MODE == "live":
-    IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino    
+    IS_TRANSMITTING = True         # True to send transmissions to live Huey via Arduino    
     IS_ORIGINAL_FPS = True         # Process every captured frame, False -> cap at FRAME_RATE, only TRUE for Live
     FRAME_RATE = 120               # Used in recovery/algo  
     CAMERA_STREAM = True           # True to run frame capture in a seperate thread, always false for videos
@@ -110,19 +110,19 @@ else:
 folder = os.getcwd() + "/main_files"
 # Video options (uncomment one for MODE = "video")
 # camera_number = folder + "/test_videos/crude_rot_huey.mp4"
-# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
 # camera_number = folder + "/test_videos/cicero_corners_bzone.mov"
 # camera_number = folder + "/test_videos/orbital_huey.mp4"
 
 # Webcam index (used for MODE = "live" or MODE = "comp")
-camera_number = 0
+# camera_number = 0
 # camera_number = 1
 
 # Set to webcam if capturing frames in main loop.
-# camera_type = "Video"
-camera_type = "Webcam"
+camera_type = "Video"
+# camera_type = "Webcam"
 
 # ------------------------------ QUANTIZATION SETTINGS ------------------------------
 
@@ -436,7 +436,7 @@ def main():
 
                             # Call display_angles with show=False to get the image without displaying
                             main_display_img = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing,
-                                                              against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped=is_flipped, weapon_on=weapon_on_this_frame, centroids=corner_detection.centroids, show=False)
+                                                              against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped=is_flipped, weapon_on=weapon_on_this_frame, centroids=corner_detection.centroids, is_confident=confidence, show=False)
 
                         elif SHOW_FRAME:
                             display_frame = warped_frame
