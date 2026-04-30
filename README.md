@@ -1,81 +1,102 @@
 # Autonomous 25-26
 
-Autonomous perception, decision-making, and control stack for Combat Robotics @ Cornell's robot **Huey**.
+Autonomous perception, orientation, decision, and motor-control code for Combat Robotics at Cornell's robot Huey.
 
-- Huey NHRL page: [https://www.nhrl.io/wiki/index.php/Huey](https://www.nhrl.io/wiki/index.php/Huey)
+Huey NHRL page: <https://www.nhrl.io/wiki/index.php/Huey>
+
 <img src="docs/images/HueyImage.png" alt="Huey Robot Image" width="50%" />
 
-## What This Repository Does
+## What This Repo Runs
 
-This project takes a live camera feed (or test video), identifies robots in-frame, estimates Huey's orientation, computes movement commands with the RamRam algorithm, and can optionally transmit those commands to on-bot motor hardware.
+The main runtime is [main.py](main.py). It takes a camera feed or a saved video, warps the arena into a top-down coordinate system, detects robots with a YOLO model, identifies Huey by color, estimates Huey's heading from colored corner markers and IMU data, computes drive commands with the RamRam algorithm, and optionally sends those commands over serial to the transmitter hardware.
 
-At a high level:
+The actual runtime loop is split into two threads:
 
-1. Capture frame (`camera_stream.py` or OpenCV video source)
-2. Warp frame into arena coordinates (homography)
-3. Run object detection (`machine/predict.py`, YOLO via Ultralytics)
-4. Quantize Huey colors for robust corner localization (`color_quant/quantization.py`)
-5. Estimate robot corners and heading (`corner_detection/`)
-6. Compute steering and speed (`Algorithm/ram.py`)
-7. Optionally transmit commands to Arduino/FlySky pipeline (`transmission/`)
-8. Display overlays and runtime diagnostics (`main_helpers.py`, `runtimesheet/`)
+- A perception/control thread reads frames, warps them, runs object detection, quantizes Huey's colors, estimates corners/orientation, runs the algorithm, and sends motor commands.
+- The main thread handles OpenCV windows and keyboard input.
 
-## Main Entry Point
+The processing order is:
 
-- Run: `main.py`
-- Core runtime settings are near the top of `main.py`:
-  - `MODE`: `"comp"`, `"live"`, `"video"`, or `"custom"`
-  - `MODEL_NAME` and `OD_IMG_SIZE`
-  - `IS_TRANSMITTING`, `WEAPON_ON`, display toggles
-  - `WARP_AND_COLOR_PICKING` (new calibration vs saved calibration)
+1. Capture a frame from `CameraStream` or `cv2.VideoCapture`.
+2. Capture one setup frame by pressing `0`.
+3. Load or create arena calibration data from `main_files/homography_matrix.txt`.
+4. Load or create Huey color selections from `main_files/selected_colors.txt`.
+5. Precompute warp maps with `warp_main.py`.
+6. Load a YOLO model through `machine/predict.py`.
+7. Detect robots in the warped arena image.
+8. Quantize detected robot crops with `color_quant/quantization.py`.
+9. Identify Huey and estimate its orientation with `corner_detection/`.
+10. Optionally fuse/replace orientation with IMU yaw from `sensors/imu_class.py`.
+11. Compute `speed` and `turn` with `algorithm/ram.py`.
+12. Optionally transmit commands through `transmission/`.
+13. Display overlays and write runtime logs.
 
-## Processing Pipeline Details
+## Important Files
 
-`main.py` uses a dual-loop architecture:
+- `main.py` - full integration entry point.
+- `main_helpers.py` - setup helpers, model backend selection, color quantization wrapper, display overlays.
+- `camera_stream.py` - threaded low-latency camera capture. Defaults to 1280x720 at 120 FPS.
+- `warp_main.py` - homography selection, warp-map generation, and frame warping.
+- `machine/predict.py` - YOLO model wrapper used by `main.py`.
+- `machine/models/` - local model artifacts.
+- `corner_detection/` - Huey color identification and corner/orientation estimation.
+- `color_quant/` - LAB-space color snapping for robot crops.
+- `algorithm/` - RamRam movement logic.
+- `transmission/` - serial and motor-control support for the FlySky/Arduino path.
+- `sensors/` - ESP/IMU reading code.
+- `runtimesheet/` - timing spreadsheet and plot generation.
+- `main_files/` - calibration files and test videos used by `main.py`.
+- `quant_settings.json` - tuned color-quantization thresholds and weights.
 
-- **Background perception thread**
-  - Reads frames
-  - Warps to precomputed map (`warp_main.py`)
-  - Detects robots using a selected model backend:
-    - TensorRT (NVIDIA)
-    - CoreML (Apple Silicon)
-    - OpenVINO (Intel)
-    - ONNX CPU fallback
-  - Quantizes colors for Huey-specific corner features
-  - Runs corner detection and algorithm output (`speed`, `turn`)
-  - Sends serial motor commands when transmission is enabled
-  - Publishes display-ready frames
+## Runtime Modes
 
-- **Main UI thread**
-  - Handles keyboard input
-  - Shows annotated main feed + optional quantized Huey crop
-  - Synchronizes pause/step/flip/weapon state with the perception thread
+Set exactly one `MODE` near the top of `main.py`.
 
-## Repository Layout
+### `MODE = "video"`
 
-- `main.py` - full integration runtime
-- `main_helpers.py` - setup helpers, model/backend selection, display helpers
-- `camera_stream.py` - threaded camera capture optimized for low latency
-- `Algorithm/` - RamRam behavior logic, tests, and analysis utilities
-- `corner_detection/` - color picking and orientation extraction
-- `color_quant/` - color quantization utilities for robust feature isolation
-- `machine/` - model loading/prediction wrappers + model artifacts
-- `transmission/` - serial + motor control integration
-- `runtimesheet/` - per-iteration timing export and graph generation
-- `testing/` - test images and supporting scripts
-- `main_files/` - videos, homography matrix, color selections, etc.
+Best first run. Uses a saved video, disables transmission, disables the camera capture thread, and processes at `FRAME_RATE = 60`.
 
-## Setup
+You must also set:
 
-### 1) Prerequisites
+```python
+camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+camera_type = "Video"
+```
 
-- Python **3.13.12** (as noted in `requirements.txt`)
-- OS with OpenCV GUI support (macOS/Windows/Linux)
-- Optional hardware:
-  - USB camera (or capture card)
-  - Arduino Nano + FlySky trainer-mode setup (for transmission)
+### `MODE = "live"`
 
-### 2) Create and activate a virtual environment
+Uses a live camera and the threaded `CameraStream`. In the current code, `live` also sets `IS_TRANSMITTING = True`, so only use it when the serial transmitter path is available or change `IS_TRANSMITTING` manually after the mode block.
+
+### `MODE = "comp"`
+
+Competition mode. Uses live camera input, enables transmission, and turns the weapon path on by default.
+
+### `MODE = "custom"`
+
+Leaves the mode-specific overrides alone so you can manually set camera, transmission, display, and timing options.
+
+## Setup Guide
+
+### 1. Clone and enter the repo
+
+```bash
+git clone <repo-url>
+cd Autonomous-25-26
+```
+
+### 2. Use the expected Python version
+
+`requirements.txt` currently documents Python `3.13.12`.
+
+Check your version:
+
+```bash
+python3 --version
+```
+
+On Windows, use `python --version`.
+
+### 3. Create a virtual environment
 
 macOS/Linux:
 
@@ -84,129 +105,257 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-Windows (PowerShell):
+Windows PowerShell:
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
-### 3) Install Python dependencies
+### 4. Install dependencies
 
 ```bash
-pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
-Notes:
-- The project uses `ultralytics`, `torch`, `opencv-python`, `openvino`, and `pyserial`.
-- Some optional graph outputs in `runtimesheet/` use Plotly.
+The main runtime depends on OpenCV, NumPy, pandas, PyTorch, Ultralytics, OpenVINO, PySerial, OpenPyXL, Plotly, and Core ML tooling.
 
-### 4) Confirm model files exist
+### 5. Confirm model files exist
 
-Models are expected under:
+`main.py` currently defaults to:
 
-`machine/models/<MODEL_NAME>/<OD_IMG_SIZE>/...`
+```python
+MODEL_NAME = "Nano320Temp"
+OD_IMG_SIZE = 320
+```
 
-Default in `main.py`:
+That means the model loader looks under:
 
-- `MODEL_NAME = "Nano320Temp"`
-- `OD_IMG_SIZE = 320`
+```text
+machine/models/Nano320Temp/320/
+```
 
-If you change either value, verify matching model artifacts exist.
+The repo currently includes `Nano320Temp.pt` and `Nano320Temp.onnx` there. Other model families are also present, including `NanoSizeVariant`, `NanoDefault`, `NanoSegHueyPrince`, and `SmallComp`.
 
-## First-Time Calibration
+Backend selection happens in `main_helpers.get_predictor()`:
 
-The runtime supports two approaches:
+- CUDA available: TensorRT `.engine`
+- Apple MPS available: CoreML `.mlpackage`
+- OpenVINO GPU available: OpenVINO model directory
+- OpenVINO CPU available: OpenVINO model directory
+- Otherwise: ONNX CPU
 
-- **Reuse previous calibration (default)**  
-  Reads:
-  - `main_files/homography_matrix.txt`
-  - `main_files/selected_colors.txt`
+Make sure the artifact for your selected backend actually exists. For example, `Nano320Temp/320` currently has `.pt` and `.onnx`, but not every backend artifact.
 
-- **Collect new calibration**  
-  Set `WARP_AND_COLOR_PICKING = True` in `main.py`, then:
-  1. Capture key frame by pressing `0`
-  2. Select arena reference points for homography
-  3. Pick robot colors when prompted
-  4. Files are saved for later runs
+### 6. Check camera access
 
-## Running
+To list cameras with names:
 
-### Video mode (recommended for local testing)
+```bash
+python see_all_cameras.py
+```
 
-1. In `main.py`, set:
-   - `MODE = "video"`
-   - `camera_number = "<path to video>"`
-2. Run:
+To quickly probe indices `0` through `4`:
+
+```bash
+python check_number_of_cameras.py
+```
+
+Set `camera_number` in `main.py` to the index you want. `CameraStream` uses AVFoundation on macOS, the default backend on Windows/Linux, MJPG, 1280x720, 120 FPS, and a capture buffer size of 1.
+
+### 7. Decide whether you need hardware
+
+For saved-video testing, you do not need robot hardware, a transmitter, or an IMU.
+
+For a live camera-only test, use `MODE = "custom"` or manually disable:
+
+```python
+IS_TRANSMITTING = False
+IMU_ENABLED = False
+```
+
+For full robot operation, you need:
+
+- A camera or capture card.
+- Arduino/FlySky transmission hardware. See [transmission/README.md](transmission/README.md).
+- ESP/IMU hardware if `IMU_ENABLED = True`. See [sensors/README.md](sensors/README.md).
+
+If `IMU_ENABLED = True`, startup will ask you to choose the ESP serial port when no port is passed. If `IS_TRANSMITTING = True`, startup will ask you to choose the Arduino serial port when needed.
+
+## First Recommended Run
+
+Start with a saved video and no hardware. In `main.py`, set:
+
+```python
+MODE = "video"
+IMU_ENABLED = False
+WARP_AND_COLOR_PICKING = False
+SHOW_FRAME = True
+SHOW_HUD = True
+SHOW_QUANTIZED_HUEY = True
+camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+camera_type = "Video"
+```
+
+Then run:
 
 ```bash
 python main.py
 ```
 
-### Live camera mode
+When the first window appears, press `0` to capture the setup frame. With `WARP_AND_COLOR_PICKING = False`, the program then loads:
 
-1. Set:
-   - `MODE = "live"`
-   - camera source index/path
-2. Run:
-
-```bash
-python main.py
+```text
+main_files/homography_matrix.txt
+main_files/selected_colors.txt
 ```
 
-### Competition mode (transmission enabled)
+The first ML/corner-detection result is shown before the match loop starts. Press a key in that window to continue.
 
-1. Set:
-   - `MODE = "comp"`
-   - correct motor channel values
-2. Ensure Arduino/FlySky hardware is configured (see `transmission/README.md`)
-3. Run:
+## Calibration
 
-```bash
-python main.py
+Calibration has two parts:
+
+- Arena homography: maps camera coordinates into a 700x700 arena image.
+- Huey colors: stores the colors used for Huey body/front/back corner detection.
+
+### Reuse saved calibration
+
+This is the default:
+
+```python
+WARP_AND_COLOR_PICKING = False
 ```
 
-## Keyboard Controls During Runtime
+The runtime reads:
 
-- `q` - quit
-- `f` - flip control direction
-- `p` - pause/resume playback
-- `w` - toggle weapon state
-- any other key while paused - step one frame
+```text
+main_files/homography_matrix.txt
+main_files/selected_colors.txt
+```
+
+### Create new calibration
+
+Set:
+
+```python
+WARP_AND_COLOR_PICKING = True
+```
+
+Then run `main.py`.
+
+1. Press `0` to capture the setup frame.
+2. Select arena corners in order: top left, top right, bottom right, bottom left.
+3. Press `z` while selecting corners to undo the previous point.
+4. Pick Huey's relevant colors when the color picker appears.
+5. The new calibration files are written into `main_files/`.
+
+Use `DISPLAY_SCALE` if the setup windows are too large or too small.
+
+## Quantization Settings
+
+`quant_settings.json` contains named color-quantization presets. `main.py` currently loads:
+
+```python
+quantization_settings = all_settings["Green Huey"]
+```
+
+Available presets currently include:
+
+- `Ryan OG Green Settings`
+- `Green Huey High-T`
+- `Purple Huey`
+- `Green Huey`
+
+If Huey is identified inconsistently after object detection works, this file and `main_files/selected_colors.txt` are the first places to check.
+
+## Keyboard Controls
+
+During the OpenCV runtime:
+
+- `q` - quit.
+- `f` - toggle manual flipped-drive direction.
+- `p` - pause or resume.
+- `w` - toggle weapon state in shared state.
+- Any other key while paused - step one frame.
+- `r` - passed to the RamRam algorithm to reset recovery history.
+
+During the initial setup-frame window:
+
+- `0` - capture the current frame.
+- `q` - quit without capturing.
+
+During arena corner selection:
+
+- `z` - undo the previous selected corner.
+- `Esc` - leave selection.
 
 ## Runtime Outputs
 
-- `runtimesheet/itertimes.xlsx` - per-iteration timings
-- `runtimesheet/itertimes.png` and `.svg` - timing plots
-- `runtimesheet/itertimes_stacked.png` and `.svg` - stacked timing plots
-- `color_output.csv` - corner detection color-percentage debug output
+When `SHEET_RUNTIME = True`, `RuntimeSheet` collects per-frame timing data and saves files on cleanup:
 
-## Module-Specific Docs
+```text
+runtimesheet/itertimes.xlsx
+runtimesheet/itertimes.png
+runtimesheet/itertimes.svg
+runtimesheet/itertimes_stacked.png
+runtimesheet/itertimes_stacked.svg
+runtimesheet/itertimes_interactive.html
+runtimesheet/itertimes_interactive_stacked.html
+```
 
-- `Algorithm/README.md`
-- `corner_detection/README.md`
-- `transmission/README.md`
-- `sensors/README.md`
-- `vid_and_img_processing/README.md`
+Corner-detection color percentage rows are saved to:
 
-## Troubleshooting
+```text
+color_output.csv
+```
 
-- **No detections or wrong detections**
-  - Verify correct `MODEL_NAME` / `OD_IMG_SIZE`
-  - Re-run calibration (`WARP_AND_COLOR_PICKING = True`)
-  - Check lighting and camera exposure
+## Common Problems
 
-- **OpenCV window or camera issues**
-  - Try different camera index or backend
-  - Confirm camera permissions in OS settings
+### The program asks for a serial port when I only want to test video
 
-- **Serial/transmission errors**
-  - Confirm Arduino is connected and flashed
-  - Verify correct serial port and baudrate
-  - Test with scripts in `transmission/`
+Set `IMU_ENABLED = False` and make sure `IS_TRANSMITTING = False`. `MODE = "live"` currently turns transmission on automatically.
 
-- **Performance too low**
-  - Use a smaller model/image size
-  - Disable optional displays (`SHOW_QUANTIZED_HUEY`, overlays)
-  - Check runtime plots in `runtimesheet/` to find bottlenecks
+### The camera opens but FPS or resolution is wrong
+
+Check the printed capture properties from `CameraStream`. OpenCV camera property requests are not guaranteed to be honored by every camera/backend.
+
+### No robots are detected
+
+Check:
+
+- The selected `MODEL_NAME` and `OD_IMG_SIZE`.
+- Whether the matching model artifact exists for the backend selected on your machine.
+- Whether the input is already warped as expected.
+- Lighting, exposure, and arena visibility.
+- The YOLO thresholds in `machine/predict.py`.
+
+### Huey is detected as the enemy, or orientation is unstable
+
+Check:
+
+- `main_files/selected_colors.txt`
+- `quant_settings.json`
+- `SHOW_QUANTIZED_HUEY`
+- Whether the YOLO crop cuts off Huey's colored markers.
+- Whether `IMU_ENABLED` is overriding camera orientation during low-corner cases.
+
+### Runtime is too slow
+
+Check `runtimesheet/itertimes.xlsx` or the generated plots. Common quick changes:
+
+- Use a smaller/faster model.
+- Reduce `OD_IMG_SIZE`.
+- Disable `SHOW_QUANTIZED_HUEY`.
+- Disable `SHEET_RUNTIME` during competition.
+- Disable `SHOW_HUD` or `DISPLAY_ANGLES` if display drawing is a bottleneck.
+- Avoid per-frame debug printing.
+
+## Related Docs
+
+- [algorithm/README.md](algorithm/README.md)
+- [corner_detection/README.md](corner_detection/README.md)
+- [transmission/README.md](transmission/README.md)
+- [sensors/README.md](sensors/README.md)
+- [vid_and_img_processing/README.md](vid_and_img_processing/README.md)

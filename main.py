@@ -50,6 +50,8 @@ BLACKOUT = True
 COLOR_QUANTIZATION = True  # Should almost always stay True
 CAMERA_STREAM = False     # Frame capture thread (must be False for videos)
 IMU_ENABLED = False     # Set to True to enable IMU integration (if hardware is available)
+USE_TRACKING = False       # Use tracking-based predictor instead of running detection on every frame (requires more resources)
+DETECTION_CONFIDENCE = 0.25  # Ultralytics default is 0.25; Try lower values
 
 # Logging / debug outputs
 SHEET_RUNTIME = True
@@ -63,7 +65,7 @@ SHOW_QUANTIZED_HUEY = True
 
 # Hardware / controls
 JANK_CONTROLLER = False  # Deprecated backup controller path
-IS_TRANSMITTING = False
+IS_TRANSMITTING = True
 WEAPON_ON = False
 
 # Frame timing
@@ -93,7 +95,7 @@ elif MODE == "video":
     IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
     WEAPON_ON = False
     IS_ORIGINAL_FPS = False         # Process every captured frame, False -> cap at FRAME_RATE, only TRUE for Live
-    FRAME_RATE = 60                 # Manually set frame rate for videos
+    FRAME_RATE = 30                 # Manually set frame rate for videos
     CAMERA_STREAM = False           # True to run frame capture in a seperate thread, always false for videos
 
 elif MODE == "custom":
@@ -107,10 +109,10 @@ else:
 
 folder = os.getcwd() + "/main_files"
 # Video options (uncomment one for MODE = "video")
+# camera_number = folder + "/test_videos/crude_rot_huey.mp4"
 # camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
-# camera_number = folder + "/test_videos/blink224_huey.mp4"
 # camera_number = folder + "/test_videos/blink224_huey.mp4"
 
 # Webcam index (used for MODE = "live" or MODE = "comp")
@@ -118,8 +120,8 @@ camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = 1
 
 # Set to webcam if capturing frames in main loop.
-# camera_type = "Video"
-camera_type = "Webcam"
+camera_type = "Video"
+# camera_type = "Webcam"
 
 # ------------------------------ QUANTIZATION SETTINGS ------------------------------
 
@@ -128,8 +130,8 @@ with open(quant_settings_file, "r") as f:
     all_settings = json.load(f)
 
 # Quantization Settings
-# quantization_settings = None
-quantization_settings = all_settings["Green Huey"]
+quantization_settings = None
+# quantization_settings = all_settings["Green Huey"]
 # quantization_settings = all_settings["Purple Huey"]
 
 # ------------------------------ BEFORE THE MATCH ------------------------------
@@ -146,6 +148,10 @@ shared_state_lock = threading.Lock()
 # Shared state for controls passed from UI thread to Perception thread
 shared_state = {"key": None, "flipped": None,
                 "paused": False, "skip_frame": False, "weapon_on": WEAPON_ON}
+
+prev_sensor_val = 0
+curr_sensor_val = 0
+total_sensor_val = 0
 
 def main():
     stream = None
@@ -191,9 +197,8 @@ def main():
 
         if IMU_ENABLED:
             imu_sensor = IMU_sensor()
-            q = deque(maxlen=15)
             cali_yaw = 0
-            q.append(0)
+        
 
         # Initialize corner detection
         corner_detection = RobotCornerDetection(selected_colors, False, False, BLACKOUT=BLACKOUT, thresh=0.4, frame_rate = FRAME_RATE)
@@ -232,6 +237,8 @@ def main():
         # This is all of our processing code minus the display of the images.
         # Any image displays should modify the frame that is returned at the end of the loop.
         def perception_pipeline():
+            global prev_sensor_val, curr_sensor_val, total_sensor_val
+
             prev = ptime()
             last_frame = 0
             iteration = 0
@@ -288,10 +295,25 @@ def main():
                     # Get inputs from Shared State
                     with shared_state_lock:
                         key = shared_state["key"]
-                        is_flipped = -1 if shared_state["flipped"] else 1
+                        manual_is_flipped = -1 if shared_state["flipped"] else 1
                         weapon_on_this_frame = shared_state["weapon_on"]
                         # Clear transient key so one press is consumed once.
                         shared_state["key"] = None
+
+                    if IMU_ENABLED:
+                        is_flipped = manual_is_flipped
+                        try:
+                            is_flipped = imu_sensor.get_upside_down_continuous()
+                            with shared_state_lock:
+                                shared_state["flipped"] = is_flipped == -1
+                        except IMUReadError as ex:
+                            print(f"🟥 Error reading IMU flip state, using manual flip: {ex}")
+                        except KeyError as ex:
+                            print(f"🟥 Error reading IMU flip state, using manual flip: {ex}")
+                        except Exception as ex:
+                            print(f"🟥 Error reading IMU flip state, using manual flip: {ex}")
+                    else:
+                        is_flipped = manual_is_flipped
 
                     # Warp image to homography matrix using maps
                     with rs.log_timing("Warp"):
@@ -300,6 +322,15 @@ def main():
                     if IMU_ENABLED:
                         try:
                             cali_yaw = imu_sensor.get_yaw_uncali()
+                            curr_sensor_val = cali_yaw
+                            print(f"Total sensor value: {total_sensor_val}")
+                            if prev_sensor_val == curr_sensor_val:
+                                total_sensor_val += 1
+                            else:
+                                total_sensor_val = 0
+
+                            prev_sensor_val = curr_sensor_val
+
                         except IMUReadError as ex:
                             # print(f"🟥 Error: {ex}") xd rawr
                             pass
@@ -315,7 +346,8 @@ def main():
                     # 11. Run the Warped Image through Object Detection
                     # Internal timings (Preprocess, Inference, etc.) are handled inside predict()
                     with rs.log_timing("Object Detection"):
-                        detected_bots = predictor.predict(warped_frame)
+                        detected_bots = predictor.predict(
+                            warped_frame, confidence_threshold=DETECTION_CONFIDENCE, track=USE_TRACKING)
 
                     # 11.5 Quantize Colors
                     with rs.log_timing("Color Quantization"):
@@ -325,7 +357,9 @@ def main():
                     # 12. Run Object Detection's results through Corner Detection
                     with rs.log_timing("Corner Detection"):
                         corner_detection.set_bots(detected_bots)
-                        detected_bots_with_data = corner_detection.corner_detection_main(algorithm.huey_previous_orientations, is_flipped=is_flipped)
+                        print("called corner main")
+                        detected_bots_with_data, confidence = corner_detection.corner_detection_main(algorithm.huey_previous_orientations, is_flipped=is_flipped, tolerance=15)
+                        print("Confidence 😤😤😤: ", confidence)
 
                     # Prepare Quantized Huey Image (for display buffer)
                     huey_display_img = None
@@ -343,23 +377,22 @@ def main():
                             except Exception as e:
                                 pass
 
-                    is_flipped = 1
-
                     if IMU_ENABLED:
                         try:
-                            is_flipped = imu_sensor.get_upside_down_continuous()
                             # print("detected bots with data: ", detected_bots_with_data)
                             
                             # if detected_bots_with_data.get("huey") is not None and detected_bots_with_data.get("huey") != {}:
-                            if q and q.count(q[0]) != 15:
-                                print(q)
-                                if detected_bots_with_data.get("huey"):
-                                    if (detected_bots_with_data.get("huey").get("orientation") is not None) and detected_bots_with_data.get("huey").get("corners") == 4:
+                            # print(q)
+                            if total_sensor_val <= 400: 
+                                if detected_bots_with_data and detected_bots_with_data.get("huey"):
+                                    print(f"DETECTED BOTS WITH DATA {detected_bots_with_data.get('huey')}")
+                                    if (detected_bots_with_data.get("huey").get("orientation") is not None) and detected_bots_with_data.get("huey").get("corners") >= 3:
                                         #print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
                                         imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
                                         print("CALLIBRATING")
                                         yaw = 0
-                                    else:
+                                    if (detected_bots_with_data.get("huey")) and (detected_bots_with_data.get("huey").get("corners") <= 1 or corner_detection.is_diagonal):
+                                        print(f"USING SENSORS USING SENSORS USING SENSORS")
                                         yaw = imu_sensor.get_yaw_continuous()
                                         detected_bots_with_data["huey"]["orientation"] = yaw
                                         print(f"yaw = {yaw}")
@@ -396,7 +429,7 @@ def main():
                             motor_group.move(speed*is_flipped, turn * -1)
                             if WEAPON_ON:
                                 weapon_motor_group.move(
-                                    1 if weapon_on_this_frame else 0)
+                                    0.3 if weapon_on_this_frame else 0) # 0.8 before
 
                     # Prepare Main Display Image
                     main_display_img = None
@@ -414,7 +447,7 @@ def main():
 
                             # Call display_angles with show=False to get the image without displaying
                             main_display_img = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing,
-                                                              against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped=is_flipped, weapon_on=weapon_on_this_frame, centroids=corner_detection.centroids, show=False)
+                                                              against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped=is_flipped, weapon_on=weapon_on_this_frame, centroids=corner_detection.centroids, is_confident=confidence, show=False)
 
                         elif SHOW_FRAME:
                             display_frame = warped_frame

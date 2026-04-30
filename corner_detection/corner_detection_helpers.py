@@ -206,14 +206,17 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
     # 5. Extract top 2 centroids
     centroids = []
     for contour in sorted_contours:
-        if len(centroids) >= 2:
-            break
-            
-        M = cv2.moments(contour)
-        if M["m00"] != 0:
-            cx = int(M["m10"] / M["m00"])
-            cy = int(M["m01"] / M["m00"])
-            centroids.append((cx, cy))
+        area = cv2.contourArea(contour)
+        print("Area", area)
+        if area > 20:
+            if len(centroids) >= 2:
+                break
+                
+            M = cv2.moments(contour)
+            if M["m00"] != 0:
+                cx = int(M["m10"] / M["m00"])
+                cy = int(M["m01"] / M["m00"])
+                centroids.append((cx, cy))
             
     return centroids
 
@@ -225,6 +228,7 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
 
     Returns: list: A list containing centroids for the front and back corners.
     """
+    three = False
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     centroid_front = find_centroids_per_color("front", image, hsv_image, selected_colors)
     centroid_back = find_centroids_per_color("back", image, hsv_image, selected_colors)
@@ -234,9 +238,11 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     if len(centroid_front) == 1 and len(centroid_back) == 2:
         points = [centroid_front, centroid_back]
         centroid_front, centroid_back = get_missing_point(points)
+        three = three or True
     elif len(centroid_back) == 1 and len(centroid_front) == 2:
         points = [centroid_front, centroid_back]
         centroid_front, centroid_back = get_missing_point(points)
+        three = three or True
 
     # # Ensure we have exactly 2 points for front and back
     # if len(centroid_front) < 2 or len(centroid_back) < 2:
@@ -246,7 +252,7 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     front_array = np.array(centroid_front[:2])  # Take first 2 points if more exist
     back_array = np.array(centroid_back[:2])    # Take first 2 points if more exist
 
-    return np.array([front_array, back_array], dtype=object), num_corners
+    return np.array([front_array, back_array], dtype=object), three
 
 def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagonals: list, sides: list, huey_bbox, prev_flipped:int, is_flipped: int) -> (float, bool):
     """
@@ -267,8 +273,8 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
             - Else return average of two potentials
     """
     IS_VALID_ORIE = prev_flipped == is_flipped
-    # print(f"IS_VALID_ORIE: {IS_VALID_ORIE}")
-    # print(f"🦭PREV ORIE: {previous_orientation}")
+    print(f"IS_VALID_ORIE: {IS_VALID_ORIE}")
+    print(f"🦭PREV ORIE: {previous_orientation}")
 
     # we update prev_flipped in corner_detection_main
 
@@ -324,8 +330,9 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
         
         # CASE 2.2: The corners are diagonal
         else:
-            # print(f"🌈🌈🌈CORNERS ON DIFFERENT SIDE: {p1} or {p2} degrees🌈🌈🌈")
+            
             if not IS_VALID_ORIE: # take midorie
+                print(f"💀MIDORIE")
                 length = front_points[0][1] - back_points[0][1] # front[0][1] should be y coords,
                 width = front_points[0][0] - back_points[0][0]
                 hypotenuse = math.sqrt(math.pow(length, 2) + math.pow(width, 2))
@@ -334,6 +341,7 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
             else: 
                 p1 = (angle + 45) % 360
                 p2 = (angle - 45) % 360
+                print(f"🌈🌈🌈CORNERS ON DIFFERENT SIDE: {p1} or {p2} degrees🌈🌈🌈")
                 return pick_closest_angle(p1, p2, previous_orientation), False
 
     raise ValueError(f"Invalid point configuration: Front={len(front_points)}, Back={len(back_points)}")
@@ -391,7 +399,7 @@ def distance(point1: tuple, point2: tuple) -> float:
     Returns: float: The Euclidean distance.
     """
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
-
+# THREE CORNERS
 def get_missing_point(points: list) -> list:
     """
     Computes the missing point to form a complete set of red and blue points.
@@ -554,7 +562,7 @@ def compute_blackout_box(image, huey_bbox, enemy_bbox, thresh = BLACKOUT_THRESHO
     Returns: hueys image blacked out on the intersection if it was a small enough area
     """
     if image is None:
-        return None
+        return None, False
     # Huey x and y min and max
     hx_min, hy_min, hx_max, hy_max = norm_from_bbox(huey_bbox)
     # Enemy x and y min and max
@@ -574,7 +582,8 @@ def compute_blackout_box(image, huey_bbox, enemy_bbox, thresh = BLACKOUT_THRESHO
     
     # Check on whether we should blackout at all
     if int_area > huey_area * thresh:
-        return image
+        print("BLACKOUT IS HIGHER THAN 40%")
+        return image, True
 
     # Arena to bbox cords
     xmin = int(round(x_left  - hx_min))
@@ -590,9 +599,9 @@ def compute_blackout_box(image, huey_bbox, enemy_bbox, thresh = BLACKOUT_THRESHO
     ymax = max(0, min(H, ymax))
 
     if xmin >= xmax or ymin >= ymax:
-        return image
+        return image, False
 
     # I think numpy indexing is (y,x)
     image[ymin:ymax, xmin:xmax] = np.asarray([255,255,255])
-    return image
+    return image, False
 
