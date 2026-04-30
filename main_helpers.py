@@ -153,7 +153,7 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
     # 6. Do an initial run of ML and Corner. Initialize Algo
     first_run_ml = predictor.predict(warped_frame, show=SHOW_FRAME)
     first_run_ml = quantize(first_run_ml, selected_colors,
-                            show=False, is_flipped=False)
+                            show=False, is_flipped=1)
     corner_detection.set_bots(first_run_ml)
     first_run_orientation, confidence = corner_detection.corner_detection_main(threshold_set=False, previous_orientations=[])
 
@@ -282,7 +282,7 @@ def initialize_quantization():
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2LAB)
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2HSV)
 
-def quantize(detected_bots, selected_colors, show, is_flipped=False, settings=None):
+def quantize(detected_bots, selected_colors, show, is_flipped=1, settings=None):
     
     print(f"Is flipped: {is_flipped}")
 
