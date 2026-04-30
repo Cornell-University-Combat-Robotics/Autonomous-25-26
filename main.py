@@ -297,10 +297,25 @@ def main():
                     # Get inputs from Shared State
                     with shared_state_lock:
                         key = shared_state["key"]
-                        is_flipped = -1 if shared_state["flipped"] else 1
+                        manual_is_flipped = -1 if shared_state["flipped"] else 1
                         weapon_on_this_frame = shared_state["weapon_on"]
                         # Clear transient key so one press is consumed once.
                         shared_state["key"] = None
+
+                    if IMU_ENABLED:
+                        is_flipped = manual_is_flipped
+                        try:
+                            is_flipped = imu_sensor.get_upside_down_continuous()
+                            with shared_state_lock:
+                                shared_state["flipped"] = is_flipped == -1
+                        except IMUReadError as ex:
+                            print(f"🟥 Error reading IMU flip state, using manual flip: {ex}")
+                        except KeyError as ex:
+                            print(f"🟥 Error reading IMU flip state, using manual flip: {ex}")
+                        except Exception as ex:
+                            print(f"🟥 Error reading IMU flip state, using manual flip: {ex}")
+                    else:
+                        is_flipped = manual_is_flipped
 
                     # Warp image to homography matrix using maps
                     with rs.log_timing("Warp"):
@@ -364,11 +379,8 @@ def main():
                             except Exception as e:
                                 pass
 
-                    is_flipped = 1
-
                     if IMU_ENABLED:
                         try:
-                            is_flipped = imu_sensor.get_upside_down_continuous()
                             # print("detected bots with data: ", detected_bots_with_data)
                             
                             # if detected_bots_with_data.get("huey") is not None and detected_bots_with_data.get("huey") != {}:
