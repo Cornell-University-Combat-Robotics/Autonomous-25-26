@@ -151,6 +151,10 @@ class RobotCornerDetection:
             confidence: 0 or 1, meaning whether we are confident in the orientation
         """
         try:
+            # AARON CHANGE AARON CHANGE TODO: MAKE SURE THIS IS CORRECT
+            self.corner_method = None
+            self.is_diagonal = False
+            
             high_overlap = False
             print(f"🐬diagona counter: {self.diagonal_counter}")
             bot_images = [bot["img"] for bot in self.bots["bots"]]
