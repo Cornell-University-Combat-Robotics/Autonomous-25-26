@@ -242,6 +242,10 @@ class RobotCornerDetection:
                     self.corner_method = 4
                 print("devision search12")
                 self.diagonal_counter = 0
+                
+                # AARON CHANGE AARON CHANGE TODO: Double check and make sure this is correct
+                huey["corners"] = self.corner_method
+                
                 front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5
                 back_midpoint = (centroid_points[1][0] + centroid_points[1][1]) * 0.5
                 print("devision search13")
