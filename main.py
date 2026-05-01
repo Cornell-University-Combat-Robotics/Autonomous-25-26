@@ -43,14 +43,14 @@ MODE = "live"
 # MODE = "custom"
 
 # Core behavior
-WARP_AND_COLOR_PICKING = True
+WARP_AND_COLOR_PICKING = False
 DISPLAY_SCALE = 0.5  # 1.0 for full-size display, 0.5 for easier 1080p selection
-CAN_RECOVER = False
+CAN_RECOVER = True
 BLACKOUT = True
 COLOR_QUANTIZATION = True  # Should almost always stay True
 CAMERA_STREAM = False     # Frame capture thread (must be False for videos)
 IMU_ENABLED = True    # Set to True to enable IMU integration (if hardware is available)
-USE_TRACKING = False       # Use tracking-based predictor instead of running detection on every frame (requires more resources)
+USE_TRACKING = True       # Use tracking-based predictor instead of running detection on every frame (requires more resources)
 DETECTION_CONFIDENCE = 0.25  # Ultralytics default is 0.25; Try lower values
 
 # Logging / debug outputs
