@@ -36,7 +36,6 @@ from sensors.imu_class import IMUReadError
 # ------------------------------ GLOBAL SETTINGS ------------------------------
 # Keep one option active per setting. Commented lines directly below are common alternatives.
 
-<<<<<<< Updated upstream
 # Run mode (uncomment exactly one)
 # MODE = "comp"
 # MODE = "live"
@@ -53,41 +52,6 @@ CAMERA_STREAM = False     # Frame capture thread (must be False for videos)
 IMU_ENABLED = False     # Set to True to enable IMU integration (if hardware is available)
 USE_TRACKING = False       # Use tracking-based predictor instead of running detection on every frame (requires more resources)
 DETECTION_CONFIDENCE = 0.25  # Ultralytics default is 0.25; Try lower values
-=======
-# MATT_LAPTOP = False           # Deprecated, matt laptop handled by torch device checks
-JANK_CONTROLLER = False         # Deprecated, True if using backup controller?
-WARP_AND_COLOR_PICKING = True   # Re-do warp & color selection
-# Display frame smaller for selection with 1080p video, 1.0 default
-DISPLAY_SCALE = 0.5
-IS_TRANSMITTING = False         # True to send transmissions to live Huey via Arduino
-WEAPON_ON = False               # True if weapon motor should be on
-SHOW_FRAME = True               # Show camera feed frames
-DISPLAY_ANGLES = True           # Only use when SHOW_FRAME is True
-# Process every captured frame, False -> cap at FRAME_RATE
-IS_ORIGINAL_FPS = False
-# FPS used for algo stuff, update to expected FPS on your system.
-FRAME_RATE = 120
-# Show heads-up display with FPS, speed, turn, frame number
-SHOW_HUD = True
-# Display the quantized bounding box of Huey in separate window
-SHOW_QUANTIZED_HUEY = True
-# True to use color quantization, should always be True
-COLOR_QUANTIZATION = True
-CAN_RECOVER = False              # True to use recovery
-# True if using live camera stream, False if using a video file
-CAMERA_STREAM = False
-# Save runtimes to a spreadsheet and generate a graph (install "Excel Viewer" VS Code extension)
-SHEET_RUNTIME = True
-# Save bounding box images every BBOX_SAVE_FREQUENCY iterations
-SAVE_BBOXES = False
-# How often to save bounding box images (every n iterations)
-BBOX_SAVE_FREQUENCY = 10
-
-# MODEL_NAME = "SmallComp"        # Used for Feb comp, best accuracy if you have the compute for it.
-# MODEL_NAME = "NanoSizeVariant"    # MAIN MODEL: Use with lower image size for faster performance, not much worse accuracy.
-# Model trained with Huey images from matches, trained at 320 image size
-MODEL_NAME = "Nano320Temp"
->>>>>>> Stashed changes
 
 # Logging / debug outputs
 SHEET_RUNTIME = True
@@ -146,8 +110,8 @@ else:
 folder = os.getcwd() + "/main_files"
 # Video options (uncomment one for MODE = "video")
 # camera_number = folder + "/test_videos/crude_rot_huey.mp4"
-# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
-camera_number = folder + "/test_videos/huey_hell.mp4"
+camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+# camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
 # camera_number = folder + "/test_videos/blink224_huey.mp4"
 
@@ -166,8 +130,9 @@ with open(quant_settings_file, "r") as f:
     all_settings = json.load(f)
 
 # Quantization Settings
-quantization_settings = None
-# quantization_settings = all_settings["Green Huey"]
+# quantization_settings = None
+quantization_settings = all_settings["Green Huey"]
+# quantization_settings = all_settings["Bluey"]
 # quantization_settings = all_settings["Purple Huey"]
 
 # ------------------------------ BEFORE THE MATCH ------------------------------
@@ -232,7 +197,6 @@ def main():
         # Get predictor, if anything goes wrong here, call Aaron #TODO: Document better
         predictor = get_predictor(MODEL_NAME, OD_IMG_SIZE)
 
-<<<<<<< Updated upstream
         if IMU_ENABLED:
             imu_sensor = IMU_sensor()
             cali_yaw = 0
@@ -240,19 +204,11 @@ def main():
 
         # Initialize corner detection
         corner_detection = RobotCornerDetection(selected_colors, False, False, BLACKOUT=BLACKOUT, thresh=0.4, frame_rate = FRAME_RATE)
-=======
-        # Initialize corner detection
-        corner_detection = RobotCornerDetection(selected_colors, False, False)
->>>>>>> Stashed changes
 
         # Initialize transmission TODO: Figure out whether we need weapon_motor_group and JANK_CONTROLLER
         if IS_TRANSMITTING:
             ser, motor_group, weapon_motor_group = get_motor_groups(
-<<<<<<< Updated upstream
                 False, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
-=======
-                JANK_CONTROLLER, speed_motor_channel, turn_motor_channel, weapon_motor_channel)
->>>>>>> Stashed changes
             # if WEAPON_ON:
             #     weapon_motor_group.move(1)
 
@@ -339,7 +295,6 @@ def main():
                             break
 
                     # Get inputs from Shared State
-<<<<<<< Updated upstream
                     with shared_state_lock:
                         key = shared_state["key"]
                         manual_is_flipped = -1 if shared_state["flipped"] else 1
@@ -361,11 +316,6 @@ def main():
                             print(f"🟥 Error reading IMU flip state, using manual flip: {ex}")
                     else:
                         is_flipped = manual_is_flipped
-=======
-                    key = shared_state["key"]
-                    is_flipped = -1 if shared_state["flipped"] else 1
-                    weapon_on_this_frame = shared_state["weapon_on"]
->>>>>>> Stashed changes
 
                     # Warp image to homography matrix using maps
                     with rs.log_timing("Warp"):
@@ -481,11 +431,7 @@ def main():
                             motor_group.move(speed*is_flipped, turn * -1)
                             if WEAPON_ON:
                                 weapon_motor_group.move(
-<<<<<<< Updated upstream
                                     0.3 if weapon_on_this_frame else 0) # 0.8 before
-=======
-                                    1 if weapon_on_this_frame else 0)
->>>>>>> Stashed changes
 
                     # Prepare Main Display Image
                     main_display_img = None
@@ -503,15 +449,7 @@ def main():
 
                             # Call display_angles with show=False to get the image without displaying
                             main_display_img = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing,
-<<<<<<< Updated upstream
                                                               against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped=is_flipped, weapon_on=weapon_on_this_frame, centroids=corner_detection.centroids, is_confident=confidence, show=False)
-=======
-                                                              against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped=is_flipped, weapon_on=weapon_on_this_frame, centroids=corner_detection.centroids, show=False)
-
-                            if SAVE_BBOXES and iteration % BBOX_SAVE_FREQUENCY == 1:
-                                cv2.imwrite(
-                                    f"{frame_save_dir}/final_image_{iteration}.png", main_display_img)
->>>>>>> Stashed changes
 
                         elif SHOW_FRAME:
                             display_frame = warped_frame
@@ -570,7 +508,6 @@ def main():
                         shared_state["skip_frame"] = False
                         paused_now = shared_state["paused"]
                     print(
-<<<<<<< Updated upstream
                         f"Playback {'paused' if paused_now else 'resumed'}")
                 elif key_8bit == ord("w"):
                     with shared_state_lock:
@@ -583,16 +520,6 @@ def main():
                         if shared_state["paused"]:
                             # Any other key while paused skips one frame.
                             shared_state["skip_frame"] = True
-=======
-                        f"Playback {'paused' if shared_state['paused'] else 'resumed'}")
-                elif key_8bit == ord("w"):
-                    shared_state["weapon_on"] = not shared_state["weapon_on"]
-                    print(
-                        f"Weapon {'ON' if shared_state['weapon_on'] else 'OFF'}")
-                elif shared_state["paused"]:
-                    # Any other key while paused skips one frame
-                    shared_state["skip_frame"] = True
->>>>>>> Stashed changes
 
                 # Pass key to perception thread for algorithm hooks.
                 with shared_state_lock:

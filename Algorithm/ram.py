@@ -368,18 +368,9 @@ class Ram():
             self.enemy_position = np.array(bots['enemy']['center'])
             error_angle, distance = self.predict_desired_turn_and_speed()
         
-<<<<<<< Updated upstream
             if self.USE_PID and self.delta_t > 0:
                 # 1. Calculate Turn using PID
                 turn = self.turn_pid.update(error_angle, self.delta_t)
-=======
-            # PID Shenanigans. Only use PID for the turn values
-            if self.USE_PID and self.delta_t != 0:
-                if self.delta_t > 0:
-                    derivative = (((self.huey_orientation - self.huey_previous_orientations[-1] + 180) % 360 ) -180) / (self.delta_t * 180.0)
-                else:
-                    derivative = 0
->>>>>>> Stashed changes
                 
                 # 2. Calculate Base Speed using PID
                 ramming_distance = distance + 100 # 100 pixels is the "overshoot"
