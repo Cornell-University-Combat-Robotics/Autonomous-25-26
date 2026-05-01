@@ -10,7 +10,6 @@ MIN_THRESHOLD = 0.08
 CORNER_THRESHOLD = 10.0
 BLACKOUT_THRESHOLD = 0.4
 
-
 @staticmethod
 def find_bot_color_pixels(image: np.ndarray, bot_color_hsv: list) -> int:
     """
@@ -155,7 +154,7 @@ def dynamic_threshold(self, threshold_set, bot_color_percentages):
     elif len(bot_color_percentages) == 0:
         self.color_percentage_rows.append((0, 0, self.huey_color_percentage_threshold))
 
-def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray, selected_colors) -> list:
+def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray, selected_colors, area_threshold) -> list:
     """
     Finds the centroids of a specific color (front or back) in the given image.
 
@@ -208,7 +207,7 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
     for contour in sorted_contours:
         area = cv2.contourArea(contour)
         print("Area", area)
-        if area > 20:
+        if area > area_threshold:
             if len(centroids) >= 2:
                 break
                 
@@ -220,7 +219,7 @@ def find_centroids_per_color(side: str, image: np.ndarray, hsv_image: np.ndarray
             
     return centroids
 
-def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
+def find_centroids(image: np.ndarray, selected_colors, area_threshold) -> np.ndarray:
     """
     Finds the centroids for the front and back corners of the robot.
 
@@ -230,8 +229,8 @@ def find_centroids(image: np.ndarray, selected_colors) -> np.ndarray:
     """
     three = False
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    centroid_front = find_centroids_per_color("front", image, hsv_image, selected_colors)
-    centroid_back = find_centroids_per_color("back", image, hsv_image, selected_colors)
+    centroid_front = find_centroids_per_color("front", image, hsv_image, selected_colors, area_threshold)
+    centroid_back = find_centroids_per_color("back", image, hsv_image, selected_colors, area_threshold)
     num_corners = len(centroid_front) + len(centroid_back)
     #3 CORNERS LOGIC    
     # Check if we have incomplete points and use get_missing_point to fix it

@@ -43,8 +43,9 @@ MODE = "video"
 # MODE = "custom"
 
 # Core behavior
-WARP_AND_COLOR_PICKING = True
+WARP_AND_COLOR_PICKING = False
 DISPLAY_SCALE = 0.5  # 1.0 for full-size display, 0.5 for easier 1080p selection
+CAN_RECOVER = True
 CAN_RECOVER = True
 BLACKOUT = True
 COLOR_QUANTIZATION = True  # Should almost always stay True
@@ -135,7 +136,13 @@ with open(quant_settings_file, "r") as f:
 # Quantization Settings
 quantization_settings = None
 # quantization_settings = all_settings["Green Huey"]
+# quantization_settings = all_settings["Green Huey Area"]
 # quantization_settings = all_settings["Purple Huey"]
+
+DEFAULT_AREA_THRESHOLD = 15
+area_threshold = DEFAULT_AREA_THRESHOLD
+if quantization_settings and "area_theshold" in quantization_settings:
+    area_threshold = quantization_settings["area_theshold"]
 
 # ------------------------------ BEFORE THE MATCH ------------------------------
 
@@ -222,7 +229,7 @@ def main():
         # else:
         #     algorithm = Ram()
 
-        algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors)
+        algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors, area_threshold)
 
         ### TODO: call dynamic threshold here
 
@@ -361,7 +368,7 @@ def main():
                     with rs.log_timing("Corner Detection"):
                         corner_detection.set_bots(detected_bots)
                         print("called corner main")
-                        detected_bots_with_data, confidence = corner_detection.corner_detection_main(algorithm.huey_previous_orientations, is_flipped=is_flipped, tolerance=15)
+                        detected_bots_with_data, confidence = corner_detection.corner_detection_main(area_threshold, algorithm.huey_previous_orientations, is_flipped=is_flipped, tolerance=15)
                         print("Confidence 😤😤😤: ", confidence)
 
                     # Prepare Quantized Huey Image (for display buffer)

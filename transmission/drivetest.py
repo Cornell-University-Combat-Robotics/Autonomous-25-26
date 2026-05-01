@@ -22,6 +22,8 @@ turn.move(speed=0.25)
 time.sleep(.2)
 turn.move(speed=0.5)
 time.sleep(1.7)
+print("doing speed")
+
 
 speed.move(speed=-1)
 time.sleep(1.7)
@@ -36,6 +38,9 @@ time.sleep(.2)
 speed.move(speed=1)
 
 time.sleep(1.7)
+
+print("done")
+
 turn.stop()
 speed.stop()
 
