@@ -20,7 +20,7 @@ from main_helpers import (
 
 #Settings
 DISPLAY_IMAGES = True           # Displays each image in window
-NO_ORIENTATION_SCORE = 30       # Angle that is equivelently bad to no orientation
+NO_ORIENTATION_SCORE = 25       # Angle that is equivelently bad to no orientation
 DATA_SET_NAME = "prince_full"   # Name of your dataset folder in "testing_data"
 COLOR_SELECT_IMG = "900.png"    # This should be the name of your image you want to do color selection on
 
@@ -94,13 +94,13 @@ def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, DISPLAY_IMAGE
                 ]
             }
             
-            quantized_bots = quantize(formated_image, selected_colors, show=False, is_flipped=False, settings=quant_settings) #Quantize with custom settings
+            quantized_bots = quantize(formated_image, selected_colors, show=False, is_flipped=1, settings=quant_settings) #Quantize with custom settings
             quantized_img = quantized_bots['bots'][0]['img']
 
             corner_detection.set_bots(quantized_bots)
             detected_bots_with_data = corner_detection.corner_detection_main()
             
-            bbox = detected_bots_with_data['huey']['bbox']
+            bbox = detected_bots_with_data[0]['huey']['bbox']
             x, y, w, h = bbox
             cx = int(x + w / 2)
             cy = int(y + h / 2)
@@ -109,9 +109,9 @@ def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, DISPLAY_IMAGE
 
             # Differs from main
             # Adds to score variable
-            if detected_bots_with_data['huey']['orientation'] != None:
+            if detected_bots_with_data[0]['huey']['orientation'] != None:
                 frames_with_orientation += 1
-                current_angle_difference = angle_difference(true_angle, detected_bots_with_data['huey']['orientation']) #Use squared difference ?
+                current_angle_difference = angle_difference(true_angle, detected_bots_with_data[0]['huey']['orientation']) #Use squared difference ?
                 total_theta += current_angle_difference
                 total_score += math.pow(current_angle_difference, 2) # Score increases by angle difference
             else:
@@ -119,9 +119,9 @@ def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, DISPLAY_IMAGE
 
             if DISPLAY_IMAGES:
                 print(f"Correct Angle: {angle_lookup.get(filename)}")
-                print(f"Calculated Angle: {detected_bots_with_data['huey']['orientation']}")
+                print(f"Calculated Angle: {detected_bots_with_data[0]['huey']['orientation']}")
                 draw_manual_arrow(quantized_img, cx, cy, true_angle)
-                if detected_bots_with_data['huey']['orientation'] != None:
+                if detected_bots_with_data[0]['huey']['orientation'] != None:
                     draw_orientation_arrow(quantized_img, detected_bots_with_data)
 
                     if true_angle:
