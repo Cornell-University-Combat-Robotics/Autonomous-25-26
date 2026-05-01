@@ -17,7 +17,7 @@
     "Green Huey":
     {
         "threshold": 19.0,
-        "area_theshold": 200,
+        "area_theshold": 15,
         "quantization_weights": [0.18123856030974983, 0.818015108439391, 1.0]
     },
     "Green Huey Area":

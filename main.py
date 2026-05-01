@@ -134,8 +134,8 @@ with open(quant_settings_file, "r") as f:
 # Quantization Settings
 quantization_settings = None
 # quantization_settings = all_settings["Green Huey"]
-# quantization_settings = all_settings["Purple Huey"]
 # quantization_settings = all_settings["Green Huey Area"]
+# quantization_settings = all_settings["Purple Huey"]
 
 DEFAULT_AREA_THRESHOLD = 15
 area_threshold = DEFAULT_AREA_THRESHOLD
