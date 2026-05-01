@@ -11,10 +11,13 @@ sensor = imu_class.IMU_sensor()
 
 while True:
     try:
-        print(f"yaw: {sensor.get_yaw()}")
-        # print(f"is upside down: {sensor.is_upside_down()}")
+        # sensor.get_yaw_continuous()
+        print(f"yaw: {sensor.get_yaw_continuous()}")
+        # print(f"is upside down: {sensor.get_upside_down_continuous()}")
+        # print(f"Z: {sensor.get_field_continuous("gyroscope", "z")}")
     except KeyboardInterrupt:
         break 
     except Exception as e:
         print(e)
         continue
+

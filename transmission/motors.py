@@ -74,6 +74,7 @@ class Motor():
         if self.channel2 is None:
             self.ser.send_data(self.channel, self.speed)
         else:
+            # print(f"Channel data: {self.channel}, {self.speed}, {self.channel2}, {self.speed2}")
             self.ser.send_data(self.channel, self.speed, self.channel2, self.speed2)
 
     def get_speed(self):

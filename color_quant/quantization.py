@@ -32,11 +32,25 @@ def quantize_robot_colors(
     robot_colors_bgr,
     thresh_lab=25.0,
     keep_background=True,
-    show = False
+    show = False,
+    custom_weights = None,
 ):
     H, W = img_bgr.shape[:2]
     N = H * W
-
+    
+    #OG Goat params from Ryan Tuning, best for Huey v Prince
+    # thresh_lab = 24.725 #Ryan god tuning
+    # weights = np.array([0.171, 0.3777, 0.669], dtype=np.float32) # Ryan god tuning
+    
+    # Define weights for L, a, and b
+    # Setting L_weight to 0.0 ignores brightness entirely.
+    # Setting it to 0.2 makes it matter, but much less than color.
+    L_weight = 0.05
+    weights = np.array([L_weight, 1.0, 1.0], dtype=np.float32)  # WEIGHTS: CIELAB color space
+    if custom_weights:
+        L_weight = custom_weights[0]
+        weights = np.array(custom_weights, dtype=np.float32)
+    
     # Convert image to Lab
     img_lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
     flat_lab = img_lab.reshape(-1, 3).astype(np.float32)  # (N, 3)
@@ -50,16 +64,30 @@ def quantize_robot_colors(
     thresh2 = thresh_lab * thresh_lab
     flat = flat_lab  # (N, 3)
 
-    # Start with first color
-    min_dist2 = np.sum((flat - robot_lab[0]) ** 2, axis=1)
+    # Start with first color (weighted)
+    diff0 = (flat - robot_lab[0]) * weights
+    min_dist2 = np.sum(diff0 ** 2, axis=1)
     min_idx = np.zeros_like(min_dist2, dtype=np.int32)
 
-    # Compare with remaining robot colors
+    # Compare with remaining robot colors (weighted)
     for i in range(1, robot_lab.shape[0]):
-        d = np.sum((flat - robot_lab[i]) ** 2, axis=1)
+        diff = (flat - robot_lab[i]) * weights
+        d = np.sum(diff ** 2, axis=1)
+        
         mask = d < min_dist2
         min_dist2[mask] = d[mask]
         min_idx[mask] = i
+
+    # # Start with first color
+    # min_dist2 = np.sum((flat - robot_lab[0]) ** 2, axis=1)
+    # min_idx = np.zeros_like(min_dist2, dtype=np.int32)
+
+    # # Compare with remaining robot colors
+    # for i in range(1, robot_lab.shape[0]):
+    #     d = np.sum((flat - robot_lab[i]) ** 2, axis=1)
+    #     mask = d < min_dist2
+    #     min_dist2[mask] = d[mask]
+    #     min_idx[mask] = i
 
     # Pixels close enough to some robot color
     mask_robot = min_dist2 < thresh2  # shape (N,)
@@ -78,6 +106,7 @@ def quantize_robot_colors(
     robot_colors_bgr = robot_colors_bgr.astype(np.uint8)
     flat_out[mask_robot] = robot_colors_bgr[min_idx[mask_robot]]
     if show:
+        out_img = cv2.resize(out_img,None, fx=3.0,fy=3.0,interpolation=cv2.INTER_CUBIC)
         cv2.imshow("Quantized Image", out_img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
@@ -91,7 +120,7 @@ if __name__ == "__main__":
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2HSV)
     
     img = cv2.imread("quantization/test_files/test3.png")
-    img = cv2.resize(img,(150,150))
+    img = cv2.resize(img,None, fx = 3.0, fy=3.0,interpolation=cv2.INTER_CUBIC)
     # Pick colors (HSV) using your ColorPicker
     color_picker = ColorPicker
     colors_hsv = np.array(color_picker.pick_colors(img), dtype=np.uint8)

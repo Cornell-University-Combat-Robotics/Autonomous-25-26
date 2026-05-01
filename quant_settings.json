@@ -1,0 +1,29 @@
+{
+    "Ryan OG Green Settings":
+    {
+        "threshold": 24.725,
+        "quantization_weights": [0.171, 0.3777, 0.669]
+    },
+    "Green Huey High-T":
+    {
+        "threshold": 26.335915418002198,
+        "quantization_weights": [0.21169277669187547, 0.3123271596867585,  0.8207064426180575]
+    },
+    "Purple Huey":
+    {
+        "threshold": 4.640077263670342,
+        "quantization_weights": [0.7665384196881221, 0.6562546911867898,  0.8356242920918429]
+    },
+    "Green Huey":
+    {
+        "threshold": 19.0,
+        "area_theshold": 15,
+        "quantization_weights": [0.18123856030974983, 0.818015108439391, 1.0]
+    },
+    "Green Huey Area":
+    {
+        "threshold": 19.0,
+        "area_theshold": 5,
+        "quantization_weights": [0.25228085094348074, 0.6393260108837663, 0.8785332198595871]
+    }
+}

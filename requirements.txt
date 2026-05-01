@@ -8,16 +8,24 @@
         # <venv-name>\Scripts\activate
     # To install packages (for both systems):
     # pip install -r requirements.txt
-    
-opencv-python==4.12.0.88         # import cv2
-numpy==2.2.6                     # used by OpenCV, matplotlib, etc.
+
+
+# USE PYTHON 3.13.12    
+opencv-python==4.13.0.92         # import cv2
+numpy==2.3.5                     # used by OpenCV, matplotlib, etc.
 matplotlib==3.10.6               # plotting
-pandas==2.3.2                    # import pandas
+pandas==3.0.1                    # import pandas
 line_profiler==5.0.0             # from line_profiler import profile
 python-dotenv==1.1.1             # from dotenv import load_dotenv
-torch==2.8.0                     # import torch
-torchvision==0.23.0              # often used with torch
-ultralytics==8.3.194             # import ultralytics (YOLO)
+torch==2.7.0                     # import torch
+torchvision==0.22.0              # often used with torch
+ultralytics==8.4.21              # import ultralytics (YOLO)
 pyserial==3.5                    # import serial
-onnxruntime==1.22.1              # import onnxruntime
-openvino==2025.3.0               # import openvino
+onnxruntime==1.24.2              # import onnxruntime
+openvino==2026.0               # import openvino
+openpyxl==3.1.2                  # import openpyxl (for Excel files)
+coremltools>=9.0                # import coremltools (for Core ML models)
+plotly>=6.5.2                   # import plotly, better graphs
+cv2_enumerate_cameras           # Used for see_all_cameras.py
+coremltools>=9.0                 # import coremltools (for Core ML models)
+optuna==4.7.0                    # import optuna

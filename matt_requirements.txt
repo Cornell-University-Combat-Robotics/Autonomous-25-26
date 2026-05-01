@@ -1,0 +1,33 @@
+# HOW TO INSTALL REQUIREMENTS FROM VENV
+    # To set up venv:
+        # MacOS:
+        # python3 -m venv <venv-name>
+        # source <venv-name>/bin/activate
+        # Windows:
+        # python -m venv <venv-name>
+        # <venv-name>\Scripts\activate
+    # To install packages (for both systems):
+    # pip install -r requirements.txt
+    
+opencv-python==4.12.0.88         # import cv2
+numpy==2.2.6                     # used by OpenCV, matplotlib, etc.
+matplotlib==3.10.6               # plotting
+pandas==2.3.2                    # import pandas
+line_profiler==5.0.0             # from line_profiler import profile
+python-dotenv==1.1.1             # from dotenv import load_dotenv
+--index-url https://pypi.org/simple
+--extra-index-url https://download.pytorch.org/whl/cu130
+--extra-index-url https://pypi.nvidia.com
+
+# PyTorch builds for CUDA 13.1
+torch==2.10.0+cu130
+
+# TensorRT builds for CUDA 13.1
+tensorrt==10.15.1.29
+tensorrt-cu13>=10.15.1
+
+ultralytics==8.4.14            # import ultralytics (YOLO)
+pyserial==3.5                    # import serial
+onnxruntime==1.22.1              # import onnxruntime
+openvino==2025.4.1               # import openvino
+
