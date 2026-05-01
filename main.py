@@ -50,7 +50,7 @@ CAN_RECOVER = True
 BLACKOUT = True
 COLOR_QUANTIZATION = True  # Should almost always stay True
 CAMERA_STREAM = True     # Frame capture thread (must be False for videos)
-IMU_ENABLED = False    # Set to True to enable IMU integration (if hardware is available)
+IMU_ENABLED = True    # Set to True to enable IMU integration (if hardware is available)
 USE_TRACKING = True       # Use tracking-based predictor instead of running detection on every frame (requires more resources)
 DETECTION_CONFIDENCE = 0.25  # Ultralytics default is 0.25; Try lower values
 
