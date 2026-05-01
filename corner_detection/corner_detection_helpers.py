@@ -286,7 +286,6 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
 
     # CASE 1: Only 2 Front Corners detected OR Only 2 Back Corners detected
     if len(front_points) == 2 or len(back_points) == 2:
-        # Correctly pick the points based on which list has 2
         
         points, frnt = (front_points, True) if len(front_points) == 2 else (back_points, False)
         
@@ -336,7 +335,7 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
                 length = front_points[0][1] - back_points[0][1] # front[0][1] should be y coords,
                 width = front_points[0][0] - back_points[0][0]
                 hypotenuse = math.sqrt(math.pow(length, 2) + math.pow(width, 2))
-                return math.asin(width/hypotenuse) * (180/math.pi)
+                return math.asin(width/hypotenuse) * (180/math.pi), False
             
             else: 
                 p1 = (angle + 45) % 360

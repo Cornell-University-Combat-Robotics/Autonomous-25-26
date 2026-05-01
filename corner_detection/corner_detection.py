@@ -123,20 +123,26 @@ class RobotCornerDetection:
                     return 0
         return 1
     
-    def non_diag_good(self, is_not_diagonal):
+    def non_diag_good(self, is_not_diagonal, is_flipped):
         """
         Returns 1 if the two corners weren't diagonal and 0 otherwise.
         """
         print("entered non diag good")
-        return int(is_not_diagonal)
+
+        print("🥳🥳🥳", is_flipped)
+
+        if (len(self.centroids[0]) == 2 or len(self.centroids[1]) == 2) and (is_flipped == -1):
+            return 0
+        else:
+            return int(is_not_diagonal)
     
-    def confidence(self, corners, is_not_diagonal, high_overlap, tolerance=15):
+    def confidence(self, corners, is_not_diagonal, high_overlap, is_flipped, tolerance=15):
         print("entered conf")
         if high_overlap:
             return 0
         elif (corners == 4 or corners == 3) and self.four_good(tolerance):
             return 1
-        elif corners == 2 and self.non_diag_good(is_not_diagonal):
+        elif corners == 2 and self.non_diag_good(is_not_diagonal, is_flipped):
             return 1
         else:
             return 0
@@ -220,7 +226,7 @@ class RobotCornerDetection:
                         # print(f"Current ORIENT: 💛🐋🌸 { huey["orientation"]}")
                     else:
                         huey["orientation"] = None
-                    conf = self.confidence(self.corner_method, IS_NOT_DIAGONAL, high_overlap, tolerance)
+                    conf = self.confidence(self.corner_method, IS_NOT_DIAGONAL, high_overlap, is_flipped, tolerance)
                     return {"huey": huey, "enemy": enemy_bots}, conf
 
                 elif (len(centroid_points[0]) + len(centroid_points[1]) < 2):
@@ -240,7 +246,7 @@ class RobotCornerDetection:
                 print("devision search13")
                 huey["orientation"] = compute_angle_between_midpoints(back_midpoint, front_midpoint)
                 result = {"huey": huey, "enemy": enemy_bots}
-                conf = self.confidence(self.corner_method, IS_NOT_DIAGONAL, high_overlap, tolerance)
+                conf = self.confidence(self.corner_method, IS_NOT_DIAGONAL, high_overlap, is_flipped, tolerance)
                 return result, conf
             else:
                 # print("Image doesn't exist")

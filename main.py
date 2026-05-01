@@ -38,18 +38,18 @@ from sensors.imu_class import IMUReadError
 
 # Run mode (uncomment exactly one)
 # MODE = "comp"
-MODE = "live"
-# MODE = "video"
+# MODE = "live"
+MODE = "video"
 # MODE = "custom"
 
 # Core behavior
 WARP_AND_COLOR_PICKING = True
 DISPLAY_SCALE = 0.5  # 1.0 for full-size display, 0.5 for easier 1080p selection
-CAN_RECOVER = False
+CAN_RECOVER = True
 BLACKOUT = True
 COLOR_QUANTIZATION = True  # Should almost always stay True
 CAMERA_STREAM = False     # Frame capture thread (must be False for videos)
-IMU_ENABLED = True    # Set to True to enable IMU integration (if hardware is available)
+IMU_ENABLED = False    # Set to True to enable IMU integration (if hardware is available)
 USE_TRACKING = False       # Use tracking-based predictor instead of running detection on every frame (requires more resources)
 DETECTION_CONFIDENCE = 0.25  # Ultralytics default is 0.25; Try lower values
 
@@ -110,20 +110,21 @@ else:
 folder = os.getcwd() + "/main_files"
 # Video options (uncomment one for MODE = "video")
 # camera_number = folder + "/test_videos/crude_rot_huey.mp4"
-# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
-camera_number = folder + "/test_videos/huey_hell.mp4"
+camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+# camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
 # camera_number = folder + "/test_videos/cicero_corners_bzone.mov"
 # camera_number = folder + "/test_videos/orbital_huey.mp4"
-# camera_number = folder + "/test_videos/trimmed_huey_redshift.mp4"
+# camera_number = folder + "/test_videos/diagona_huey.mp4"
+# camera_number = folder + "/test_videos/huey_backs.mp4"
 
 # Webcam index (used for MODE = "live" or MODE = "comp")
-camera_number = 0
+# camera_number = 0
 # camera_number = 1
 
 # Set to webcam if capturing frames in main loop.
-# camera_type = "Video"
-camera_type = "Webcam"
+camera_type = "Video"
+# camera_type = "Webcam"
 
 # ------------------------------ QUANTIZATION SETTINGS ------------------------------
 
