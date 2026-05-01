@@ -30,7 +30,6 @@ class RobotCornerDetection:
         self.display_possible_hueys = display_possible_hueys
         self.huey_color_percentage_threshold = -1
         self.color_percentage_rows = []
-        self.diagonal_counter = 0
         self.is_diagonal = False
         self.centroids = []
         
@@ -47,7 +46,7 @@ class RobotCornerDetection:
         self.threshold_queue = deque(maxlen = self.dynamic_threshold_window)
         self.running_sum = 0 # running sum of midpoints for threshold logic
         
-        self.corner_method = None
+        self.corner_method = 0
 
 
     def set_bots(self, bots: dict):
@@ -152,16 +151,13 @@ class RobotCornerDetection:
         """
         try:
             # AARON CHANGE AARON CHANGE TODO: MAKE SURE THIS IS CORRECT
-            self.corner_method = None
+            self.corner_method = 0
             self.is_diagonal = False
             
             high_overlap = False
-            print(f"🐬diagona counter: {self.diagonal_counter}")
             bot_images = [bot["img"] for bot in self.bots["bots"]]
             print("devision search1")
             image = self.detect_our_robot_main(bot_images, threshold_set)
-            # if self.diagonal_counter > self.frame_rate/4:
-            #     self.diagonal_counter = 0
             
             if image is not None:
                 # Find the identified bot (our robot)
@@ -212,12 +208,10 @@ class RobotCornerDetection:
                         self.corner_method = 2
                         print("devision search7")
                         if IS_NOT_DIAGONAL:
-                            self.diagonal_counter = 0
                             self.is_diagonal = False
                             huey["orientation"] = calc_orientation
                             print("devision search8")
                         else: # DIAGONAL
-                            self.diagonal_counter += 1
                             self.is_diagonal = True
                             huey["orientation"] = calc_orientation
                         self.prev_flipped = is_flipped
@@ -233,15 +227,14 @@ class RobotCornerDetection:
                     print("devision search11")
                     print("Less than 2 corners found")
                     self.is_diagonal = False
-                    self.diagonal_counter += 1
                     conf = 0
                     return {"huey": huey, "enemy": enemy_bots}, conf
                 
                 print("FOURNER4️⃣")
-                if not self.corner_method:
+                if not self.corner_method == 3:
                     self.corner_method = 4
+
                 print("devision search12")
-                self.diagonal_counter = 0
                 front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5
                 back_midpoint = (centroid_points[1][0] + centroid_points[1][1]) * 0.5
                 print("devision search13")

@@ -38,18 +38,18 @@ from sensors.imu_class import IMUReadError
 
 # Run mode (uncomment exactly one)
 # MODE = "comp"
-# MODE = "live"
-MODE = "video"
+MODE = "live"
+# MODE = "video"
 # MODE = "custom"
 
 # Core behavior
 WARP_AND_COLOR_PICKING = True
 DISPLAY_SCALE = 0.5  # 1.0 for full-size display, 0.5 for easier 1080p selection
-CAN_RECOVER = True
+CAN_RECOVER = False
 BLACKOUT = True
 COLOR_QUANTIZATION = True  # Should almost always stay True
 CAMERA_STREAM = False     # Frame capture thread (must be False for videos)
-IMU_ENABLED = False     # Set to True to enable IMU integration (if hardware is available)
+IMU_ENABLED = True    # Set to True to enable IMU integration (if hardware is available)
 USE_TRACKING = False       # Use tracking-based predictor instead of running detection on every frame (requires more resources)
 DETECTION_CONFIDENCE = 0.25  # Ultralytics default is 0.25; Try lower values
 
@@ -113,15 +113,17 @@ folder = os.getcwd() + "/main_files"
 # camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
-# camera_number = folder + "/test_videos/blink224_huey.mp4"
+# camera_number = folder + "/test_videos/cicero_corners_bzone.mov"
+# camera_number = folder + "/test_videos/orbital_huey.mp4"
+# camera_number = folder + "/test_videos/trimmed_huey_redshift.mp4"
 
 # Webcam index (used for MODE = "live" or MODE = "comp")
-# camera_number = 0
+camera_number = 0
 # camera_number = 1
 
 # Set to webcam if capturing frames in main loop.
-camera_type = "Video"
-# camera_type = "Webcam"
+# camera_type = "Video"
+camera_type = "Webcam"
 
 # ------------------------------ QUANTIZATION SETTINGS ------------------------------
 
@@ -393,12 +395,12 @@ def main():
                             if total_sensor_val <= 400: 
                                 if detected_bots_with_data and detected_bots_with_data.get("huey"):
                                     print(f"DETECTED BOTS WITH DATA {detected_bots_with_data.get('huey')}")
-                                    if (detected_bots_with_data.get("huey").get("orientation") is not None) and detected_bots_with_data.get("huey").get("corners") >= 3:
+                                    if (detected_bots_with_data.get("huey").get("orientation") is not None) and confidence:
                                         #print(f"before cali yaw: {cali_yaw} and {detected_bots_with_data.get("huey").get("orientation")}")
                                         imu_sensor.calibrate_yaw(detected_bots_with_data.get("huey").get("orientation"), cali_yaw)
                                         print("CALLIBRATING")
                                         yaw = 0
-                                    if (detected_bots_with_data.get("huey")) and (detected_bots_with_data.get("huey").get("corners") <= 1 or corner_detection.is_diagonal):
+                                    if (detected_bots_with_data.get("huey")) and (corner_detection.corner_method < 2 or corner_detection.is_diagonal):
                                         print(f"USING SENSORS USING SENSORS USING SENSORS")
                                         yaw = imu_sensor.get_yaw_continuous()
                                         detected_bots_with_data["huey"]["orientation"] = yaw

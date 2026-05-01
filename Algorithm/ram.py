@@ -275,7 +275,7 @@ class Ram():
         return error_angle, distance
 
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
-    def ram_ram(self, bots: dict[str, any] = None, can_recover: bool = True, fps = 120, key=None, diagonal_counter=0):
+    def ram_ram(self, bots: dict[str, any] = None, can_recover: bool = True, fps = 120, key=None):
         if self.is_recovering or self.is_backing:
             self.HISTORY_BUFFER = fps
         else:
@@ -332,7 +332,7 @@ class Ram():
             self.is_recovering = False
             return self.huey_move(self.BACK_UP_SPEED, self.BACK_UP_TURN)
         self.is_backing = False
-        if (self.check_previous_position_and_orientation(can_recover) or diagonal_counter > fps/4):
+        if (self.check_previous_position_and_orientation(can_recover)):
             if (bots and bots["huey"] and len(bots["huey"]) > 0):
                 self.huey_position = np.array(bots['huey'].get('center'))
                 self.huey_previous_positions.append(self.huey_position)
