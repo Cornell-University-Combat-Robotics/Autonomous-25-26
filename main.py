@@ -142,7 +142,6 @@ area_threshold = DEFAULT_AREA_THRESHOLD
 if quantization_settings and "area_theshold" in quantization_settings:
     area_threshold = quantization_settings["area_theshold"]
 
-print(f"*********************AREA THREHOSDDDDDD {area_threshold}")
 # ------------------------------ BEFORE THE MATCH ------------------------------
 
 if IS_TRANSMITTING:
