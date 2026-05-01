@@ -46,11 +46,12 @@ print(selected_colors)
 
 corner_detection = RobotCornerDetection(selected_colors, False, False)
 
-def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, DISPLAY_IMAGES=DISPLAY_IMAGES, NO_ORIENTATION_SCORE=NO_ORIENTATION_SCORE):
+def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, area_threshold, DISPLAY_IMAGES=DISPLAY_IMAGES, NO_ORIENTATION_SCORE=NO_ORIENTATION_SCORE):
 
     #Format quantization settings
     quant_settings={
         "threshold": threshold,
+        "area_theshold": area_threshold,
         "quantization_weights": [L_weight, RG_weight, BY_weight]
     }
 
@@ -98,7 +99,7 @@ def test_detect_corners(threshold, L_weight, RG_weight, BY_weight, DISPLAY_IMAGE
             quantized_img = quantized_bots['bots'][0]['img']
 
             corner_detection.set_bots(quantized_bots)
-            detected_bots_with_data = corner_detection.corner_detection_main()
+            detected_bots_with_data = corner_detection.corner_detection_main(area_threshold)
             
             bbox = detected_bots_with_data[0]['huey']['bbox']
             x, y, w, h = bbox
@@ -149,7 +150,10 @@ if __name__ == "__main__":
 
     orientation_scores = {}
 
-    for i in range(70, 80, 15):
-        orientation_scores[i] = test_detect_corners(i, 0.1, 1.0, 1.0)
+    # for i in range(15, 25, 3):
+    #     orientation_scores[i] = test_detect_corners(i, 0.1, 1.0, 1.0, area_threshold=15)
+
+    for i in range(20, 4, -2):
+        orientation_scores[i] = test_detect_corners(25, 0.1, 1.0, 1.0, area_threshold=i)
 
     print(str(orientation_scores))

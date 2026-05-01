@@ -141,7 +141,7 @@ class RobotCornerDetection:
         else:
             return 0
     
-    def corner_detection_main(self, previous_orientations: list = [], threshold_set: bool=True, is_flipped:int = 1, tolerance:int=15) -> dict | None:
+    def corner_detection_main(self, area_threshold, previous_orientations: list = [], threshold_set: bool=True, is_flipped:int = 1, tolerance:int=15) -> dict | None:
         """
         Main function for detecting corners and orientation of the robot.
 
@@ -190,7 +190,7 @@ class RobotCornerDetection:
                         image, high_overlap = compute_blackout_box(image, huey["bbox"], enemy_bots["bbox"], thresh = self.thresh)
 
                     print("devision search4")
-                    centroid_points, three = find_centroids(image, self.selected_colors)
+                    centroid_points, three = find_centroids(image, self.selected_colors, area_threshold)
                     if three:
                         self.corner_method = 3
                     self.centroids = centroid_points
