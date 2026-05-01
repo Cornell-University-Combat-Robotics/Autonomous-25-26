@@ -162,7 +162,7 @@ class RobotCornerDetection:
             
             high_overlap = False
             bot_images = [bot["img"] for bot in self.bots["bots"]]
-            print("devision search1")
+            # print("devision search1")
             image = self.detect_our_robot_main(bot_images, threshold_set)
             
             if image is not None:
@@ -179,7 +179,7 @@ class RobotCornerDetection:
                     "corners": 0,
                 }
                 
-                print("devision search2")
+                # print("devision search2")
                 # Enemy bots are all except the identified bot
                 enemy_bots = {}
                 if isinstance(self.bots, dict) and "bots" in self.bots:
@@ -189,39 +189,39 @@ class RobotCornerDetection:
                                 "bbox": bot_data["bbox"],
                                 "center": np.mean(bot_data["bbox"], axis=0),
                             }
-                            print("devision search3")
+                            # print("devision search3")
                             break
                     # Compute blackout overlapped part and create csv
                     if self.BLACKOUT and enemy_bots and enemy_bots["bbox"] and huey and huey["bbox"] and is_overlap(huey["bbox"],enemy_bots["bbox"]):
                         image, high_overlap = compute_blackout_box(image, huey["bbox"], enemy_bots["bbox"], thresh = self.thresh)
 
-                    print("devision search4")
+                    # print("devision search4")
                     centroid_points, three = find_centroids(image, self.selected_colors, area_threshold)
                     if three:
                         self.corner_method = 3
                     self.centroids = centroid_points
-                    print("devision search5")
+                    # print("devision search5")
                 # Every time we calculate 4 points, calculate diagonal and side length in the case of 1 front 1 back corner in the future
                 calc_diagonal_and_side_length(self.centroids, self.diag_len, self.side_len, self.num_lens)
                 
                 IS_NOT_DIAGONAL = False
                         
                 if (len(centroid_points[0]) + len(centroid_points[1]) == 2):
-                    print("devision search6")
+                    # print("devision search6")
                     if previous_orientations is not None and len(previous_orientations) > 0:
                         previous_orientation = previous_orientations[-1]
                         calc_orientation, IS_NOT_DIAGONAL = two_corners(centroid_points, previous_orientation, self.diag_len, self.side_len, huey["bbox"], self.prev_flipped, is_flipped=is_flipped)
                         self.corner_method = 2
-                        print("devision search7")
+                        # print("devision search7")
                         if IS_NOT_DIAGONAL:
                             self.is_diagonal = False
                             huey["orientation"] = calc_orientation
-                            print("devision search8")
+                            # print("devision search8")
                         else: # DIAGONAL
                             self.is_diagonal = True
                             huey["orientation"] = calc_orientation
                         self.prev_flipped = is_flipped
-                        print("devision search10")
+                        # print("devision search10")
                         # print(f"PREV ORIENT: 🌸🐋💛 {previous_orientation}")
                         # print(f"Current ORIENT: 💛🐋🌸 { huey["orientation"]}")
                     else:
@@ -230,20 +230,20 @@ class RobotCornerDetection:
                     return {"huey": huey, "enemy": enemy_bots}, conf
 
                 elif (len(centroid_points[0]) + len(centroid_points[1]) < 2):
-                    print("devision search11")
+                    # print("devision search11")
                     print("Less than 2 corners found")
                     self.is_diagonal = False
                     conf = 0
                     return {"huey": huey, "enemy": enemy_bots}, conf
                 
-                print("FOURNER4️⃣")
+                # print("FOURNER4️⃣")
                 if not self.corner_method == 3:
                     self.corner_method = 4
 
-                print("devision search12")
+                # print("devision search12")
                 front_midpoint = (centroid_points[0][0] + centroid_points[0][1]) * 0.5
                 back_midpoint = (centroid_points[1][0] + centroid_points[1][1]) * 0.5
-                print("devision search13")
+                # print("devision search13")
                 huey["orientation"] = compute_angle_between_midpoints(back_midpoint, front_midpoint)
                 result = {"huey": huey, "enemy": enemy_bots}
                 conf = self.confidence(self.corner_method, IS_NOT_DIAGONAL, high_overlap, is_flipped, tolerance)

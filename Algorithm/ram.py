@@ -25,18 +25,18 @@ class Ram():
     MAX_TURN = 1  # between 0 and 1
     ARENA_WIDTH = 700  # in pixels
     TOLERANCE = 10  # how close Huey's prev pos are permitted to be
-    BACK_UP_SPEED = -0.5
+    BACK_UP_SPEED = -0.7
     BACK_UP_TURN = 0
-    FORWARD_SPEED = 0.5
+    FORWARD_SPEED = 0.7
     FORWARD_TURN = 0
-    LEFT_SPEED = 0.5
-    LEFT_TURN = -0.5
-    RIGHT_SPEED = 0.5
-    RIGHT_TURN = 0.5
+    LEFT_SPEED = 0.7
+    LEFT_TURN = -0.7
+    RIGHT_SPEED = 0.7
+    RIGHT_TURN = 0.7
     BACK_UP_THRESHOLD = 10  # > Double EDGE_THRESHOLD
     EDGE_THRESHOLD = 5
-    RECOVERY_SPEED_VALUES = [BACK_UP_SPEED* 0.8, FORWARD_SPEED* 0.8, LEFT_SPEED* 0.8, RIGHT_SPEED* 0.8] 
-    RECOVERY_TURN_VALUES = [BACK_UP_TURN, FORWARD_TURN, LEFT_TURN, RIGHT_TURN]
+    RECOVERY_SPEED_VALUES = [BACK_UP_SPEED* 0.8, LEFT_SPEED* 0.8, RIGHT_SPEED* 0.8, FORWARD_SPEED* 0.8] 
+    RECOVERY_TURN_VALUES = [BACK_UP_TURN, LEFT_TURN, RIGHT_TURN, FORWARD_TURN]
     USE_PID = True
     is_recovering = False
     is_backing = False
@@ -92,11 +92,36 @@ class Ram():
         self.delta_t = 0.001
 
         # THIS WORKS IN TESTBOX
-        # self.turn_pid = PIDController(kp=0.008, ki=0.000, kd=0.0005, output_limits=(-1.0, 1.0))
-        # self.speed_pid = PIDController(kp=0.003, ki=0.000, kd=0.000, output_limits=(-1.0,1.0))
-        
         self.turn_pid = PIDController(kp=0.008, ki=0.000, kd=0.0005, output_limits=(-1.0, 1.0))
         self.speed_pid = PIDController(kp=0.003, ki=0.000, kd=0.000, output_limits=(-1.0,1.0))
+        
+        # Iter 1: Increase turn kp to account for not turning enough as we accelerate to robot
+        # self.turn_pid = PIDController(kp=0.01, ki=0.000, kd=0.0005, output_limits=(-1.0, 1.0))
+        # self.speed_pid = PIDController(kp=0.003, ki=0.000, kd=0.000, output_limits=(-1.0,1.0))
+
+        # Iter 2: Turning derivative down to 0.003 for turn
+        # self.turn_pid = PIDController(kp=0.008, ki=0.000, kd=0.0003, output_limits=(-1.0, 1.0))
+        # self.speed_pid = PIDController(kp=0.003, ki=0.000, kd=0.000, output_limits=(-1.0,1.0))
+
+        # Iter 3: Turning derivative down to 0.0015 for turn (no jitter, still over shooting a little)
+        # self.turn_pid = PIDController(kp=0.008, ki=0.000, kd=0.00015, output_limits=(-1.0, 1.0))
+        # self.speed_pid = PIDController(kp=0.003, ki=0.000, kd=0.000, output_limits=(-1.0,1.0))
+
+        # Iter 4: Increasing proportional for turn
+        # self.turn_pid = PIDController(kp=0.012, ki=0.000, kd=0.00015, output_limits=(-1.0, 1.0))
+        # self.speed_pid = PIDController(kp=0.003, ki=0.000, kd=0.000, output_limits=(-1.0,1.0))
+
+        # Iter 5: Decreasing derivative (see if it gets shaky)
+        # self.turn_pid = PIDController(kp=0.012, ki=0.000, kd=0.00005, output_limits=(-1.0, 1.0))
+        # self.speed_pid = PIDController(kp=0.003, ki=0.000, kd=0.000, output_limits=(-1.0,1.0))
+
+        # Iter 6: Increasing derivative (got shakey)
+        # self.turn_pid = PIDController(kp=0.012, ki=0.000, kd=0.0001, output_limits=(-1.0, 1.0))
+        # self.speed_pid = PIDController(kp=0.003, ki=0.000, kd=0.000, output_limits=(-1.0,1.0))
+
+        # Iter 7: Increasing deriative again
+        # self.turn_pid = PIDController(kp=0.012, ki=0.000, kd=0.00015, output_limits=(-1.0, 1.0))
+        # self.speed_pid = PIDController(kp=0.003, ki=0.000, kd=0.000, output_limits=(-1.0,1.0))
 
         #recovery
         self.recovering_until = 2.0
@@ -118,7 +143,7 @@ class Ram():
     ''' moves Huey backwards, forward, left, right'''
     def recovery_sequence(self):
         self.recovery_step += 1
-        duration = random.uniform(0.5, 1.0)
+        duration = random.uniform(0.35, 0.6)
         self.recovering_until = time.time() + duration
         self.recover_speed = self.RECOVERY_SPEED_VALUES[self.recovery_step%4]
         self.recover_turn = self.RECOVERY_TURN_VALUES[self.recovery_step%4]
@@ -145,6 +170,8 @@ class Ram():
         #     # TODO: work out angle range
         #     if abs(prev_orientation - self.huey_orientation) < Ram.TOLERANCE * 0.5:
         #         counter_orientation += 1
+
+        print("👨‍🔧👨‍🔧👨‍🔧 counter pos:",counter_pos)
 
         if counter_pos >= self.BACK_UP_THRESHOLD:
             self.is_recovering = True
@@ -277,7 +304,7 @@ class Ram():
     ''' main method for the ram ram algorithm that turns to face the enemy and charge towards it '''
     def ram_ram(self, bots: dict[str, any] = None, can_recover: bool = True, fps = 120, key=None):
         if self.is_recovering or self.is_backing:
-            self.HISTORY_BUFFER = fps
+            self.HISTORY_BUFFER = fps/2
         else:
             self.HISTORY_BUFFER = fps*2
         self.BACK_UP_THRESHOLD = 0.75*self.HISTORY_BUFFER
