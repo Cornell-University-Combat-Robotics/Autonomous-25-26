@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 
 def draw_orientation_arrow(frame, detected_bots_with_data, arrow_length=50, thickness=2):
-    for bot_name, data in detected_bots_with_data.items():
+    for bot_name, data in detected_bots_with_data[0].items():
         if not data or 'orientation' not in data or 'bbox' not in data:
             continue
 

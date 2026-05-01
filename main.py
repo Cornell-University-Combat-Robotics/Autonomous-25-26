@@ -133,7 +133,14 @@ with open(quant_settings_file, "r") as f:
 quantization_settings = None
 # quantization_settings = all_settings["Green Huey"]
 # quantization_settings = all_settings["Purple Huey"]
+# quantization_settings = all_settings["Green Huey Area"]
 
+DEFAULT_AREA_THRESHOLD = 15
+area_threshold = DEFAULT_AREA_THRESHOLD
+if quantization_settings and "area_theshold" in quantization_settings:
+    area_threshold = quantization_settings["area_theshold"]
+
+print(f"*********************AREA THREHOSDDDDDD {area_threshold}")
 # ------------------------------ BEFORE THE MATCH ------------------------------
 
 if IS_TRANSMITTING:
@@ -219,7 +226,7 @@ def main():
         # else:
         #     algorithm = Ram()
 
-        algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors)
+        algorithm = first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_colors, area_threshold)
 
         ### TODO: call dynamic threshold here
 
@@ -358,7 +365,7 @@ def main():
                     with rs.log_timing("Corner Detection"):
                         corner_detection.set_bots(detected_bots)
                         print("called corner main")
-                        detected_bots_with_data, confidence = corner_detection.corner_detection_main(algorithm.huey_previous_orientations, is_flipped=is_flipped, tolerance=15)
+                        detected_bots_with_data, confidence = corner_detection.corner_detection_main(area_threshold, algorithm.huey_previous_orientations, is_flipped=is_flipped, tolerance=15)
                         print("Confidence 😤😤😤: ", confidence)
 
                     # Prepare Quantized Huey Image (for display buffer)
