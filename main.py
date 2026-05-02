@@ -456,8 +456,7 @@ def main():
 
                             # Call display_angles with show=False to get the image without displaying
                             main_display_img = display_angles(detected_bots_with_data, move_dictionary, warped_frame, is_recovering=algorithm.is_recovering, is_backing=algorithm.is_backing,
-                                                              against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped=is_flipped, weapon_on=weapon_on_this_frame, centroids=corner_detection.centroids, is_confident=confidence, show=False)
-
+                                      against_wall=algorithm.against_wall, moving_forward=algorithm.moving_forward, is_flipped=is_flipped, weapon_on=weapon_on_this_frame, weapon_high_speed=weapon_high_speed, centroids=corner_detection.centroids, is_confident=confidence, show=False)
                         elif SHOW_FRAME:
                             display_frame = warped_frame
                             if SHOW_HUD:
