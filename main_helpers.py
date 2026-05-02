@@ -183,10 +183,8 @@ def first_run(predictor, warped_frame, SHOW_FRAME, corner_detection, selected_co
 
     return algorithm
 
-
-def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False, weapon_on=False, centroids=[], is_confident=0, show=True):
-    if is_recovering:
-        cv2.putText(image, "RECOVERING", (550, 50),
+def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=False, is_recovering=False, is_backing=False, against_wall="", moving_forward=-1, is_flipped=False, weapon_on=False, weapon_high_speed=True, centroids=[], is_confident=0, show=True):
+    cv2.putText(image, "RECOVERING", (550, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
     if is_flipped == -1:
         cv2.putText(image, "FLIPPED", (550, 50),
@@ -209,6 +207,12 @@ def display_angles(detected_bots_with_data, move_dictionary, image, initial_run=
     else:
         cv2.putText(image, "WEAPON OFF", (image.shape[1] - 150, image.shape[0] - 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.67, (0, 0, 255), 2)
+
+    # Weapon speed indicator drawn directly above WEAPON ON/OFF
+    speed_label = "SPD: HIGH" if weapon_high_speed else "SPD: LOW"
+    speed_color = (0, 255, 0) if weapon_high_speed else (0, 165, 255)  # Green or orange
+    cv2.putText(image, speed_label, (image.shape[1] - 150, image.shape[0] - 55),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.67, speed_color, 2)
 
     # BLUE line: Huey's Current Orientation according to Corner Detection
 
