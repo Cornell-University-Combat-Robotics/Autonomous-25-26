@@ -25,5 +25,15 @@
         "threshold": 19.0,
         "area_theshold": 5,
         "quantization_weights": [0.25228085094348074, 0.6393260108837663, 0.8785332198595871]
+    },
+    "Blue Comp": {
+        "threshold": 19.0,
+        "area_theshold": 10,
+        "quantization_weights": [0.12283842689716107, 0.30242161433928283, 0.47882345555356887]
+    },
+    "Green Comp": {
+        "threshold": 19.0,
+        "area_theshold": 10,
+        "quantization_weights": [0.300588838731473, 0.2775465712415277, 0.4505725961563153]
     }
 }
