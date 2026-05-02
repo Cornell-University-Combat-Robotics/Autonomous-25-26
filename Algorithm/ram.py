@@ -186,7 +186,6 @@ class Ram():
         #     if abs(prev_orientation - self.huey_orientation) < Ram.TOLERANCE * 0.5:
         #         counter_orientation += 1
 
-        print("👨‍🔧👨‍🔧👨‍🔧 counter pos:", counter_pos)
 
         if counter_pos >= self.BACK_UP_THRESHOLD:
             self.is_recovering = True

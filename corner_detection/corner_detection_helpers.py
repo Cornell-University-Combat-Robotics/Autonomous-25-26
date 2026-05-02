@@ -94,10 +94,9 @@ def find_our_bot(self, images: list[np.ndarray], bot_color_hsv, threshold_set=Tr
         # Say we can't find huey if the bot's are below the huey threshold (for recovery)
         if len(bot_color_percentages) == 1 and bot_color_percentages[-1] < self.huey_color_percentage_threshold:
             our_bot_image = None
-            # print("💔 check A")
+
         elif len(bot_color_percentages) > 1 and bot_color_percentages[-1] < min(MIN_THRESHOLD, self.huey_color_percentage_threshold):
             our_bot_image = None
-            # print("💛 check B")
         
         return our_bot_image
     
@@ -272,8 +271,6 @@ def two_corners(centroid_points: np.ndarray, previous_orientation: float, diagon
             - Else return average of two potentials
     """
     IS_VALID_ORIE = prev_flipped == is_flipped
-    print(f"IS_VALID_ORIE: {IS_VALID_ORIE}")
-    print(f"🦭PREV ORIE: {previous_orientation}")
 
     # we update prev_flipped in corner_detection_main
 

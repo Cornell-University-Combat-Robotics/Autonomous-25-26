@@ -283,8 +283,6 @@ def initialize_quantization():
     _ = cv2.cvtColor(dummy, cv2.COLOR_BGR2HSV)
 
 def quantize(detected_bots, selected_colors, show, is_flipped=1, settings=None):
-    
-    print(f"Is flipped: {is_flipped}")
 
     # Settings if no custom settings are input:
     custom_weights = None
