@@ -156,7 +156,7 @@ stop_event = threading.Event()
 shared_state_lock = threading.Lock()
 # Shared state for controls passed from UI thread to Perception thread
 shared_state = {"key": None, "flipped": None,
-                "paused": False, "skip_frame": False, "weapon_on": WEAPON_ON}
+                "paused": False, "skip_frame": False, "weapon_on": WEAPON_ON, "weapon_high_speed": True}
 
 prev_sensor_val = 0
 curr_sensor_val = 0
@@ -307,7 +307,7 @@ def main():
                         key = shared_state["key"]
                         manual_is_flipped = -1 if shared_state["flipped"] else 1
                         weapon_on_this_frame = shared_state["weapon_on"]
-                        # Clear transient key so one press is consumed once.
+                        weapon_high_speed = shared_state["weapon_high_speed"]   # ← add this line
                         shared_state["key"] = None
 
                     if IMU_ENABLED:
@@ -437,8 +437,8 @@ def main():
                             turn = move_dictionary["turn"]
                             motor_group.move(speed*is_flipped, turn * -1)
                             if WEAPON_ON:
-                                weapon_motor_group.move(
-                                    0.8 if weapon_on_this_frame else 0)
+                                weapon_speed_val = 0.75 if weapon_high_speed else 0.15
+                                weapon_motor_group.move(weapon_speed_val if weapon_on_this_frame else 0)
 
                     # Prepare Main Display Image
                     main_display_img = None
@@ -522,6 +522,11 @@ def main():
                         weapon_now = shared_state["weapon_on"]
                     print(
                         f"Weapon {'ON' if weapon_now else 'OFF'}")
+                elif key_8bit == ord("s"):
+                    with shared_state_lock:
+                        shared_state["weapon_high_speed"] = not shared_state["weapon_high_speed"]
+                        speed_now = shared_state["weapon_high_speed"]
+                    print(f"Weapon speed {'HIGH (0.75)' if speed_now else 'LOW (0.15)'}")
                 else:
                     with shared_state_lock:
                         if shared_state["paused"]:
