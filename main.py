@@ -136,6 +136,7 @@ with open(quant_settings_file, "r") as f:
 # Quantization Settings
 # quantization_settings = None
 quantization_settings = all_settings["Blue Comp"]
+# quantization_settings = all_settings["Green - Light Corners"]
 # quantization_settings = all_settings["Green Comp"]
 
 DEFAULT_AREA_THRESHOLD = 15

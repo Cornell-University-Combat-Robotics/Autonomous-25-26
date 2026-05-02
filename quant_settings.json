@@ -35,5 +35,10 @@
         "threshold": 19.0,
         "area_theshold": 10,
         "quantization_weights": [0.300588838731473, 0.2775465712415277, 0.4505725961563153]
+    },
+    "Green - Light Corners": {
+        "threshold": 19.0,
+        "area_theshold": 10,
+        "quantization_weights": [0.057922490519950326, 0.7612521347535218, 0.814305024380173]
     }
 }
