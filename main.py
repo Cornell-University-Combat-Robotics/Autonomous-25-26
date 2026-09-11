@@ -167,6 +167,8 @@ def main():
     try:
         # 1. Start the capturing frame from the camera or pre-recorded video
         # 2. Capture initial frame by pressing '0'
+
+        # TODO: Turn into ROS2 talker node
         if CAMERA_STREAM:
             stream = CameraStream(camera_number).start()
             captured_image = key_frame(
@@ -184,6 +186,8 @@ def main():
                 cap, CAMERA_STREAM, selection_scale=DISPLAY_SCALE)
 
         # 3. Use the initial frame to get a new Homography Matrix and new colors
+
+        # TODO: Turn into ROS2 listener
         if WARP_AND_COLOR_PICKING:
             warped_frame, homography_matrix = make_new_homography(
                 captured_image, selection_scale=DISPLAY_SCALE)
