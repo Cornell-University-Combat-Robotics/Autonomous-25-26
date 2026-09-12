@@ -38,8 +38,8 @@ from sensors.imu_class import IMUReadError
 
 # Run mode (uncomment exactly one)
 # MODE = "comp"
-MODE = "live"
-# MODE = "video"
+# MODE = "live"
+MODE = "video"
 # MODE = "custom"
 
 # Core behavior
@@ -65,7 +65,7 @@ SHOW_QUANTIZED_HUEY = True
 
 # Hardware / controls
 JANK_CONTROLLER = False  # Deprecated backup controller path
-IS_TRANSMITTING = True
+IS_TRANSMITTING = False
 WEAPON_ON = False
 
 # Frame timing
@@ -110,7 +110,7 @@ else:
 folder = os.getcwd() + "/main_files"
 # Video options (uncomment one for MODE = "video")
 # camera_number = folder + "/test_videos/crude_rot_huey.mp4"
-# camera_number = folder + "/test_videos/huey_vs_prince.mp4"
+camera_number = folder + "/test_videos/huey_vs_prince.mp4"
 # camera_number = folder + "/test_videos/huey_hell.mp4"
 # camera_number = folder + "/test_videos/huey_in_n_out.mp4"
 # camera_number = folder + "/test_videos/cicero_corners_bzone.mov"
@@ -119,7 +119,7 @@ folder = os.getcwd() + "/main_files"
 # camera_number = folder + "/test_videos/huey_backs.mp4"
 
 # Webcam index (used for MODE = "live" or MODE = "comp")
-camera_number = 0
+# camera_number = 0
 # camera_number = 1
 
 # Set to webcam if capturing frames in main loop.
@@ -184,6 +184,9 @@ def main():
 
             captured_image = key_frame(
                 cap, CAMERA_STREAM, selection_scale=DISPLAY_SCALE)
+
+        print(captured_image)
+        print(type(captured_image))
 
         # 3. Use the initial frame to get a new Homography Matrix and new colors
 
